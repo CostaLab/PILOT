@@ -1,0 +1,2 @@
+,Gene ID,Expression pattern,Slope,Fitted function,Intercept,Treat,adjusted P-value,R-squared,mod_rsquared_adj,proportion,mean
+4,glom_tuft_shape_circularity,quadratic down,-0.0001648931547962547,quadratic,0.4139707424884193,-2.5967425952166095e-07,2.3399679232454858e-200,0.036960306995937,0.5184801534979697,0.0,0.3821422379989268

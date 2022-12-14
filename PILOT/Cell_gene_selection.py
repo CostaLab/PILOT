@@ -1172,7 +1172,7 @@ def statistics(mat_df):
     return df[["Expression pattern",'count']]
 
 
-def save_data(dictionary, column_names,save_path,name,p_val,pro):
+def save_data(dictionary, column_names,save_path,name,p_val,pro,gprofil=False):
     """
     make table and save the data
     """
@@ -1261,13 +1261,14 @@ def save_data(dictionary, column_names,save_path,name,p_val,pro):
             os.makedirs(save_path+name+'/'+'PILOT')
         df_exp.to_csv(save_path+name+'/'+'PILOT/'+exp+'.csv')
         
-        gp = GProfiler(return_dataframe=True,)
-        genes_lists=list(df_exp['Gene ID'][0:])
-        df=gp.profile(organism='hsapiens',
-                query=genes_lists,no_evidences=False)
-        if not os.path.exists(save_path+name+'/'+'Gprofiler'):
-            os.makedirs(save_path+name+'/'+'Gprofiler')
-        df.to_csv(save_path+name+'/'+'Gprofiler'+'/'+exp+'.csv') 
+        if gprofil:
+            gp = GProfiler(return_dataframe=True,)
+            genes_lists=list(df_exp['Gene ID'][0:])
+            df=gp.profile(organism='hsapiens',
+                    query=genes_lists,no_evidences=False)
+            if not os.path.exists(save_path+name+'/'+'Gprofiler'):
+                os.makedirs(save_path+name+'/'+'Gprofiler')
+            df.to_csv(save_path+name+'/'+'Gprofiler'+'/'+exp+'.csv') 
      
     
 
