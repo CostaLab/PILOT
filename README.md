@@ -6,7 +6,7 @@ PILOT uses optimal transport to compute the Wasserstein distance between two sin
 ## INSTALLATION
 
 ```terminal
-git clone https://github.com/mehdijoodaki/PILOT
+git clone https://github.com/CostaLab/PILOT
 cd PILOT
 pip install .
 ```
