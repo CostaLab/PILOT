@@ -1,0 +1,12 @@
+
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+*.git
+**/__pycache__/
+.git/
+<<<<<<< HEAD
+=======
+*/cells.tar.gz/*
+
+*/cells/*
+>>>>>>> eaa9937... change the datasets and  tutorial
