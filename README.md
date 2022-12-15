@@ -16,6 +16,12 @@ cd PILOT
 pip install .
 ```
 
+## Usage
+
+For applying PILOT to your data, we provide tutorials here, you just need to after installation, follow the same path in the tutorial.
+Please just make sure that you need to extract needed materials as inputs for PILOT.
+
+
 
 ## Data and code availability
 
