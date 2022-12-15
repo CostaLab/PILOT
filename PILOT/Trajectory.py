@@ -88,7 +88,23 @@ def extract_annot_expression(adata,columns=['cell_type_original','patient_region
                     annot.columns=['cell_types','sampleID','status']                          
         return data,annot    
 
-                
+ 
+
+
+def extract_data_anno_from_h5ad(adata,pca_column='',annot_columns=[],name_dataset='unnamed_dataset'):
+    data=adata.obsm[pca_column]  
+    col_add=[]
+    for i in range(1,adata.obsm[pca_column].shape[1]+1):
+        col_add.append('PCA_'+str(i))
+    data=pd.DataFrame(data,columns=col_add) 
+    
+    annot=adata.obs[annot_columns]
+    annot.columns=['cell_type','sampleID','status']
+    annot = annot.reset_index(drop=True) 
+    path_to_results=set_path_for_results(name_dataset)
+    
+    return data,annot,path_to_results
+              
        
     
 def load_annot(path,name):
