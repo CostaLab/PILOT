@@ -6,9 +6,10 @@ PILOT uses optimal transport to compute the Wasserstein distance between two sin
 ![plot](./img/plot.png)
 
 
+Current version for PILOT is 0.1.0
 
-
-## INSTALLATION
+## User installation
+The easiest way to install PILOT and the required packages is using pip,
 
 ```terminal
 git clone https://github.com/CostaLab/PILOT
@@ -20,6 +21,7 @@ pip install .
 
 For applying PILOT to your data, we provide tutorials here, you just need to after installation, follow the same path in the tutorial.
 Please just make sure that you need to extract needed materials as inputs for PILOT.
+You can see the required data and its structure in Tutorial/Datasets path.
 
 
 
