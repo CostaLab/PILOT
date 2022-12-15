@@ -15,3 +15,10 @@ git clone https://github.com/CostaLab/PILOT
 cd PILOT
 pip install .
 ```
+
+
+## Data and code availability
+
+For accessing the used data sets, please go into the "Data and code availability" section in the manuscript.
+
+
