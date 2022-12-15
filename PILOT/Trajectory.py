@@ -36,11 +36,9 @@ from cycler import cycler
 #custom_cycler = (cycler(color=['#1589e8','#f0c3c3','#ec0c0e']))
 
 
-def load_object(path,name):
-    for format in [".h5ad"]:
-        p = os.path.join(path,name + format)
-    if isfile(p):
-        adata=sc.read_h5ad(p)
+def load_h5ad(path):
+    if isfile(path):
+        adata=sc.read_h5ad(path)
         return adata
     else:
         print('There is no such data, check the path or name')
