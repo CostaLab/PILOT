@@ -19,14 +19,8 @@ pip install .
 
 ## Usage
 
-For applying PILOT to your data, we provide tutorials here, you just need to after installation, follow the same path in the tutorial.
+For applying PILOT to your data, we provide tutorials here, you just need to after installation, follow the same path in the [Tutorial](https://github.com/CostaLab/PILOT/tree/main/Tutorial).
 Please just make sure that you need to extract needed materials as inputs for PILOT.
-You can see the required data and its structure in Tutorial/Datasets path.
-
-
-
-## Data and code availability
-
-For accessing the used data sets, please go into the "Data and code availability" section in the manuscript.
+You can see the required data and its structure in [Datasets](https://github.com/CostaLab/PILOT/tree/main/Tutorial/Datasets).
 
 
