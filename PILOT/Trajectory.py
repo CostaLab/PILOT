@@ -91,19 +91,34 @@ def extract_annot_expression(adata,columns=['cell_type_original','patient_region
  
 
 
-def extract_data_anno_from_h5ad(adata,pca_column='',annot_columns=[],name_dataset='unnamed_dataset'):
-    data=adata.obsm[pca_column]  
+def extract_data_anno_scRNA_from_h5ad(adata,emb_matrix='PCA',clusters_col='cell_type',sample_col='sampleID',status='status' ,name_dataset='unnamed_dataset'):
+    data=adata.obsm[emb_matrix]  
     col_add=[]
-    for i in range(1,adata.obsm[pca_column].shape[1]+1):
+    for i in range(1,adata.obsm[emb_matrix].shape[1]+1):
         col_add.append('PCA_'+str(i))
     data=pd.DataFrame(data,columns=col_add) 
-    
-    annot=adata.obs[annot_columns]
+    data = data.reset_index(drop=True)
+    annot=adata.obs[[clusters_col,sample_col,status]]
     annot.columns=['cell_type','sampleID','status']
     annot = annot.reset_index(drop=True) 
     path_to_results=set_path_for_results(name_dataset)
     
     return data,annot,path_to_results
+
+
+
+
+def extract_data_anno_pathomics_from_h5ad(adata,var_names=[],clusters_col='Cell_type',sample_col='sampleID',status='status' ,name_dataset='unnamed_dataset'):
+    data=adata[:,var_names].X
+    data=pd.DataFrame(data,columns=var_names)
+    data = data.reset_index(drop=True)
+    annot=adata.obs[[clusters_col,sample_col,status]]
+    annot.columns=['cell_type','sampleID','status']
+    annot = annot.reset_index(drop=True) 
+    path_to_results=set_path_for_results(name_dataset)
+    
+    return data,annot,path_to_results
+
               
        
     
