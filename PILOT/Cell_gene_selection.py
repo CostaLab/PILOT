@@ -1275,32 +1275,6 @@ def save_data(dictionary, column_names,save_path,name,p_val,pro,gprofil=False):
   
     print("data saved successfully")
 
-# def filter_table(mat_df, filter_type, pval_thr = 0.05):
-#     """
-#     filter table based on multiple testing corrections
-    
 
-#     Parameters
-#     ----------
-#     mat_df : Dataframe
-#         Data table of statistic results of each feature.
-
-    
-    
-    
-# def gprofiler(path,name,genes_number=16,org='hsapiens'):
-#    # genes_list= model.loadTarget(path, name)
-#     genes_list=model.loadTarget(path, name)
-#     genes_id=list(genes_list['Gene ID'][0:100])
-#     gp = GProfiler(return_dataframe=True,)
-#     df=gp.profile(organism='hsapiens',
-#                 query=genes_id,)
-#     path=path+'/gprofiler'+name+'.csv'
-#     df.to_csv(path)
-#     df['-log10(p_value)']=np.log10(df['p_value']).abs()
-#     fig = px.scatter(df ,x='source', y='-log10(p_value)',color='source',size='-log10(p_value)', hover_data=['native','term_size','name','p_value'])
-    
-#     fig.show()
-    
     
    

@@ -1,9 +1,6 @@
 import pandas as pd
 import numpy as np
 import scanpy as sc
-#import umap
-#import umap.plot
-#import umap.umap_ as umap
 import os
 import seaborn as sns
 import scipy
@@ -542,54 +539,7 @@ def Cell_importance(bins,annot,embedding_diff,real_labels,path,sort_axis='emb_x'
     return pathies_cell_proportions[['sampleID','Time_score']],cellnames
    
 
-"""
-def Cell_importance(bins,annot,embedding_diff,real_labels,path,sort_axis='emb_x',p_value=0.05,width=25,height=25,xlim=5,model_type = 'LinearRegression',modify_r2=False):
-    cell_types_propo=bins
-    patients_id=bins.keys()
-    cell_types = annot['cell_type'].unique()
-    emd=embedding_diff
-    labels=real_labels
-    #creat a dataframe of samples and their pseuduscores
-    emd_dataframe = pd.DataFrame({'sampleID':list(patients_id), 'emb_x':emd[:,0],'emb_y':emd[:,1],'lables':list(labels)},dtype=object)
-    #sort samples based on defined axis, you should choose correct one!
-    emd_dataframe_sort = emd_dataframe.sort_values(sort_axis, ascending=True) 
-    orders=list(emd_dataframe_sort['sampleID'])
-    times=list(range(1, len(orders)+1))
-    pathies_cell_proportions = pd.DataFrame.from_dict(bins).T
-    pathies_cell_proportions.columns=cell_types
-    pathies_cell_proportions.index.name='sampleID'
-    df_join = pd.merge(emd_dataframe_sort['sampleID'], pathies_cell_proportions, how='inner', on = 'sampleID')
-    df_join=df_join.set_index('sampleID')
-    #Normalizing the proportions for heat map
-    normalized_df=(df_join-df_join.min())/(df_join.max()-df_join.min())
- 
-    #Saving Heat map based on sorte pseuduscores of the Trajectory 
-    
-    sns.clustermap(normalized_df[cell_types],row_cluster=False,annot=False,cmap='Blues',figsize=(12,12),xticklabels=True);
-    plt.savefig(path+"/"+'Samples_over_trajectory.pdf')
-    
-    #Building a model based on Regression and pseuduscores 
-    pathies_cell_proportions['Time_score']=list(emd_dataframe[sort_axis])
-    pathies_cell_proportions = pathies_cell_proportions.sort_values('Time_score', ascending=True)
-    pathies_cell_proportions['Time_score']=list(times)
-    pathies_cell_proportions=pathies_cell_proportions.reset_index()
-    RNA_data = pd.DataFrame()
-    RNA_data['label'] = pathies_cell_proportions['Time_score']
-    RNA_target = np.transpose(pathies_cell_proportions.iloc[:,1:len(annot.cell_type.unique())+1])
-    min_target=min(RNA_data['label'])
-    max_target=max(RNA_data['label'])
-    #sorted_best = fit_best_model(RNA_target, RNA_data,model_type,min_target=min_target, max_target=max_target,)
-    sorted_best=fit_best_model(RNA_target, RNA_data, model_type,0,0,p_value,modify_r2)
-    with plt.rc_context():
-            plot_best_matches(RNA_target, RNA_data,pathies_cell_proportions, sorted_best, "Cell Proportion",
-    plot_color='tab:orange',num=len(sorted_best.keys()),width=width,height=height,x_lim=xlim,cells_show=True)
-  
-            plt.savefig(path+"/"+'Cell_types_importance.pdf')
-    
-    
-    cellnames=list(sorted_best.keys())
-    return pathies_cell_proportions[['sampleID','Time_score']],cellnames
- """  
+
 def feature_importance_shap(EMD,bins,annot,embedding_diff,real_labels,path,sort_axis='emb_x'):
     Similarities=EMD
     cell_types_propo=bins
