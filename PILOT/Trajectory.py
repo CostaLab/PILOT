@@ -88,34 +88,19 @@ def extract_annot_expression(adata,columns=['cell_type_original','patient_region
  
 
 
-def extract_data_anno_scRNA_from_h5ad(adata,emb_matrix='PCA',clusters_col='cell_type',sample_col='sampleID',status='status' ,name_dataset='unnamed_dataset'):
-    data=adata.obsm[emb_matrix]  
+def extract_data_anno_from_h5ad(adata,pca_column='',annot_columns=[],name_dataset='unnamed_dataset'):
+    data=adata.obsm[pca_column]  
     col_add=[]
-    for i in range(1,adata.obsm[emb_matrix].shape[1]+1):
+    for i in range(1,adata.obsm[pca_column].shape[1]+1):
         col_add.append('PCA_'+str(i))
     data=pd.DataFrame(data,columns=col_add) 
-    data = data.reset_index(drop=True)
-    annot=adata.obs[[clusters_col,sample_col,status]]
+    
+    annot=adata.obs[annot_columns]
     annot.columns=['cell_type','sampleID','status']
     annot = annot.reset_index(drop=True) 
     path_to_results=set_path_for_results(name_dataset)
     
     return data,annot,path_to_results
-
-
-
-
-def extract_data_anno_pathomics_from_h5ad(adata,var_names=[],clusters_col='Cell_type',sample_col='sampleID',status='status' ,name_dataset='unnamed_dataset'):
-    data=adata[:,var_names].X
-    data=pd.DataFrame(data,columns=var_names)
-    data = data.reset_index(drop=True)
-    annot=adata.obs[[clusters_col,sample_col,status]]
-    annot.columns=['cell_type','sampleID','status']
-    annot = annot.reset_index(drop=True) 
-    path_to_results=set_path_for_results(name_dataset)
-    
-    return data,annot,path_to_results
-
               
        
     
@@ -487,12 +472,13 @@ def contigency_mat(true_labels,predicted_labels, normalize = 'index'):
 
 
 
-def Cell_importance(bins,annot,embedding_diff,real_labels,path,sort_axis='emb_x',width=25,height=25,xlim=5,p_val=0.05):
-    cell_types_propo=bins
-    patients_id=bins.keys()
+def Cell_importance(bins,annot, embedding_diff, real_labels, path, sort_axis='emb_x', p_val=0.05):
+    
+    cell_types_propo = bins
+    patients_id = bins.keys()
     cell_types = annot['cell_type'].unique()
-    emd=embedding_diff
-    labels=real_labels
+    emd = embedding_diff
+    labels = real_labels
     #creat a dataframe of samples and their pseuduscores
     emd_dataframe = pd.DataFrame({'sampleID':list(patients_id), 'emb_x':emd[:,0],'emb_y':emd[:,1],'lables':list(labels)},dtype=object)
     #sort samples based on defined axis, you should choose correct one!
@@ -520,25 +506,21 @@ def Cell_importance(bins,annot,embedding_diff,real_labels,path,sort_axis='emb_x'
     RNA_data = pd.DataFrame()
     RNA_data['label'] = pathies_cell_proportions['Time_score']
     RNA_target = np.transpose(pathies_cell_proportions.iloc[:,1:len(annot.cell_type.unique())+1])
-    min_target=min(RNA_data['label'])
-    max_target=max(RNA_data['label'])
-    #sorted_best = fit_best_model_cell_types(RNA_target, RNA_data,min_target=min_target, max_target=max_target)
-    
-    
-    sorted_best=fit_best_model(RNA_target, RNA_data, model_type='LinearRegression',max_iter_huber=1,epsilon_huber=1,pval_thr=p_val,modify_r2=False)
-    
-   
-    
+    sorted_best=fit_best_model(RNA_target, RNA_data, model_type = 'LinearRegression', pval_thr = p_val, modify_r2 = False)
+        
     with plt.rc_context():
-            plot_best_matches_cell_types(RNA_target, RNA_data,pathies_cell_proportions, sorted_best, "Cell Proportion",
-    plot_color='tab:orange', min_target=min_target, max_target=max_target,num=len(sorted_best.keys()),width=25,height=25,xlim=xlim)
+            min_x = min(np.array(list(RNA_data['label'])))
+            max_x = min(np.array(list(RNA_data['label'])))
+            start = pathies_cell_proportions[pathies_cell_proportions['Time_score'] == min_x]['sampleID'].unique()
+            end = pathies_cell_proportions[pathies_cell_proportions['Time_score'] == max_x]['sampleID'].unique()
+            plot_name = 'From  ' + start + '  to  ' + end
+            plot_best_matches_cell_types(RNA_target, RNA_data, sorted_best, plot_name, "Cell Proportion")
             plt.savefig(path+"/"+'Cell_types_importance.pdf')
     
     
     cellnames=list(sorted_best.keys())
     return pathies_cell_proportions[['sampleID','Time_score']],cellnames
    
-
 
 def feature_importance_shap(EMD,bins,annot,embedding_diff,real_labels,path,sort_axis='emb_x'):
     Similarities=EMD
