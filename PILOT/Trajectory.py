@@ -34,7 +34,7 @@ from cycler import cycler
 
 
 
-#This function loads the h5ad data, set the path.
+#This function loads the h5ad data, set the path.   
 def load_h5ad(path):
     if isfile(path):
         adata=sc.read_h5ad(path)
@@ -53,7 +53,10 @@ def set_path_for_results(name_dataset):
         print('The path has already been set.')
         return 'Results_PILOT/'+name_dataset
         
+'''
+For extracting annotation from scRNA
 
+'''
 def extract_annot_expression(adata,columns=['cell_type_original','patient_region','region','X_pca'],reclustering=False,reduction=False,resu=0.1):
     
         if reduction:
@@ -105,8 +108,9 @@ def extract_data_anno_scRNA_from_h5ad(adata,emb_matrix='PCA',clusters_col='cell_
     return data,annot,path_to_results
 
 
-
-
+'''
+For extracting annotation from pathomics data
+'''
 def extract_data_anno_pathomics_from_h5ad(adata,var_names=[],clusters_col='Cell_type',sample_col='sampleID',status='status' ,name_dataset='unnamed_dataset'):
     data=adata[:,var_names].X
     data=pd.DataFrame(data,columns=var_names)
@@ -159,7 +163,12 @@ def load_expression(path,name):
         
                   
       
-                  
+'''
+
+
+Calculating preportions of culsters per sample
+
+'''                  
     
 
 def Cluster_Representations(df, cell_col = 0, sample_col = 1, regularization = None,regulizer=10):    
@@ -255,8 +264,9 @@ def data_regularization(annot, data, collector, min_count = 10, max_count = 100)
         
     return annot[boolean_list],data[boolean_list]
 
-    
-
+'''
+Computing cost matrix, it finds distances between clusters/cell-types   
+'''
 def cost_matrix(annot, data,path,cell_col = 0):
     
 
@@ -283,7 +293,9 @@ def cost_matrix(annot, data,path,cell_col = 0):
     plt.close(fig)     
     return dis
 
-
+'''
+Computes Wassertein disatcnes among samples
+'''
 def wasserstein_d(bins, cost,regularized = "unreg", reg = 0.1, path=None):
     
    
@@ -376,7 +388,9 @@ def Sil_computing(EMD, real_labels, metric, space = 'diffusion'):
         
     return Silhouette
 
-
+'''
+Finding the trajecories by applying DM
+'''
 def trajectory(EMD, predicted_labels,df, knn= 64, sample_col=1, clusters = 'status', embed_coord = 'diffusion',label_act = False, path=None,colors=['#377eb8','#ff7f00','#e41a1c'],location_labels='center'):
     
     custom_cycler = (cycler(color=colors))
@@ -486,8 +500,9 @@ def contigency_mat(true_labels,predicted_labels, normalize = 'index'):
     print(data_crosstab)
     return data_crosstab
 
-
-
+'''
+Ordering cells based on the estimated time by PILOT
+'''
 
 def Cell_importance(bins,annot,embedding_diff,real_labels,path,sort_axis='emb_x',width=25,height=25,xlim=5,p_val=0.05):
     cell_types_propo=bins
@@ -649,6 +664,10 @@ def extract_cells_from_gene_expression(adata,orders,sample_col,col_cell,cell_lis
                 os.makedirs(path_results+'/cells/') 
             joint.to_csv(path_results+'/cells/'+cell+'.csv')
 
+
+'''
+Ordering genes based on the estimated time by PILOT
+'''
             
 def genes_importance(pro,data,path,name_cell,col='Time_score',genes_index=[],p_value=0.05,max_iter_huber=500,epsilon_huber=1.5,x_lim=4,store_data=1,genes_interesting=[],modify_r2 = True,model_type = 'HuberRegressor'):
     RNA_data = pd.DataFrame()
