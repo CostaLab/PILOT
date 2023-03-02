@@ -33,6 +33,8 @@ from cycler import cycler
 #custom_cycler = (cycler(color=['#1589e8','#f0c3c3','#ec0c0e']))
 
 
+
+#This function loads the h5ad data, set the path.
 def load_h5ad(path):
     if isfile(path):
         adata=sc.read_h5ad(path)
