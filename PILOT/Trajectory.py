@@ -8,20 +8,11 @@ import matplotlib.pyplot as plt
 import pydiffmap
 from sklearn import metrics
 from pydiffmap import diffusion_map
-from sklearn.decomposition import PCA
-from sklearn.cluster import SpectralClustering
-from sklearn.cluster import KMeans
-from sklearn.cluster import AgglomerativeClustering
 from sklearn.neighbors import NearestCentroid
 from sklearn.metrics.cluster import rand_score
-from sklearn.cluster import DBSCAN
 from scipy.spatial import distance
-from sklearn.manifold import MDS
 from sknetwork.clustering import Louvain
-import shap
-from sklearn.ensemble import RandomForestClassifier,RandomForestRegressor
 from sklearn.preprocessing import label_binarize
-from sklearn.model_selection import train_test_split
 import time
 import sys 
 from genericpath import isfile
@@ -30,11 +21,15 @@ import warnings
 import ot
 from logging import info, warn
 from cycler import cycler
-#custom_cycler = (cycler(color=['#1589e8','#f0c3c3','#ec0c0e']))
+warnings.filterwarnings('ignore')
 
 
+'''
+This function loads the h5ad data, set the path.   
+Indicate the @path for reading the data
+'''
 
-#This function loads the h5ad data, set the path.   
+
 def load_h5ad(path):
     if isfile(path):
         adata=sc.read_h5ad(path)
@@ -44,7 +39,11 @@ def load_h5ad(path):
     
     
     
-    
+'''
+This function creates a folder named Results_PILOT for saving the whole generated results by PILOT 
+ @param:name dataset: Name of your data
+'''
+
 def set_path_for_results(name_dataset):
     if not os.path.exists('Results_PILOT/'+name_dataset):
         os.makedirs('Results_PILOT/'+name_dataset)
@@ -55,14 +54,13 @@ def set_path_for_results(name_dataset):
         
 '''
 For extracting annotation from scRNA
-
 '''
-def extract_annot_expression(adata,columns=['cell_type_original','patient_region','region','X_pca'],reclustering=False,reduction=False,resu=0.1):
+def extract_annot_expression(adata,columns=['cell_type_original','patient_region','region','X_pca'],reclustering=False,reduction=False,resu=0.1,max_value=10,target_sum=1e4):
     
         if reduction:
-                    sc.pp.normalize_total(adata, target_sum=1e4)
+                    sc.pp.normalize_total(adata, target_sum=target_sum)
                     sc.pp.log1p(adata)
-                    sc.pp.scale(adata, max_value=10)
+                    sc.pp.scale(adata, max_value=max_value)
                     sc.tl.pca(adata, svd_solver='arpack')
                     data=adata.obsm['X_pca']  
                     cols=[]
@@ -91,7 +89,15 @@ def extract_annot_expression(adata,columns=['cell_type_original','patient_region
         return data,annot    
 
  
-
+'''
+This function extracts the needed inputs for PILOT
+ @param:adata: loaded Anndata.
+ @param:emb_matrix: PCA representation of data (variable)
+ @param:clusters_col: cell_type/clustering column name in observation level of your  Anndata
+ @param:sample_col: samples/patients column name in observation level of your Anndata
+ @param:status: status/disease column name, e.g. control/case 
+ @param:name_dataset: name of your data ,PILOT creates a folder with this name for saving the whole generated results 
+'''
 
 def extract_data_anno_scRNA_from_h5ad(adata,emb_matrix='PCA',clusters_col='cell_type',sample_col='sampleID',status='status' ,name_dataset='unnamed_dataset'):
     data=adata.obsm[emb_matrix]  
@@ -140,7 +146,7 @@ def load_annot(path,name):
                 annot = annot.loc[:, ~annot.columns.str.contains('^Unnamed')]  
                 return annot
             except (Exception):
-                warn("loading " + name + " failed, failed, check the path/name of this data")
+                warn("loading " + name + "failed, check the path/name of this data")
        
 def load_expression(path,name):
     """
@@ -164,14 +170,15 @@ def load_expression(path,name):
                   
       
 '''
-
-
-Calculating preportions of culsters per sample
-
+Calculating preportions of culsters per sample.
+ @param:df is annot data (includes sample,cells/clusters and status)
+ @param: cell_col is cell-type/clusters column of your, defualt is the 0th column of your annotation data
+ @param: sample  is sample column 
+ @param: regulizer is regulizers 
 '''                  
     
 
-def Cluster_Representations(df, cell_col = 0, sample_col = 1, regularization = None,regulizer=10):    
+def Cluster_Representations(df, cell_col = 0, sample_col = 1,regulizer=10,normalization=True):    
 
     dict ={}
 
@@ -201,82 +208,36 @@ def Cluster_Representations(df, cell_col = 0, sample_col = 1, regularization = N
         dict[x] = vector  #set proportions for each sample
         
     
-    if regularization == True:
+    if normalization == True:
         for x in df['sampleID'].unique():
             dict[x] = (dict[x]+prior)/(sum(dict[x])+sum(prior))
-            #vector = np.ones(len(df['cell_type'].unique()))*max(bins[x])*0.1
-           # vector = np.ones(len(df['cell_type'].unique()))*regulizer #len(df['cell_type'].unique())
-           # dict[x] = (dict[x]+vector)/(sum(dict[x])+sum(vector))
+          
             
             
             
     
     return dict
 
-
-def bins_agreg(bins):
-    collector = np.zeros(len(bins[list(bins.keys())[0]]))
-    for i in bins.keys():
-        collector = collector + bins[i]
-    
-    return collector
-
-def find_outliers(arrayMatrix):
-    q75,q25 = np.percentile(arrayMatrix,[75,25])
-    intr_qr = q75-q25
- 
-    max_v = q75+(1.5*intr_qr)
-    min_v = q25-(1.5*intr_qr)
-    
-    z_scores = [(y > max_v or y < min_v) for y in arrayMatrix]
-    return np.where(np.array(z_scores) == True)
-
-
-def filter_outliers(outliers,annot,data):
-    
-    n_cell = len(annot.cell_type.unique())
-
-    to_remove = annot.sampleID.unique()[outliers]
-    
-    for i in to_remove:
-        data = data.drop(annot[annot.sampleID == i].index)
-        annot = annot.drop(annot[annot.sampleID == i].index)
-
-    return data, annot
-
-
-def data_regularization(annot, data, collector, min_count = 10, max_count = 100):
-    
-    significant_cells =[]
-    name_cells = []
-    boolean_list=[]
-    names = annot.cell_type.unique()  
-    k=0
-    
-    for i in collector:
-        if min_count < i < max_count:
-            significant_cells.append(i)
-            name_cells.append(names[k])
-        k=k+1 
-    
-    for i in annot.index.values:
-        boolean_list.append(annot['cell_type'].loc[i] in name_cells)
-        
-    return annot[boolean_list],data[boolean_list]
-
 '''
-Computing cost matrix, it finds distances between clusters/cell-types   
+Computing cost matrix, it finds distances between clusters/cell-types,
+First calculates the median of each cluster and then dissimilarity between clusters is computed.  
+ @param: annot is annotation data
+ @param: data are PCAs 
+ @param: path for saving matrix
+ @param: cell_col is cells/cluster column
+ @metric: metric, the measurement for calculating the distances between centroids 
 '''
-def cost_matrix(annot, data,path,cell_col = 0):
+
+def cost_matrix(annot,data,path,cell_col = 0,metric='cosine',figsize_h=12,figsize_w=12,col_cluster=True,row_cluster=True,cmap='Blues_r',font_scale=2):
     
 
-    cells = annot[annot.columns[cell_col]].unique()
+    cells = annot[annot.columns[cell_col]].unique() # gets cells 
     centroids = []
 
     for i in cells:
-        centroids.append(list(data[annot[annot.columns[cell_col]] == i].median(axis=0)))
+        centroids.append(list(data[annot[annot.columns[cell_col]] == i].median(axis=0))) #get the centriod of each cluster
 
-    dis_t = scipy.spatial.distance.pdist(centroids, metric = 'cosine')
+    dis_t = scipy.spatial.distance.pdist(centroids, metric = metric) 
     dis = scipy.spatial.distance.squareform(dis_t, force ='no', checks = True)
     
     fig = plt.figure()
@@ -285,8 +246,8 @@ def cost_matrix(annot, data,path,cell_col = 0):
     cost.columns=annot.cell_type.unique()
     cost['cell_types']=annot.cell_type.unique()
     cost=cost.set_index('cell_types')
-    sns.set(font_scale=2)
-    sns.clustermap(cost[annot.cell_type.unique()],cmap='Blues_r',figsize=(12,12),col_cluster=True,row_cluster=True, tree_kws={"linewidths": 0.});
+    sns.set(font_scale=font_scale)
+    sns.clustermap(cost[annot.cell_type.unique()],cmap=cmap,figsize=(figsize_h,figsize_w),col_cluster=col_cluster,row_cluster=row_cluster, tree_kws={"linewidths": 0.});
     
     plt.title('Cost Matrix',loc='center')
     plt.savefig(path+'/Cost_matrix.pdf') 
@@ -294,24 +255,28 @@ def cost_matrix(annot, data,path,cell_col = 0):
     return dis
 
 '''
-Computes Wassertein disatcnes among samples
+Computes Wassertein disatcnes among samples, the defualt method if callasical OT (unreg),
+you can change OT with Regularation one.
+@param: Clu_rep is proportions matrix
+@param: cost is cost matrix
+@param: regularized  is type of OT, by default uses calssical OT without any regulariztion, otherwise applys sinkhorn_stabilized
 '''
-def wasserstein_d(bins, cost,regularized = "unreg", reg = 0.1, path=None):
+def wasserstein_d(Clu_rep, cost,regularized = "unreg", reg = 0.1, path=None,figsize_h=12,figsize_w=12):
     
    
-    samples_id = list(bins.keys())
+    samples_id = list(Clu_rep.keys())
     n_samples = len(samples_id)
     EMD = np.zeros((n_samples,n_samples))
     
     if regularized == "unreg":
         for i in range(n_samples):
             for j in range(n_samples):
-                #EMD[i,j] = ot.unbalanced.mm_unbalanced2(bins[samples_id[i]],bins[samples_id[j]], cost, 0.8, 'kl')
-                EMD[i,j] = ot.emd2(bins[samples_id[i]],bins[samples_id[j]], cost)
+              
+                EMD[i,j] = ot.emd2(Clu_rep[samples_id[i]],Clu_rep[samples_id[j]], cost)
     else:
         for i in range(n_samples):
             for j in range(n_samples):
-                EMD[i,j] = ot.sinkhorn2(bins[samples_id[i]],bins[samples_id[j]], cost, reg, method = "sinkhorn_stabilized")
+                EMD[i,j] = ot.sinkhorn2(Clu_rep[samples_id[i]],Clu_rep[samples_id[j]], cost, reg, method = "sinkhorn_stabilized")
                 
     fig = plt.figure()
     emd = pd.DataFrame.from_dict(EMD).T
@@ -319,7 +284,7 @@ def wasserstein_d(bins, cost,regularized = "unreg", reg = 0.1, path=None):
     emd['sampleID']=samples_id 
     emd=emd.set_index('sampleID')
     sns.set(font_scale=2)
-    sns.clustermap(emd,cmap='Blues_r',figsize=(12,12),col_cluster=True,row_cluster=True, tree_kws={"linewidths": 0.})
+    sns.clustermap(emd,cmap='Blues_r',figsize=(figsize_h,figsize_w),col_cluster=True,row_cluster=True, tree_kws={"linewidths": 0.})
     plt.title('Wasserstein distance',loc='center')
     plt.savefig(path+'/Wasserstein distance.pdf') 
     plt.close(fig)
@@ -327,18 +292,27 @@ def wasserstein_d(bins, cost,regularized = "unreg", reg = 0.1, path=None):
 
     return EMD
 
-
-def Clustering(EMD, df, category = 'status', sample_col=1,res = 0.01):
+'''
+Doing the clustering based on the OT distance
+@param: EMD, wasserstein distances
+@param: df , annotation data
+@param: category name of the column as disease/status in annot data
+@param: sample_col, is the sample column in annot data
+@parma: res, resolution od Leiden clustering
+@param: metric, is the measurement for neighborhood graph in the knn space
+@parma: steper, is the steper for increasin/decreasing resolution till getting the number of real lables
+'''
+def Clustering(EMD, df, category = 'status', sample_col=1,res = 0.01,metric ='cosine',steper=0.01):
 
     samples = df[df.columns[sample_col]].unique()
     condition = df[category]
     n_clust = len(df[category].unique())
     
     flag = True
-    inc = 0.01
+    inc = steper
     while flag == True:
         adata = sc.AnnData(EMD)
-        sc.pp.neighbors(adata, metric ='cosine')
+        sc.pp.neighbors(adata, metric=metric)
         sc.tl.leiden(adata, resolution = res)
         labels = np.array(adata.obs.leiden)
         if len(df.status.unique()) > len(np.unique(labels)):
@@ -368,65 +342,50 @@ def Clustering(EMD, df, category = 'status', sample_col=1,res = 0.01):
 
 
 
-def Sil_computing(EMD, real_labels, metric, space = 'diffusion'):
-
-    n_comp = EMD.shape[0]
-    
-    if space == 'MDS':
-        mydmap = MDS(n_components=n_comp)
-        embedding = mydmap.fit_transform(EMD)
-    
-    elif space == 'PCA':
-        mydmap = PCA(n_components=n_comp)
-        embedding = mydmap.fit_transform(EMD)
-        
-    elif space == 'diffusion':
-        embedding = EMD
-    
-    Silhouette = metrics.silhouette_score(embedding, real_labels, metric ='cosine')
-    print("Silhouette score: ", Silhouette)
-        
+def Sil_computing(EMD, real_labels, metric='cosine'):
+    Silhouette = metrics.silhouette_score(EMD, real_labels, metric =metric)
+    print("Silhouette score: ", Silhouette) 
     return Silhouette
+
+
 
 '''
 Finding the trajecories by applying DM
+@param: EMD, is the output of OT,
+@param: n_evecs, number of embeddings
+@param: k : int, optional Number of nearest neighbors over which to construct the kernel.
+       
+@param: epsilon, string or scalar, optional
+            Method for choosing the epsilon.  Currently, the only options are to provide a scalar (epsilon is set to the provided scalar) 'bgh' (Berry, Giannakis and Harlim), and 'bgh_generous' ('bgh' method, with answer multiplied by 2.
+
+@param: alpha, normalization in bandwith function
+
+Reference:
+ .. [1] T. Berry, and J. Harlim, Applied and Computational Harmonic Analysis 40, 68-96
+           (2016).
 '''
-def trajectory(EMD, predicted_labels,df, knn= 64, sample_col=1, clusters = 'status', embed_coord = 'diffusion',label_act = False, path=None,colors=['#377eb8','#ff7f00','#e41a1c'],location_labels='center'):
+def trajectory(EMD, predicted_labels,df, n_evecs = 2, epsilon =1, alpha = 0.5,knn= 64, sample_col=1, clusters = 'status',label_act = False, path=None,colors=['#377eb8','#ff7f00','#e41a1c'],location_labels='center', fig_h=12,fig_w=12,font_size=24,axes_line_width=1,axes_color='black',facecolor='white',point_size=100,cmap='viridis',fontsize_legend=24,alpha_trans=1,plot_titel = "Trajectory of the disease progression"):
     
     custom_cycler = (cycler(color=colors))
     
-    plot_titel = "Trajectory of the disease progression"
+    plot_titel = plot_titel
 
-    if embed_coord == 'diffusion':
-        mydmap = diffusion_map.DiffusionMap.from_sklearn(n_evecs = 2, epsilon =1, alpha = 0.5, k=64)
-        embedding = mydmap.fit_transform(EMD)
+   
+    mydmap = diffusion_map.DiffusionMap.from_sklearn(n_evecs = n_evecs, epsilon =epsilon, alpha = alpha, k=knn)
+    embedding = mydmap.fit_transform(EMD)
         
-    elif embed_coord == 'MDS':
-        mydmap = MDS(n_components=2)
-        embedding = mydmap.fit_transform(EMD)
-        
-    elif embed_coord == 'PCA':
-        mydmap = PCA(n_components=2)
-        embedding = mydmap.fit_transform(EMD)
-    
-    else:
-        print('Choose one of the embeddings options including diffusion map, MDs or PCA.')
-      
-    
-    
-    
-    plt.rcParams.update({'font.size': 16})
-    plt.rcParams["axes.edgecolor"] = "black"
-    plt.rcParams["axes.linewidth"] = 1
+    plt.rcParams.update({'font.size': font_size})
+    plt.rcParams["axes.edgecolor"] = axes_color
+    plt.rcParams["axes.linewidth"] = axes_line_width
 
     fig = plt.figure()
-    fig.set_size_inches(12, 12)
+    fig.set_size_inches(fig_h, fig_w)
     
     ax = plt.gca()
     
-    ax.set(facecolor = "white")
+    ax.set(facecolor = facecolor)
     ax.set_prop_cycle(custom_cycler)
-    scatter = ax.scatter(embedding[:,0],embedding[:,1], c = predicted_labels, label = predicted_labels,s=100)
+    scatter = ax.scatter(embedding[:,0],embedding[:,1], c = predicted_labels, label = predicted_labels,s=point_size)
     legend= ax.legend(*scatter.legend_elements(), loc="lower left", title="Classes")
     ax.add_artist(legend)
    
@@ -435,87 +394,96 @@ def trajectory(EMD, predicted_labels,df, knn= 64, sample_col=1, clusters = 'stat
     plt.savefig(path+"/"+plot_titel+"(predicted_lables)"+'.pdf')    
     plt.close(fig)
 
-    
-    
-
     df = df.drop_duplicates(subset =[df.columns[sample_col]])
     fig = plt.figure()
-    fig.set_size_inches(12, 12)
+    fig.set_size_inches(fig_h, fig_w)
     
     ax = plt.gca()
     
-    ax.set(facecolor = "white")
+    ax.set(facecolor = facecolor)
     ax.set_prop_cycle(custom_cycler)
-    #plt.rcParams['axes.prop_cycle'] = plt.cycler(color=['#1589e8','#f0c3c3','#ec0c0e'])
+   
     for category in df[clusters].unique():
         aux = np.array(df[clusters] == category)
         group_data = embedding[aux]
-        scatter = ax.scatter(group_data[:,0],group_data[:,1], alpha=1,label=category, cmap='viridis',s=100) 
+        scatter = ax.scatter(group_data[:,0],group_data[:,1], alpha=alpha_trans,label=category, cmap=cmap,s=point_size) 
         
         if label_act == True:
             names = np.array(df[df[clusters] == category].sampleID)
             k = 0
             for txt in names:
-                ax.annotate(txt, (group_data[k,0], group_data[k,1]),fontsize=12)
+                ax.annotate(txt, (group_data[k,0], group_data[k,1]),fontsize=font_size)
                 k=k+1
 
-    ax.legend(loc=location_labels, fontsize=24)
+    ax.legend(loc=location_labels, fontsize=fontsize_legend)
     frame = legend.get_frame()
-    frame.set_color('white')
+    frame.set_color(facecolor)
     
 
     plt.title(plot_titel)
     plt.savefig(path+"/"+plot_titel+'.pdf')
-    if embed_coord =='diffusion':
-        plt.show()         
+    plt.show()         
     plt.close(fig)
     
 
     
     return embedding
 
-def plot_by_pheno(data, predicted_labels, class_id = 2):
-    boolean = []
-    k=0
-    for i in predicted_labels:
-        if i == class_id:
-            boolean.append(k)
-        else:
-            pass       
-        k=k+1
-        
-    category = data.loc[boolean]
-    umap_object = umap.UMAP(n_components=2, random_state=42)
-    embedding_umap = umap_object.fit_transform(category)
-
-    fig,ax = plt.subplots()
-    scatter = ax.scatter(embedding_umap[:,0],embedding_umap[:,1])
-    ax.set_title('Cluster projection by phenotypic state: ' + str(class_id))
-    plt.show() 
-
-def contigency_mat(true_labels,predicted_labels, normalize = 'index'):
-    contigency = {'predicted_labels': predicted_labels, 'true_labels': true_labels}
-    cont_matrix = pd.DataFrame(data=contigency)
-    data_crosstab = pd.crosstab(cont_matrix['predicted_labels'], cont_matrix['true_labels'], margins = False,normalize= normalize)
-    print(data_crosstab)
-    return data_crosstab
 
 '''
-Ordering cells based on the estimated time by PILOT
+Getting the pseudotime based on the pricipla graph
+
+@param: emb, embeddings of DM.
+@param: NumNodes, number of node for buiding the backbone.
+@param: source_node, start from this node
+@param: show_text, showing the numbers in the backbone
+@param: Do_PCA Perform PCA on the nodes
+@param: DimToPlot a integer vector specifing the PCs (if Do_PCA=TRUE) or dimension (if Do_PCA=FALSE) to plot. 
+@param: Node_color, colors of backbon's  node.
+@return orders of samples based on the trajectory and selected cell-types
 '''
 
-def Cell_importance(bins,annot,embedding_diff,real_labels,path,sort_axis='emb_x',width=25,height=25,xlim=5,p_val=0.05):
+
+
+def fit_pricipla_graph(emb,NumNodes=10,source_node=0,path=None,show_text=True,Do_PCA=False,fig_x_size=12,fig_y_size=12,X_color='r', Node_color='k', DimToPlot=[0, 1],facecolor='white',title='Principal graph'):
+ 
+    pg_curve = elpigraph.computeElasticPrincipalTree(emb,NumNodes=NumNodes)[0]
+    fig = plt.figure()
+    fig.set_size_inches(fig_x_size, fig_y_size)
+    ax = plt.gca()
+    ax.set(facecolor = facecolor)
+    elpigraph.plot.PlotPG(emb,pg_curve,Do_PCA=Do_PCA,show_text=show_text,DimToPlot=DimToPlot,Node_color=Node_color,X_color=X_color)
+    plt.title(title)
+    plt.savefig(path+"/"+'Principal graph'+'.pdf')
+    plt.show()         
+    plt.close(fig)
+    elpigraph.utils.getPseudotime(emb,pg_curve,source=source_node,target=None)
+    pseudotime = pg_curve['pseudotime']
+    return pseudotime
+
+
+'''
+Ordering cells based on the estimated time by PILOT.
+@param: bins, proportions.
+@param: annot, annotation data.
+@param: embedding_diff, emds of DM. 
+@param: pseudotime, calculated pseudotime with fit_pricipla_graph.
+@param: heatmap_h,heatmap_w, height and width of heatmap.
+@param: p_val, p-value for filtering the found fitting models.
+@param: plot_cell: ploting the plots
+@param witdth and height, size of plots
+@param xlim, for grouping the disease progression(pseudotime) and showing the groups over x-axis
+
+'''
+def Cell_importance(bins,annot,embedding_diff,real_labels,path,pseudotime,heatmap_h=12,heatmap_w=12,width=25,height=25,xlim=5,p_val=1,plot_cell=True):
     cell_types_propo=bins
     patients_id=bins.keys()
     cell_types = annot['cell_type'].unique()
     emd=embedding_diff
     labels=real_labels
-    #creat a dataframe of samples and their pseuduscores
-    emd_dataframe = pd.DataFrame({'sampleID':list(patients_id), 'emb_x':emd[:,0],'emb_y':emd[:,1],'lables':list(labels)},dtype=object)
-    #sort samples based on defined axis, you should choose correct one!
-    emd_dataframe_sort = emd_dataframe.sort_values(sort_axis, ascending=True) 
-    orders=list(emd_dataframe_sort['sampleID'])
-    times=list(range(1, len(orders)+1))
+    emd_dataframe = pd.DataFrame({'sampleID':list(patients_id), 'pseudotime':pseudotime,'lables':list(labels)},dtype=object)
+    emd_dataframe_sort = emd_dataframe.sort_values('pseudotime', ascending=True) 
+    emd_dataframe_sort['pseudotime']=np.arange(1, len(emd_dataframe)+1, 1).tolist()
     pathies_cell_proportions = pd.DataFrame.from_dict(bins).T
     pathies_cell_proportions.columns=cell_types
     pathies_cell_proportions.index.name='sampleID'
@@ -526,13 +494,13 @@ def Cell_importance(bins,annot,embedding_diff,real_labels,path,sort_axis='emb_x'
  
     #Saving Heat map based on sorte pseuduscores of the Trajectory 
     
-    sns.clustermap(normalized_df[cell_types],row_cluster=False,annot=False,cmap='Blues',figsize=(12,12),xticklabels=True);
+    sns.clustermap(normalized_df[cell_types],row_cluster=False,annot=False,cmap='Blues',figsize=(heatmap_h,heatmap_w),xticklabels=True);
     plt.savefig(path+"/"+'Samples_over_trajectory.pdf')
     
     #Building a model based on Regression and pseuduscores 
-    pathies_cell_proportions['Time_score']=list(emd_dataframe[sort_axis])
+    pathies_cell_proportions['Time_score']=list(emd_dataframe['pseudotime'])
     pathies_cell_proportions = pathies_cell_proportions.sort_values('Time_score', ascending=True)
-    pathies_cell_proportions['Time_score']=list(times)
+    pathies_cell_proportions['Time_score']=np.arange(1, len(emd_dataframe)+1, 1).tolist()
     pathies_cell_proportions=pathies_cell_proportions.reset_index()
     RNA_data = pd.DataFrame()
     RNA_data['label'] = pathies_cell_proportions['Time_score']
@@ -544,75 +512,19 @@ def Cell_importance(bins,annot,embedding_diff,real_labels,path,sort_axis='emb_x'
     
     sorted_best=fit_best_model(RNA_target, RNA_data, model_type='LinearRegression',max_iter_huber=1,epsilon_huber=1,pval_thr=p_val,modify_r2=False)
     
-   
+    if plot_cell:
     
-    with plt.rc_context():
-            plot_best_matches_cell_types(RNA_target, RNA_data,pathies_cell_proportions, sorted_best, "Cell Proportion",
-    plot_color='tab:orange', min_target=min_target, max_target=max_target,num=len(sorted_best.keys()),width=25,height=25,xlim=xlim)
-            plt.savefig(path+"/"+'Cell_types_importance.pdf')
+        with plt.rc_context():
+                plot_best_matches_cell_types(RNA_target, RNA_data,pathies_cell_proportions, sorted_best, "Cell Proportion",
+        plot_color='tab:orange', min_target=min_target, max_target=max_target,num=len(sorted_best.keys()),width=25,height=25,xlim=xlim)
+                plt.savefig(path+"/"+'Cell_types_importance.png')
     
     
     cellnames=list(sorted_best.keys())
+    #return orders of samples based on the trejctory and selected cell-types
     return pathies_cell_proportions[['sampleID','Time_score']],cellnames
    
 
-
-def feature_importance_shap(EMD,bins,annot,embedding_diff,real_labels,path,sort_axis='emb_x'):
-    Similarities=EMD
-    cell_types_propo=bins
-    patients_id=bins.keys()
-    cell_types = annot['cell_type'].unique()
-    emd=embedding_diff
-    labels=real_labels
-    #creat a dataframe of samples and their pseuduscores
-    emd_dataframe = pd.DataFrame({'sampleID':list(patients_id), 'emb_x':emd[:,0],'emb_y':emd[:,1],'lables':list(labels)},dtype=object)
-    #sort samples based on defined axis, you should choose correct one!
-    emd_dataframe_sort = emd_dataframe.sort_values(sort_axis, ascending=False)
-    orders=list(emd_dataframe_sort['sampleID'])
-    
-    #get the smaples proportions 
-    pathies_cell_proportions = pd.DataFrame.from_dict(bins).T
-    pathies_cell_proportions.columns=cell_types
-    pathies_cell_proportions.index.name='sampleID'
-    df_join = pd.merge(emd_dataframe_sort['sampleID'], pathies_cell_proportions, how='inner', on = 'sampleID')
-    df_join=df_join.set_index('sampleID')
-    #Normalizing the proportions for heat map
-    normalized_df=(df_join-df_join.min())/(df_join.max()-df_join.min())
- 
-    #Saving Heat map based on sorte pseuduscores of the Trajectory 
-    
-    sns.clustermap(normalized_df[cell_types],row_cluster=False,annot=False,cmap='Blues',figsize=(12,12),xticklabels=True);
-    plt.savefig(path+"/"+'heat_map_trjectory.png')
-    
-    #Building a model based on Regression and pseuduscores 
-    pathies_cell_proportions['labels']=list(emd_dataframe[sort_axis])
-    Y = pathies_cell_proportions['labels']
-
-    X = pathies_cell_proportions[cell_types]
-    # Split the data into train and test data:
-    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size = 0.3)
-    # Build the model with the random forest regression algorithm:
-    model = RandomForestRegressor(max_depth=10, random_state=0, n_estimators=10)
-    #Training the model
-    model.fit(X_train, Y_train)
-    explainer = shap.TreeExplainer(model)
-    
-    fig2 = plt.figure()
-  
-    
-    shap.summary_plot(explainer.shap_values(X_train),X_train,plot_type='dot',show=False,plot_size=[12,12]);
-    
-    
-        
-    fig2.savefig(path+"/"+'feature_importance_dot.pdf', bbox_inches='tight')   
-    fig3 = plt.figure()
- 
-    shap.summary_plot(explainer.shap_values(X_train), X_train, plot_type="bar",show=False,plot_size=[12,12]);
-   
-    fig2.savefig(path+"/"+'feature_importance_dot.png')
-    fig3.savefig(path+"/"+'feature_importance_bar.png')
- 
-    return orders
 
 def reclustering_data(adata,resu=0.01,normalization=False,target_sum=1e6,n_neighbor=15,method_='umap', metric_t = 'cosine',mode='distances',origine_scr_rna=False,dimension_rect=False,n_component=25):
     
@@ -645,7 +557,13 @@ def reclustering_data(adata,resu=0.01,normalization=False,target_sum=1e6,n_neigh
 
     return labels
 
-
+'''
+Extracts genes expressed. with from object, this function after extracting genes joins them with pseudotime
+@param: adata is the Anndata
+@param: order, the samples with their pseudotime (output of Cell_importance function)
+@cell_list, cells which are changing significantly over the trajectory(pseudotime)
+Return each cell beside genes and their time associated with the trajectory of samples, they are saved in the cell folder.
+'''
 
 def extract_cells_from_gene_expression(adata,orders,sample_col,col_cell,cell_list,path_results):
             
@@ -667,6 +585,20 @@ def extract_cells_from_gene_expression(adata,orders,sample_col,col_cell,cell_lis
 
 '''
 Ordering genes based on the estimated time by PILOT
+@param: pro, the percentage of the sparsity of genes.
+@param: data, returned data for each cell by extract_cells_from_gene_expression function.
+@param: name_cell, name of the cell
+@param:col, name of the time column
+@param: genes_index, the indices of genes in the data file
+@param: store_data, if save the plots and output
+@param:genes_interesting, the name of your interested genes
+@param:modify_r2, use modified R squared
+@param:model_type, choose traditional lose function or HuberRegressor
+@param:p_value, default is 0.05
+@param: max_iter_huber, number of iteration for huber model
+@param: epsilon_huber: epsilon parameter for huber model
+@param:x_lim  for grouping the disease progression(pseudotime) and showing the groups over x-axis
+
 '''
             
 def genes_importance(pro,data,path,name_cell,col='Time_score',genes_index=[],p_value=0.05,max_iter_huber=500,epsilon_huber=1.5,x_lim=4,store_data=1,genes_interesting=[],modify_r2 = True,model_type = 'HuberRegressor'):
@@ -705,7 +637,7 @@ def genes_importance(pro,data,path,name_cell,col='Time_score',genes_index=[],p_v
 
     with plt.rc_context():
         plot_best_matches(RNA_target, RNA_data,data, sorted_best, "Gene expression", plot_color='tab:orange',num=len(sorted_best.keys()),x_lim=x_lim)
-        plt.savefig(path+'/Markers/'+name_cell+'/'+'genes_ranking for cell type '+name_cell+'.pdf')
+        plt.savefig(path+'/Markers/'+name_cell+'/'+'genes_ranking for cell type '+name_cell+'.png')
     
     
     if len(genes_interesting):
@@ -715,9 +647,14 @@ def genes_importance(pro,data,path,name_cell,col='Time_score',genes_index=[],p_v
             
             
             plot_best_matches(RNA_target, RNA_data,data, filtered_dict, "Gene expression",             plot_color='tab:orange',num=len(filtered_dict.keys()),x_lim=x_lim)
-            plt.savefig(path+'/Markers/'+name_cell+'/'+'Interesting genes_ranking for cell type '+name_cell+'.pdf')
+            plt.savefig(path+'/Markers/'+name_cell+'/'+'Interesting genes_ranking for cell type '+name_cell+'.png')
 
-def proportions(data):
+            
+'''
+Computing the proportions of sparsity for genes
+@param: data, the cell with its genes
+'''
+def cal_proportions(data):
     pro=pd.DataFrame()
     pro['Gene ID']=list(data.columns)
     pro['proportion']=0
@@ -730,5 +667,18 @@ def proportions(data):
             pro.loc[pro['Gene ID'] == name_genes, 'mean'] = means
     return pro            
             
-            
-  
+'''
+Extracting clusters with their features and time 
+@param:orders, the order by PILOT,
+@param:annot, annotation data
+@param:data, features data
+'''
+def extract_cells_from_pathomics(orders,annot,data,path):
+    
+    data['sampleID']=list(annot['sampleID'])
+    joint=pd.merge(data,orders,on='sampleID')
+    if not os.path.exists(path+'/cells/'):  
+                    os.makedirs(path+'/cells/')
+    joint.to_csv(path+'/cells/'+'All.csv')
+    
+    

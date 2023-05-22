@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
 name='PILOT',
-version='0.1.0',
+version='0.1.1',
 author='Mehdi Joodaki',
 author_email='judakimehdi@gmail.com',
 packages=['PILOT'],
@@ -25,6 +25,7 @@ install_requires=[
 "scipy",
 "seaborn",
 "shap",
-"statsmodels"
+"statsmodels",
+"elpigraph-python"
 ],
 )

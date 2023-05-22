@@ -23,6 +23,7 @@ from gprofiler import GProfiler
 import plotly.io as pio
 import math
 import matplotlib as mpl
+import elpigraph
 
 
 #%%% load functions    
@@ -384,7 +385,7 @@ def plot_best_matches_cell_types(target, data,df,sorted_best, scale_name, plot_c
     
     plt.figure(figsize=((width, height)))
     plt.subplots_adjust(wspace = 0.5, hspace = 0.5 )
-    plt.suptitle(xlabel, fontsize=28, y=0.95)
+   # plt.suptitle(xlabel, fontsize=20, y=0.95)
     plt.tight_layout()
     
     j = 1
@@ -408,16 +409,16 @@ def plot_best_matches_cell_types(target, data,df,sorted_best, scale_name, plot_c
         curve = np.matmul(new_polyline, best_results['params'])
         ax.plot(np.linspace(min_target,max_target), curve)
     
-        ax.set_title(best_tf_name,fontsize=22)
+        ax.set_title(best_tf_name,fontsize=20)
         ax.axis(xmin = min_target,xmax = max_target)
     
         if((j+4) % 4 == 1):
             #ax.set(ylabel = scale_name)
-            ax.set_ylabel(scale_name, fontsize=14)
+            ax.set_ylabel(scale_name, fontsize=20)
         ax.annotate("adj R2 = " + str("{:.2f}".format(best_results['rsquared_adj'])), 
                  (np.mean(x),np.mean(best_tf)),
                  color='black',
-                 size=18)
+                 size=20)
      
     
         j += 1
@@ -462,16 +463,16 @@ def plot_best_matches_cell_types_(target, data,df,sorted_best, scale_name, plot_
         curve = np.matmul(polyline, best_results.params)
         ax.plot(np.linspace(min_target,max_target), curve)
     
-        ax.set_title(best_tf_name,fontsize=22)
+        ax.set_title(best_tf_name,fontsize=28)
         ax.axis(xmin = min_target,xmax = max_target)
     
         if((j+4) % 4 == 1):
             #ax.set(ylabel = scale_name)
-            ax.set_ylabel(scale_name, fontsize=14)
+            ax.set_ylabel(scale_name, fontsize=22)
         ax.annotate("adj R2 = " + str("{:.2f}".format(best_results.rsquared_adj)), 
                  (np.mean(x),np.mean(best_tf)),
                  color='black',
-                 size=18)
+                 size=22)
      
     
         j += 1
@@ -501,7 +502,7 @@ def plot_best_matches(target, data,df, sorted_best, scale_name, plot_color,num=1
     plt_count=0
     plt.figure(figsize=((width, 4*len(patterns))))
     xlabel='From  '+ start+'  to  '+end
-    plt.suptitle(xlabel, fontsize=28, y=0.05)
+   # plt.suptitle(xlabel, fontsize=20, y=0.05)
     #plt.tight_layout()
     plt.subplots_adjust(
 
@@ -549,21 +550,21 @@ def plot_best_matches(target, data,df, sorted_best, scale_name, plot_color,num=1
 
                 ax.plot(pline, curve, c = plot_color)
 
-                ax.set_title(best_tf_name,fontsize=22)
+                ax.set_title(best_tf_name,fontsize=20)
 
 
 
                 ax.axis(xmin = min(x)-0.01,xmax = max(x)+0.01)
 
                 if((j+4) % 4 == 0):
-                    ax.set_ylabel(pattern, fontsize=14)
+                    ax.set_ylabel(pattern, fontsize=20)
                     #ax[plt_count,j].set(ylabel = pattern,fontsize=8)
                     #ax[plt_count,j].set_xlabel(str(xlabel),fontsize=12)
 
                 ax.annotate("Modified adj R2 = " + str("{:.2f}".format(best_results['mod_rsquared_adj'])),
                          (10,np.mean(best_tf)),
                          color='blue',
-                         size=18)
+                         size=20)
 
                 j += 1
                 if j%4==0:

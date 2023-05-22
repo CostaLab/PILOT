@@ -1,2 +1,0 @@
-,Gene ID,Expression pattern,Slope,Fitted function,Intercept,Treat,adjusted P-value,R-squared,mod_rsquared_adj,proportion,mean
-0,tubule_distance_to_closest_instance,linear up,0.0010358413867770538,linear,0.90212808663622,0.001035841386777054,0.0,0.08485392263847513,0.5498340433321658,0,1.2688220876145948
