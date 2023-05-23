@@ -178,7 +178,7 @@ Calculating preportions of culsters per sample.
 '''                  
     
 
-def Cluster_Representations(df, cell_col = 0, sample_col = 1,regulizer=10,normalization=True):    
+def Cluster_Representations(df, cell_col = 0, sample_col = 1,regulizer=0.2,normalization=True):    
 
     dict ={}
 
