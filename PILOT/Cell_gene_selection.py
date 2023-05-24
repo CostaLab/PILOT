@@ -46,8 +46,10 @@ def loadTarget(path, name):
             try: 
                 if format == ".csv":
                     target = pd.read_csv(p, index_col=0)
+                 
                     # target = target.fillna(0)
                     # target = target.loc[(target!=0).any(axis=1)]
+                 
                 return target
             except (Exception):
                 warn("loading " + format + " failed")
@@ -370,7 +372,7 @@ def fit_best_model(target, data, model_type,max_iter_huber,epsilon_huber,pval_th
     return sorted_best    
 
 
-def plot_best_matches_cell_types(target, data,df,sorted_best, scale_name, plot_color, min_target=0, max_target=35,num=11,width=25,height=25,xlim=4):
+def plot_best_matches_cell_types(target, data,df,sorted_best, scale_name, min_target=0, max_target=35,num=11,width=25,height=25,xlim=4,point_size=100,color_back=None,fontsize=20,alpha=1,cmap='viridis'):
     """
     plot 16 best fitted model
     """
@@ -384,7 +386,7 @@ def plot_best_matches_cell_types(target, data,df,sorted_best, scale_name, plot_c
     xlabel='From  '+ start+'  to  '+end
     
     plt.figure(figsize=((width, height)))
-    plt.subplots_adjust(wspace = 0.5, hspace = 0.5 )
+    plt.subplots_adjust(wspace = 0.5, hspace = 1 )
    # plt.suptitle(xlabel, fontsize=20, y=0.95)
     plt.tight_layout()
     
@@ -404,82 +406,39 @@ def plot_best_matches_cell_types(target, data,df,sorted_best, scale_name, plot_c
         
         ax = plt.subplot(math.ceil(num/4), 4, j)
         plt.xticks(np.arange(min_x,max_x,xlim))
-        ax.scatter(x, best_tf, c =best_tf ,cmap='viridis')
+        if color_back!=None:
+            ax.set_facecolor(color_back)
+        ax.scatter(x, best_tf, c =best_tf ,cmap=cmap,alpha=alpha,s=point_size)
         new_polyline = np.append(np.ones((len(polyline),1)), polyline, axis=1)
         curve = np.matmul(new_polyline, best_results['params'])
         ax.plot(np.linspace(min_target,max_target), curve)
-    
-        ax.set_title(best_tf_name,fontsize=20)
+        
+        best_tf_name=str(best_tf_name)+"\n Modified adj R2 = " + str("{:.2f}".format(best_results['mod_rsquared_adj']))
+        ax.set_title(best_tf_name,fontsize=fontsize)
         ax.axis(xmin = min_target,xmax = max_target)
     
         if((j+4) % 4 == 1):
             #ax.set(ylabel = scale_name)
-            ax.set_ylabel(scale_name, fontsize=20)
-        ax.annotate("adj R2 = " + str("{:.2f}".format(best_results['rsquared_adj'])), 
-                 (np.mean(x),np.mean(best_tf)),
-                 color='black',
-                 size=20)
+            ax.set_ylabel(scale_name, fontsize=fontsize)
+            
+       # if show_R:
+        #    if x_lab==None:
+         #       x_lab=np.mean(x)
+          #  if y_lab==None:
+           #     y_lab=np.mean(best_tf)
+            #ax.annotate("adj R2 = " + str("{:.2f}".format(best_results['rsquared_adj'])), 
+             #        (x_lab,y_lab),
+              #       color=color_label,
+               #      size=fontsize)
      
     
         j += 1
 
 
-
-def plot_best_matches_cell_types_(target, data,df,sorted_best, scale_name, plot_color, min_target=0, max_target=35,num=11,width=25,height=25,xlim=4):
-    """
-    plot 16 best fitted model
-    """
-    
-
-    x = np.array(list(data['label']))
-    min_x = min(x)
-    max_x = max(x)
-    start=df[df['Time_score']==min_x]['sampleID'].unique()
-    end=df[df['Time_score']==max_x]['sampleID'].unique()
-    xlabel='From  '+ start+'  to  '+end
-    
-    plt.figure(figsize=((width, height)))
-    plt.subplots_adjust(wspace = 0.5, hspace = 0.5 )
-    plt.suptitle(xlabel, fontsize=28, y=0.95)
-    plt.tight_layout()
-    
-    j = 1
-    for i in range(num):
-        
-      
-        
-        
-        best_tf_name = list(sorted_best)[i]
-        best_tf = target.loc[[best_tf_name]].values
-        best_results = list(sorted_best.items())[i][1][1]
-        best_func = list(sorted_best.items())[i][1][0]
-    
-        polyline = np.linspace(min_target,max_target)
-        polyline = generate_feature_cell_types(best_func, polyline)
-        
-        ax = plt.subplot(math.ceil(num/4), 4, j)
-        plt.xticks(np.arange(min_x,max_x,xlim))
-        ax.scatter(x, best_tf, c =best_tf ,cmap='viridis')
-        curve = np.matmul(polyline, best_results.params)
-        ax.plot(np.linspace(min_target,max_target), curve)
-    
-        ax.set_title(best_tf_name,fontsize=28)
-        ax.axis(xmin = min_target,xmax = max_target)
-    
-        if((j+4) % 4 == 1):
-            #ax.set(ylabel = scale_name)
-            ax.set_ylabel(scale_name, fontsize=22)
-        ax.annotate("adj R2 = " + str("{:.2f}".format(best_results.rsquared_adj)), 
-                 (np.mean(x),np.mean(best_tf)),
-                 color='black',
-                 size=22)
-     
-    
-        j += 1
 
 
   
-def plot_best_matches(target, data,df, sorted_best, scale_name, plot_color,num=16,width=25,height=25,x_lim=4):
+def plot_best_matches(target, data,df, sorted_best, scale_name, plot_color='tab:orange',num=16,width=25,height=25,x_lim=4,fontsize=20,alpha=0.5,cmap='viridis',color_back=None):
     """
     plot 4 of each best fitted pattern
     
@@ -500,15 +459,15 @@ def plot_best_matches(target, data,df, sorted_best, scale_name, plot_color,num=1
     end=df[df['Time_score']==max_x]['sampleID'].unique()
 
     plt_count=0
-    plt.figure(figsize=((width, 4*len(patterns))))
+    plt.figure(figsize=((width, height)))
     xlabel='From  '+ start+'  to  '+end
    # plt.suptitle(xlabel, fontsize=20, y=0.05)
     #plt.tight_layout()
     plt.subplots_adjust(
 
 
-                    wspace=0.4,
-                    hspace=0.4)
+                    wspace=0.5,
+                    hspace=1)
 
     genes_expressions=patterns
     pltt=0
@@ -529,6 +488,8 @@ def plot_best_matches(target, data,df, sorted_best, scale_name, plot_color,num=1
             if list(sorted_best.values())[counter][2]==pattern:
                 pltt+=1
                 ax = plt.subplot(len(patterns), 4, pltt)
+                if color_back!=None:
+                    ax.set_facecolor(color_back)
                 plt.xticks(np.arange(min_x,max_x,x_lim))
                 #flag=True
                 best_tf_name = list(sorted_best)[counter]
@@ -544,27 +505,35 @@ def plot_best_matches(target, data,df, sorted_best, scale_name, plot_color,num=1
                 curve = np.matmul(new_polyline, best_results['params'])
 
 
-
-                ax.scatter(x, best_tf, c = best_tf,cmap='viridis', alpha = 0.5)
-
+               
+                    
+                ax.scatter(x, best_tf, c = best_tf,cmap=cmap, alpha = alpha)
+      
 
                 ax.plot(pline, curve, c = plot_color)
-
-                ax.set_title(best_tf_name,fontsize=20)
+                
+                best_tf_name=best_tf_name+"\n Modified adj R2 = " + str("{:.2f}".format(best_results['mod_rsquared_adj']))
+                ax.set_title(best_tf_name,fontsize=fontsize)
 
 
 
                 ax.axis(xmin = min(x)-0.01,xmax = max(x)+0.01)
 
                 if((j+4) % 4 == 0):
-                    ax.set_ylabel(pattern, fontsize=20)
+                    ax.set_ylabel(pattern, fontsize=fontsize)
                     #ax[plt_count,j].set(ylabel = pattern,fontsize=8)
                     #ax[plt_count,j].set_xlabel(str(xlabel),fontsize=12)
-
-                ax.annotate("Modified adj R2 = " + str("{:.2f}".format(best_results['mod_rsquared_adj'])),
-                         (10,np.mean(best_tf)),
-                         color='blue',
-                         size=20)
+            #    if show_R:
+             #       if x_lab==None:
+              #          x_lab=np.mean(x)
+               #     if y_lab==None:
+                #        y_lab=np.mean(best_tf)
+                       
+                 #   ax.annotate("Modified adj R2 = " + str("{:.2f}".format(best_results['mod_rsquared_adj'])),
+                              
+                  #           (x_lab,y_lab),
+                   #          color=color_label,
+                    #         size=fontsize)
 
                 j += 1
                 if j%4==0:
@@ -1243,38 +1212,42 @@ def save_data(dictionary, column_names,save_path,name,p_val,pro,gprofil=False):
         
     mat_df['adjusted P-value'] = mat_df['adjusted P-value'].astype(float)
     mat_df=mat_df[mat_df['adjusted P-value'] <= p_val]
-   # mat_df=mat_df[flomat_df[''] >= pval_thr]
-
-    mat_df=pd.merge(mat_df, pro, on='Gene ID')
-    
-    mat_df.to_csv(save_path+'/'+name+'/Whole_expressions.csv')  
-   
-    
-    df=statistics(mat_df)
-    print ('For this cell_type, p-value of  {} genes are statistically significant.'.format(len(mat_df)))
-    print(df)
     
     
-    lists_names= list(mat_df['Expression pattern'].unique())
-    for exp in lists_names:
-        df_exp=mat_df[mat_df['Expression pattern']==exp]
-        if not os.path.exists(save_path+name+'/'+'PILOT'):
-            os.makedirs(save_path+name+'/'+'PILOT')
-        df_exp.to_csv(save_path+name+'/'+'PILOT/'+exp+'.csv')
+    if column_names[0]=='Cell name':
+        mat_df.to_csv(save_path+'/'+name+'_Report.csv')
         
-        if gprofil:
-            gp = GProfiler(return_dataframe=True,)
-            genes_lists=list(df_exp['Gene ID'][0:])
-            df=gp.profile(organism='hsapiens',
-                    query=genes_lists,no_evidences=False)
-            if not os.path.exists(save_path+name+'/'+'Gprofiler'):
-                os.makedirs(save_path+name+'/'+'Gprofiler')
-            df.to_csv(save_path+name+'/'+'Gprofiler'+'/'+exp+'.csv') 
-     
-    
+    else:
+        mat_df=pd.merge(mat_df, pro, on='Gene ID')
 
-  
-    print("data saved successfully")
+        mat_df.to_csv(save_path+'/'+name+'/Whole_expressions.csv')  
+
+
+        df=statistics(mat_df)
+        print ('For this cell_type, p-value of  {} genes are statistically significant.'.format(len(mat_df)))
+        print(df)
+
+
+        lists_names= list(mat_df['Expression pattern'].unique())
+        for exp in lists_names:
+            df_exp=mat_df[mat_df['Expression pattern']==exp]
+            if not os.path.exists(save_path+name+'/'+'PILOT'):
+                os.makedirs(save_path+name+'/'+'PILOT')
+            df_exp.to_csv(save_path+name+'/'+'PILOT/'+exp+'.csv')
+
+            if gprofil:
+                gp = GProfiler(return_dataframe=True,)
+                genes_lists=list(df_exp['Gene ID'][0:])
+                df=gp.profile(organism='hsapiens',
+                        query=genes_lists,no_evidences=False)
+                if not os.path.exists(save_path+name+'/'+'Gprofiler'):
+                    os.makedirs(save_path+name+'/'+'Gprofiler')
+                df.to_csv(save_path+name+'/'+'Gprofiler'+'/'+exp+'.csv') 
+
+
+
+
+        print("data saved successfully")
 
 
     

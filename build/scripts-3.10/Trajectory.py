@@ -473,9 +473,9 @@ Ordering cells based on the estimated time by PILOT.
 @param: plot_cell: ploting the plots
 @param witdth and height, size of plots
 @param xlim, for grouping the disease progression(pseudotime) and showing the groups over x-axis
-
+@param color_back, for backgroundcolor
 '''
-def Cell_importance(bins,annot,embedding_diff,real_labels,path,pseudotime,heatmap_h=12,heatmap_w=12,width=25,height=25,xlim=5,p_val=1,plot_cell=True):
+def Cell_importance(bins,annot,embedding_diff,real_labels,path,pseudotime,heatmap_h=12,heatmap_w=12,width=25,height=25,xlim=5,p_val=1,plot_cell=True,point_size=100,color_back=None,fontsize=20,alpha=1,cmap='viridis',save_as_pdf=False):
     cell_types_propo=bins
     patients_id=bins.keys()
     cell_types = annot['cell_type'].unique()
@@ -512,20 +512,106 @@ def Cell_importance(bins,annot,embedding_diff,real_labels,path,pseudotime,heatma
     
     sorted_best=fit_best_model(RNA_target, RNA_data, model_type='LinearRegression',max_iter_huber=1,epsilon_huber=1,pval_thr=p_val,modify_r2=False)
     
+    if save_as_pdf:
+        suffix='Cell_types_importance.pdf'
+    else:
+        suffix='Cell_types_importance.png'
+    
     if plot_cell:
     
         with plt.rc_context():
                 plot_best_matches_cell_types(RNA_target, RNA_data,pathies_cell_proportions, sorted_best, "Cell Proportion",
-        plot_color='tab:orange', min_target=min_target, max_target=max_target,num=len(sorted_best.keys()),width=25,height=25,xlim=xlim)
-                plt.savefig(path+"/"+'Cell_types_importance.png')
+        min_target=min_target, max_target=max_target,num=len(sorted_best.keys()),width=width,height=height,xlim=xlim,point_size=point_size,color_back=color_back,fontsize=fontsize,alpha=alpha,cmap=cmap)
+                plt.savefig(path+"/"+suffix)
     
     
     cellnames=list(sorted_best.keys())
     #return orders of samples based on the trejctory and selected cell-types
+    
+    
+    if not os.path.exists(path+'/Cell_type_Report'):
+        os.makedirs(path+'/Cell_type_Report')
+  
+    
+    save_data(sorted_best, 
+                   ['Cell name', 'Expression pattern', 'Slope', 'Fitted function', 'Intercept', 'Treat', 'Treat2', 'adjusted P-value', 'R-squared','mod_rsquared_adj'],
+                       path+'/Cell_type_Report/','Cells_Importance',p_val=p_val,pro=None)
+    
+    
     return pathies_cell_proportions[['sampleID','Time_score']],cellnames
    
 
+'''
+Ordering genes based on the estimated time by PILOT
+@param: pro, the percentage of the sparsity of genes.
+@param: data, returned data for each cell by extract_cells_from_gene_expression function.
+@param: name_cell, name of the cell
+@param:col, name of the time column
+@param: genes_index, the indices of genes in the data file
+@param: store_data, if save the plots and output
+@param:genes_interesting, the name of your interested genes
+@param:modify_r2, use modified R squared
+@param:model_type, choose traditional lose function or HuberRegressor
+@param:p_value, default is 0.05
+@param: max_iter_huber, number of iteration for huber model
+@param: epsilon_huber: epsilon parameter for huber model
+@param:x_lim  for grouping the disease progression(pseudotime) and showing the groups over x-axis
 
+'''
+            
+def genes_importance(pro,data,path,name_cell,col='Time_score',genes_index=[],p_value=0.05,max_iter_huber=500,epsilon_huber=1.5,x_lim=4,width=12,height=12,store_data=True,genes_interesting=[],modify_r2 = True,model_type = 'HuberRegressor',fontsize=20,alpha=0.5,cmap='viridis',color_back=None,save_as_pdf=False):
+    RNA_data = pd.DataFrame()
+    RNA_data['label'] = data[col]
+    print(f"Name of Cell type : \033[1m{name_cell}\033[0m")
+
+    RNA_target = np.transpose(data.iloc[:,genes_index])
+    print("sparsity:" + str(calculate_sparsity(RNA_target)))
+    #%%%
+    min_target=min(RNA_data['label'])
+    max_target=max(RNA_data['label'])
+    #%%% fit best models for RNA data
+
+    sorted_best =fit_best_model(RNA_target, RNA_data, model_type,max_iter_huber,epsilon_huber,p_value,modify_r2)
+    
+ 
+        
+    
+    
+    #%%% plot RNA data
+    if not os.path.exists(path+'/Markers'):
+        os.makedirs(path+'/Markers')
+    if not os.path.exists(path+'/Markers/'+name_cell):
+            os.makedirs(path+'/Markers/'+name_cell)
+    
+    if save_as_pdf:
+        suffix='.pdf'
+    else:
+        suffix='.png'
+    
+
+    if store_data:
+    
+        
+        save_data(sorted_best, 
+                   ['Gene ID', 'Expression pattern', 'Slope', 'Fitted function', 'Intercept', 'Treat', 'Treat2', 'adjusted P-value', 'R-squared','mod_rsquared_adj'],
+                       path+'/Markers/',name_cell,p_val=p_value,pro=pro)
+
+    with plt.rc_context():
+        plot_best_matches(RNA_target, RNA_data,data, sorted_best, "Gene expression",plot_color='tab:orange',num=len(sorted_best.keys()),x_lim=x_lim,width=width,height=height,fontsize=fontsize,alpha=alpha,cmap=cmap,color_back=color_back)
+        plt.savefig(path+'/Markers/'+name_cell+'/'+'genes_ranking for cell type '+name_cell+suffix)
+    
+    
+    if len(genes_interesting):
+        print(" Plots for interesting genes: ")
+        filtered_dict = {k:v for (k,v) in sorted_best.items() if k in genes_interesting}
+        with plt.rc_context():
+            
+            
+            plot_best_matches(RNA_target, RNA_data,data, filtered_dict, "Gene expression",             plot_color='tab:orange',num=len(filtered_dict.keys()),width=width,height=height,x_lim=x_lim,fontsize=fontsize,alpha=alpha,cmap=cmap,color_back=color_back)
+            plt.savefig(path+'/Markers/'+name_cell+'/'+'Interesting genes_ranking for cell type '+name_cell+'.png')
+
+    
+    
 def reclustering_data(adata,resu=0.01,normalization=False,target_sum=1e6,n_neighbor=15,method_='umap', metric_t = 'cosine',mode='distances',origine_scr_rna=False,dimension_rect=False,n_component=25):
     
     if origine_scr_rna:
@@ -583,71 +669,6 @@ def extract_cells_from_gene_expression(adata,orders,sample_col,col_cell,cell_lis
             joint.to_csv(path_results+'/cells/'+cell+'.csv')
 
 
-'''
-Ordering genes based on the estimated time by PILOT
-@param: pro, the percentage of the sparsity of genes.
-@param: data, returned data for each cell by extract_cells_from_gene_expression function.
-@param: name_cell, name of the cell
-@param:col, name of the time column
-@param: genes_index, the indices of genes in the data file
-@param: store_data, if save the plots and output
-@param:genes_interesting, the name of your interested genes
-@param:modify_r2, use modified R squared
-@param:model_type, choose traditional lose function or HuberRegressor
-@param:p_value, default is 0.05
-@param: max_iter_huber, number of iteration for huber model
-@param: epsilon_huber: epsilon parameter for huber model
-@param:x_lim  for grouping the disease progression(pseudotime) and showing the groups over x-axis
-
-'''
-            
-def genes_importance(pro,data,path,name_cell,col='Time_score',genes_index=[],p_value=0.05,max_iter_huber=500,epsilon_huber=1.5,x_lim=4,store_data=1,genes_interesting=[],modify_r2 = True,model_type = 'HuberRegressor'):
-    RNA_data = pd.DataFrame()
-    RNA_data['label'] = data[col]
-    print(f"Name of Cell type : \033[1m{name_cell}\033[0m")
-
-    RNA_target = np.transpose(data.iloc[:,genes_index])
-    print("sparsity:" + str(calculate_sparsity(RNA_target)))
-    #%%%
-    min_target=min(RNA_data['label'])
-    max_target=max(RNA_data['label'])
-    #%%% fit best models for RNA data
-
-    sorted_best =fit_best_model(RNA_target, RNA_data, model_type,max_iter_huber,epsilon_huber,p_value,modify_r2)
-    
- 
-        
-    
-    
-    #%%% plot RNA data
-    if not os.path.exists(path+'/Markers'):
-        os.makedirs(path+'/Markers')
-    if not os.path.exists(path+'/Markers/'+name_cell):
-            os.makedirs(path+'/Markers/'+name_cell)
-    
-    
-    
-
-    if store_data:
-    
-        
-        save_data(sorted_best, 
-                   ['Gene ID', 'Expression pattern', 'Slope', 'Fitted function', 'Intercept', 'Treat', 'Treat2', 'adjusted P-value', 'R-squared','mod_rsquared_adj'],
-                       path+'/Markers/',name_cell,p_val=p_value,pro=pro)
-
-    with plt.rc_context():
-        plot_best_matches(RNA_target, RNA_data,data, sorted_best, "Gene expression", plot_color='tab:orange',num=len(sorted_best.keys()),x_lim=x_lim)
-        plt.savefig(path+'/Markers/'+name_cell+'/'+'genes_ranking for cell type '+name_cell+'.png')
-    
-    
-    if len(genes_interesting):
-        print(" Plots for interesting genes: ")
-        filtered_dict = {k:v for (k,v) in sorted_best.items() if k in genes_interesting}
-        with plt.rc_context():
-            
-            
-            plot_best_matches(RNA_target, RNA_data,data, filtered_dict, "Gene expression",             plot_color='tab:orange',num=len(filtered_dict.keys()),x_lim=x_lim)
-            plt.savefig(path+'/Markers/'+name_cell+'/'+'Interesting genes_ranking for cell type '+name_cell+'.png')
 
             
 '''
