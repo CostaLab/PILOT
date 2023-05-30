@@ -135,9 +135,16 @@ def fit_model_activity(func_type, X, y,max_iter_huber,epsilon_huber,model_type):
     results = dict.fromkeys(['pvalues', 'rsquared_adj', 'params'], [])
     
     if(model_type == 'LinearRegression'):
-        model = LinearRegression().fit(X, y)
+          model = LinearRegression().fit(X, y)
     elif(model_type == 'HuberRegressor'):
-        model = HuberRegressor(max_iter=max_iter_huber,epsilon=epsilon_huber).fit(X, y)
+        epsilon = epsilon_huber
+        for step in list(np.arange(0, 1, 0.05)):
+            try:
+                model = HuberRegressor(epsilon = epsilon + step).fit(X, y)
+            except ValueError:
+                continue
+            break
+    
     params = np.append(model.intercept_,model.coef_)
     predictions = model.predict(X)
     results['rsquared_adj'] = 1 - (1-model.score(X, y))*(len(y)-1)/(len(y)-X.shape[1]-1)

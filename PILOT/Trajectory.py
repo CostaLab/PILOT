@@ -17,6 +17,7 @@ import time
 import sys 
 from genericpath import isfile
 from .Cell_gene_selection import *
+from .Gene_cluster_specific import *
 import warnings
 import ot
 from logging import info, warn
@@ -474,6 +475,8 @@ Ordering cells based on the estimated time by PILOT.
 @param witdth and height, size of plots
 @param xlim, for grouping the disease progression(pseudotime) and showing the groups over x-axis
 @param color_back, for backgroundcolor
+@param save_as_pdf, format for saving
+@param alpha, adjust the transparency 
 '''
 def Cell_importance(bins,annot,embedding_diff,real_labels,path,pseudotime,heatmap_h=12,heatmap_w=12,width=25,height=25,xlim=5,p_val=1,plot_cell=True,point_size=100,color_back=None,fontsize=20,alpha=1,cmap='viridis',save_as_pdf=False):
     cell_types_propo=bins
@@ -556,10 +559,13 @@ Ordering genes based on the estimated time by PILOT
 @param: max_iter_huber, number of iteration for huber model
 @param: epsilon_huber: epsilon parameter for huber model
 @param:x_lim  for grouping the disease progression(pseudotime) and showing the groups over x-axis
+@param color_back, for backgroundcolor
+@param save_as_pdf, format for saving
+@param alpha, adjust the transparency
 
 '''
             
-def genes_importance(pro,data,path,name_cell,col='Time_score',genes_index=[],p_value=0.05,max_iter_huber=500,epsilon_huber=1.5,x_lim=4,width=12,height=12,store_data=True,genes_interesting=[],modify_r2 = True,model_type = 'HuberRegressor',fontsize=20,alpha=0.5,cmap='viridis',color_back=None,save_as_pdf=False):
+def genes_importance(pro,data,path,name_cell,col='Time_score',genes_index=[],p_value=0.05,max_iter_huber=500,epsilon_huber=1.5,x_lim=4,width=12,height=12,store_data=True,genes_interesting=[],modify_r2 = True,model_type = 'HuberRegressor',fontsize=20,alpha=0.5,cmap='viridis',color_back=None,save_as_pdf=False,plot_genes=False):
     RNA_data = pd.DataFrame()
     RNA_data['label'] = data[col]
     print(f"Name of Cell type : \033[1m{name_cell}\033[0m")
@@ -595,22 +601,25 @@ def genes_importance(pro,data,path,name_cell,col='Time_score',genes_index=[],p_v
         save_data(sorted_best, 
                    ['Gene ID', 'Expression pattern', 'Slope', 'Fitted function', 'Intercept', 'Treat', 'Treat2', 'adjusted P-value', 'R-squared','mod_rsquared_adj'],
                        path+'/Markers/',name_cell,p_val=p_value,pro=pro)
-
-    with plt.rc_context():
-        plot_best_matches(RNA_target, RNA_data,data, sorted_best, "Gene expression",plot_color='tab:orange',num=len(sorted_best.keys()),x_lim=x_lim,width=width,height=height,fontsize=fontsize,alpha=alpha,cmap=cmap,color_back=color_back)
-        plt.savefig(path+'/Markers/'+name_cell+'/'+'genes_ranking for cell type '+name_cell+suffix)
-    
-    
-    if len(genes_interesting):
-        print(" Plots for interesting genes: ")
-        filtered_dict = {k:v for (k,v) in sorted_best.items() if k in genes_interesting}
+        
+        
+        
+    if plot_genes:
         with plt.rc_context():
-            
-            
-            plot_best_matches(RNA_target, RNA_data,data, filtered_dict, "Gene expression",             plot_color='tab:orange',num=len(filtered_dict.keys()),width=width,height=height,x_lim=x_lim,fontsize=fontsize,alpha=alpha,cmap=cmap,color_back=color_back)
-            plt.savefig(path+'/Markers/'+name_cell+'/'+'Interesting genes_ranking for cell type '+name_cell+'.png')
+            plot_best_matches(RNA_target, RNA_data,data, sorted_best, "Gene expression",plot_color='tab:orange',num=len(sorted_best.keys()),x_lim=x_lim,width=width,height=height,fontsize=fontsize,alpha=alpha,cmap=cmap,color_back=color_back)
+            plt.savefig(path+'/Markers/'+name_cell+'/'+'genes_ranking for cell type '+name_cell+suffix)
 
-    
+
+        if len(genes_interesting):
+            print(" Plots for interesting genes: ")
+            filtered_dict = {k:v for (k,v) in sorted_best.items() if k in genes_interesting}
+            with plt.rc_context():
+
+
+                plot_best_matches(RNA_target, RNA_data,data, filtered_dict, "Gene expression",             plot_color='tab:orange',num=len(filtered_dict.keys()),width=width,height=height,x_lim=x_lim,fontsize=fontsize,alpha=alpha,cmap=cmap,color_back=color_back)
+                plt.savefig(path+'/Markers/'+name_cell+'/'+'Interesting genes_ranking for cell type '+name_cell+'.png')
+
+
     
 def reclustering_data(adata,resu=0.01,normalization=False,target_sum=1e6,n_neighbor=15,method_='umap', metric_t = 'cosine',mode='distances',origine_scr_rna=False,dimension_rect=False,n_component=25):
     
