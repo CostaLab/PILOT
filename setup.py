@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
 name='PILOT',
-version='0.1.1',
+version='1.1.0',
 author='Mehdi Joodaki',
 author_email='judakimehdi@gmail.com',
 packages=['PILOT'],
