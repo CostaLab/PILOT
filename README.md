@@ -17,7 +17,7 @@ cd PILOT
 pip install .
 ```
 ## [Tutorial](https://github.com/CostaLab/PILOT/tree/main/Tutorial)
-For applying PILOT to your data, we provide tutorials here, you just need to after installation.
+For applying PILOT to your data, we provide tutorials here.
 
 There are two tutorials, one for myocardial infarction data (single cell data) and the second tutorial is for pathomics data (Kidney IgAN(G) & Kidney IgAN(T)).
 For [Tutorial of single-cell processing](https://github.com/CostaLab/PILOT/blob/main/Tutorial/%20Myocardial%20infarction.ipynb) and for [Tutorial of pathomics data processing]](https://github.com/CostaLab/PILOT/blob/main/Tutorial/%20Myocardial%20infarction.ipynb)
