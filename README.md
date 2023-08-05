@@ -9,7 +9,7 @@ PILOT uses optimal transport to compute the Wasserstein distance between two sin
 Current version for PILOT is 1.1.0
 
 ## User installation
-The easiest way to install PILOT and the required packages is using pip,
+The easiest way to install PILOT and the required packages is using the following way,
 
 ```terminal
 git clone https://github.com/CostaLab/PILOT
@@ -21,7 +21,7 @@ conda install jupyter
 pip install .
 ```
 ## [Tutorial](https://github.com/CostaLab/PILOT/tree/main/Tutorial)
-There are three tutorials, one for [Myocardial Infarction (single cell data)](https://github.com/CostaLab/PILOT/blob/main/Tutorial/%20Myocardial%20infarction.ipynb), and the second tutorial for [pathomics data, the combination of Kidney IgAN(G) & Kidney IgAN(T)](https://github.com/CostaLab/PILOT/blob/main/Tutorial/Combination_Kidney_IgAN.ipynb) and the last one is for [Patients sub-group detection and then ranking cells/genes by clustering (Pancreas data)](https://github.com/CostaLab/PILOT/blob/main/Tutorial/%20Myocardial%20infarction.ipynb)
+There are three tutorials, one for [Myocardial Infarction (single cell data)](https://github.com/CostaLab/PILOT/blob/main/Tutorial/%20Myocardial%20infarction.ipynb), and the second tutorial for [pathomics data, the combination of Kidney IgAN(G) & Kidney IgAN(T)](https://github.com/CostaLab/PILOT/blob/main/Tutorial/Combination_Kidney_IgAN.ipynb) and the last one is for [Patients sub-group detection and then ranking cells/genes by clustering (Pancreas data)](https://github.com/CostaLab/PILOT/blob/main/Tutorial/Patients%20sub-group%20detection.ipynb)
  
 
 
