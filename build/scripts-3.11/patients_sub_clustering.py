@@ -23,7 +23,7 @@ def plot_cell_types_distributions(proportions: pd.DataFrame = None,
                                   cell_types: list = None,
                                   labels:str = 'Predicted_Labels',
                                   file_path: str = None,
-                                  figsize: tuple = (15, 7)):
+                                  figsize: tuple = (15, 7),label_order=None,label_colors=None,fontsize=24,rotation = 45):
     """
     
 
@@ -39,7 +39,10 @@ def plot_cell_types_distributions(proportions: pd.DataFrame = None,
         determine the path to store the figure. The default is None.
     figsize : tuple, optional
         determine the figure size. The default is (15, 7).
-
+    label_order: list, order of lables
+    label_colors: list, color of lables based
+    fontsize:int, size of fonts
+    rotation:int, rotation
     Returns
     -------
     None.
@@ -49,16 +52,25 @@ def plot_cell_types_distributions(proportions: pd.DataFrame = None,
     col_names = list(cell_types)
     col_names.append(labels)
     df_long = pd.melt(proportions.loc[:,col_names], labels)
+    
+    if label_order:
+        df_long['Predicted_Labels'] = df_long.Predicted_Labels.astype("category")
+        sorter=label_order
+        df_long['Predicted_Labels'] = df_long['Predicted_Labels'].cat.set_categories(sorter)
+        df_long=df_long.sort_values(["Predicted_Labels"])
+
+    
     fig = plt.figure(figsize = figsize)
-    sns.boxplot(x = "variable", hue = labels, y = "value", data = df_long)
-    plt.ylabel("Cell proportions", fontsize = 24)
+    sns.boxplot(x = "variable", hue = labels, y = "value", data = df_long,palette=label_colors)
+    plt.ylabel("Cell proportions", fontsize = fontsize)
     plt.xlabel("")
-    plt.xticks(fontsize = 24, rotation = 45, ha = 'right', rotation_mode = 'anchor')
-    plt.legend(fontsize = 24)
+    plt.xticks(fontsize = fontsize, rotation = rotation, ha = 'right', rotation_mode = 'anchor')
+    plt.legend(fontsize = fontsize)
     fig.tight_layout()
-    plt.savefig(file_path + "/Cell_types_distributions.png",
+    plt.savefig(file_path + "/Cell_types_distributions.pdf",
                           facecolor = 'white')
     plt.show()
+    
     
 def plot_hor_vs_vert(data, subplot, x, y, c, xlabel, ylabel, rotation,
                      tick_bottom, tick_left, title):
@@ -284,7 +296,8 @@ def volcano_plot(scores, foldchanges, p_values, cell_type, feature1, feature2, f
     """
 
 
-
+    
+    
 def clustering_EMD(EMD,proportions,annot,real_labels,res=0.3,metric='cosine',groupby_col='status',swap_axes=False,cmap="Blues_r",dendrogram=True,show_gene_labels=False,var_group_rotation=90,figsize=[12,12],save=False):
     import anndata
     EMD_df=pd.DataFrame(EMD,columns=proportions.keys())
@@ -296,7 +309,7 @@ def clustering_EMD(EMD,proportions,annot,real_labels,res=0.3,metric='cosine',gro
     sc.pp.neighbors(adata_emd, metric=metric)
     sc.tl.leiden(adata_emd, resolution = res)
     predicted_labels = np.array(adata_emd.obs.leiden)
-    Silhouette = Sil_computing(EMD/EMD.max(), predicted_labels,metric='cosine')
+    Silhouette = Sil_computing(EMD/EMD.max(), predicted_labels,metric=metric)
     
     proportion_df=pd.DataFrame(proportions)
     proportion_df=proportion_df.T
@@ -329,6 +342,48 @@ def clustering_EMD(EMD,proportions,annot,real_labels,res=0.3,metric='cosine',gro
     adata_emd = anndata.AnnData(X = EMD_df[ EMD_df.columns[0:EMD_df.shape[0]]].values, var =df_genes, obs = obs )
     sc.pl.heatmap(adata_emd,adata_emd.obs.sampleID,groupby=[groupby_col],swap_axes=swap_axes,cmap=cmap,dendrogram=dendrogram,show_gene_labels=show_gene_labels,var_group_rotation=var_group_rotation,figsize=figsize,save=save)
     return proportion_df
+
+
+    """
+    Parameters
+    ----------
+    EMD : W distance,
+    path_to_results:str, path to save the plot
+    resolutions: list,a list of your desire resulotions
+
+    metric: str, metric for leiden clustering and calculating sil. 
+
+    Returns
+    -------
+    None,
+    plot Silhouette Score vs. Resolution to figure out the best sil.
+    """
+def Select_best_sil(EMD,path_to_results,resolutions=[],metric='cosine'):
+    # Create a list to store the Silhouette Scores
+    sil_scores = []
+
+    # Define the range of resolutions/number of clusters to test
+    # Loop through the resolutions and calculate the Silhouette Score for each
+    for resolution in resolutions:
+        # Cluster the data using Louvain clustering at the specified resolution
+        adata_emd = sc.AnnData(EMD)
+        sc.pp.neighbors(adata_emd, metric=metric)
+        sc.tl.leiden(adata_emd, resolution = resolution)
+        # Calculate the Silhouette Score
+        predicted_labels = np.array(adata_emd.obs.leiden)
+        Silhouette = Sil_computing(EMD/EMD.max(), predicted_labels,metric='cosine')
+
+        # Append the Silhouette Score to the list
+        sil_scores.append(Silhouette)
+
+    # Plot the Silhouette Scores against the resolutions
+    plt.figure(facecolor="white")
+    plt.plot(resolutions, sil_scores, marker='o')
+    plt.xlabel('Resolution')
+    plt.ylabel('Silhouette Score')
+    plt.title('Silhouette Score vs. Resolution')
+    plt.savefig(path_to_results+'/silhouette_score_vs_resolution.pdf')
+    plt.show()
 
 
 def extract_cells_from_gene_expression_for_clustering(adata,sample_col,col_cell,cell_list,path_results,normalization=True):
@@ -431,6 +486,10 @@ def compute_diff_expressions(cell_type: str = None,
     
     # get results
     res = R('''res''')
+    
+    if not os.path.exists(path_to_result+'/Diff_Expressions_Results/'+cell_type):
+            os.makedirs(path_to_result+'/Diff_Expressions_Results/'+cell_type)
+    path_to_result=path_to_result+'/Diff_Expressions_Results/'+cell_type+'/'
     res.to_csv(path_to_result + "/diff_expressions_stats_" + cell_type + ".csv")
       
     pv_thr = -np.log10(pval_thr)
@@ -462,7 +521,7 @@ def gene_annotation_cell_type_subgroup(cell_type: str = None,
     """
 
 
-    group_genes = pd.read_csv(path_to_results + "/significant_genes_"+cell_type+"_"+group+".csv",
+    group_genes = pd.read_csv(path_to_results +'/Diff_Expressions_Results/'+cell_type+"/significant_genes_"+cell_type+"_"+group+".csv",
                                index_col=0)
     gp = GProfiler(return_dataframe=True)
     gprofiler_results = gp.profile(organism = 'hsapiens',
@@ -486,6 +545,8 @@ def gene_annotation_cell_type_subgroup(cell_type: str = None,
 
     plt.ylabel("GO Terms", size = 24)
     plt.xlabel("-$log_{10}$ (P-value)", size = 24)
-    if not os.path.exists(path_to_results + "/Cells"+"/GO_analysis/"):
-            os.makedirs(path_to_results + "/Cells"+"/GO_analysis/") 
-    plt.savefig(path_to_results + "/Cells"+"/GO_analysis/" + cell_type + "_" + group + ".png", bbox_inches = 'tight', facecolor='white', transparent=False)
+    
+    if not os.path.exists(path_to_results+'/Diff_Expressions_Results/'+cell_type+'/GO_analysis/'):
+            os.makedirs(path_to_results+'/Diff_Expressions_Results/'+cell_type+'/GO_analysis/')
+    path_to_results=path_to_results+'/Diff_Expressions_Results/'+cell_type+'/GO_analysis/'
+    plt.savefig(path_to_results+ group + ".png", bbox_inches = 'tight', facecolor='white', transparent=False)
