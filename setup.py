@@ -1,12 +1,12 @@
-from setuptools import setup
+from setuptools import find_packages, setup
 
 setup(
     name='PILOT',
     version='1.1.0',
     author='Mehdi Joodaki',
     author_email='judakimehdi@gmail.com',
-    packages=['PILOT'],
-    scripts=['PILOT/Cell_gene_selection.py','PILOT/Trajectory.py','PILOT/patients_sub_clustering.py'],
+    url='https://github.com/CostaLab/PILOT',
+    
     install_requires=[
         "cycler",
         "joypy",
@@ -29,5 +29,6 @@ setup(
         "adjustText",
         "gprofiler-official",
     ],
+    packages=find_packages()
 )
 
