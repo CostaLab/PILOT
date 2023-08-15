@@ -256,6 +256,8 @@ def select_best_sil(adata,resolutions=[],metric='cosine',path=None,start=0.2,ste
     
     resolutions = [start + step * i for i in range(int((end - start) / step) + 1)]
     # Create a list to store the Silhouette Scores
+    best_res=start
+    best_sil=0
     if path==None:
         if not os.path.exists('Results_PILOT/plots'):
             os.makedirs('Results_PILOT/plots')
@@ -276,11 +278,15 @@ def select_best_sil(adata,resolutions=[],metric='cosine',path=None,start=0.2,ste
         predicted_labels = np.array(adata_emd.obs.leiden)
         
         Silhouette = metrics.silhouette_score(EMD, predicted_labels, metric =metric)
-        
+        if float(Silhouette) > best_sil:
+            best_sil=Silhouette
+            best_res=resolution
+            
 
         # Append the Silhouette Score to the list
         sil_scores.append(Silhouette)
         number_of_clusters.append(len(np.unique(predicted_labels)))
+    adata.uns['best_res']=best_res
     # Plot the Silhouette Scores against the resolutions
     plt.figure(facecolor="white")
     plt.plot(resolutions, sil_scores, marker='o')

@@ -30,7 +30,7 @@ clusters_col='cell_types',sample_col='sampleID',status='status',
                               metric='cosine',
                                regulizer=0.2,normalization=True,
                                regularized='unreg',reg=0.1,
-                               res=0.01,steper=0.01,data_type='scRNA'):
+                               res=0.01,steper=0.01,data_type='scRNA',return_sil_ari=False):
     
     
     if data_type=='scRNA':
@@ -58,11 +58,33 @@ clusters_col=clusters_col,sample_col=sample_col,status=status)
     adata.uns['EMD_df']=emd_df
     adata.uns['EMD'] =EMD
     #Computing clusters and then ARI
-    predicted_labels, ARI, real_labels = Clustering(EMD/EMD.max(), annot,metric=metric,res=res,steper=steper)
-    adata.uns['real_labels'] =real_labels
-    #Computing Sil
-    Silhouette = Sil_computing(EMD/EMD.max(), real_labels,metric=metric)
+    if return_sil_ari:
+        predicted_labels, ARI, real_labels = Clustering(EMD/EMD.max(), annot,metric=metric,res=res,steper=steper)
+        adata.uns['real_labels'] =real_labels
+        #Computing Sil
+        Silhouette = Sil_computing(EMD/EMD.max(), real_labels,metric=metric)
+        adata.uns['Sil']=Silhouette
+        adata.uns['ARI']=ARI
+    else:
+        adata.uns['real_labels']=return_real_labels(annot)
+      
+        
+        
+        
+def return_real_labels(df, category = 'status', sample_col=1):
 
+    samples = df[df.columns[sample_col]].unique()
+    condition = df[category]
+    n_clust = len(df[category].unique())
+
+    true_labels = []
+    for i in range(len(samples)):
+        a = condition[df[df.columns[sample_col]] == samples[i]].unique()
+        true_labels.append(a[0])
+    
+    
+    return true_labels;
+        
 '''
 This function loads the h5ad data, set the path.   
 Indicate the @path for reading the data
@@ -360,14 +382,14 @@ def Clustering(EMD, df, category = 'status', sample_col=1,res = 0.01,metric ='co
         true_labels.append(a[0])
     
     S = rand_score(true_labels, labels)
-    print("ARI: ", S)
+    #print("ARI: ", S)
     return labels, S, true_labels;
 
 
 
 def Sil_computing(EMD, real_labels, metric='cosine'):
     Silhouette = metrics.silhouette_score(EMD, real_labels, metric =metric)
-    print("Silhouette score: ", Silhouette) 
+    #print("Silhouette score: ", Silhouette) 
     return Silhouette
 
 
@@ -587,7 +609,44 @@ def cell_importance(adata,heatmap_h=20,heatmap_w=12,width=40,height=35,xlim=5,p_
     
     adata.uns['cellnames']=cellnames
     adata.uns['orders']=pathies_cell_proportions[['sampleID','Time_score']]
+ 
+
+'''
+Extracts genes expressed. with from object, this function after extracting genes joins them with pseudotime
+@param: adata is the Anndata
+@param: order, the samples with their pseudotime (output of Cell_importance function)
+@cell_list, cells which are changing significantly over the trajectory(pseudotime)
+Return each cell beside genes and their time associated with the trajectory of samples, they are saved in the cell folder.
+'''
+
+def extract_cells_from_gene_expression(adata,sample_col,col_cell,cell_list=[],normalize=True):
     
+        path_results='Results_PILOT'
+        orders=adata.uns['orders']
+        
+        if len(cell_list)==0:
+            cell_types=adata.uns['cellnames']
+        else:
+            cell_types=cell_list
+            
+        
+        for cell in cell_types:
+            
+            adata_new = adata[adata.obs[col_cell].isin([cell]),:]
+            if normalize:
+                sc.pp.normalize_total(adata_new, target_sum=1e4)
+                sc.pp.log1p(adata_new)
+            df=adata_new[:,adata_new.var_names].X
+            df=pd.DataFrame(df.toarray())
+            df.columns=adata_new.var_names
+            df['sampleID']=list(adata_new.obs[sample_col])
+            joint=orders.merge(df,on='sampleID')
+            if not os.path.exists(path_results+'/cells/'):
+                os.makedirs(path_results+'/cells/') 
+            joint.to_csv(path_results+'/cells/'+cell+'.csv')
+
+
+
 
 '''
 Ordering genes based on the estimated time by PILOT
@@ -610,10 +669,10 @@ Ordering genes based on the estimated time by PILOT
 
 '''
             
-def genes_importance(name_cell,col='Time_score',genes_index=[],p_value=0.05,max_iter_huber=100,epsilon_huber=1.35,x_lim=4,width=20,height=30,store_data=True,genes_interesting=[],modify_r2 = False,model_type = 'HuberRegressor',fontsize=8,alpha=0.5,cmap='viridis',color_back=None,save_as_pdf=False,plot_genes=True,colnames=[]):
+def genes_importance(adata,name_cell,col='Time_score',genes_index=[],p_value=0.05,max_iter_huber=100,epsilon_huber=1.35,x_lim=4,width=20,height=30,store_data=True,genes_interesting=[],modify_r2 = False,model_type = 'HuberRegressor',fontsize=8,alpha=0.5,cmap='viridis',color_back=None,save_as_pdf=False,plot_genes=True,colnames=[],sample_col='sampleID',col_cell='cell_types'):
     
    
-   
+    extract_cells_from_gene_expression(adata,sample_col=sample_col,col_cell=col_cell,cell_list=[name_cell])
     
     path='Results_PILOT'
     data =loadTarget(path+'/cells/', name_cell)
@@ -714,41 +773,6 @@ def reclustering_data(adata,resu=0.01,normalization=False,target_sum=1e6,n_neigh
         labels = louvain.fit_transform(adata.obsp['connectivities'])
 
     return labels
-
-'''
-Extracts genes expressed. with from object, this function after extracting genes joins them with pseudotime
-@param: adata is the Anndata
-@param: order, the samples with their pseudotime (output of Cell_importance function)
-@cell_list, cells which are changing significantly over the trajectory(pseudotime)
-Return each cell beside genes and their time associated with the trajectory of samples, they are saved in the cell folder.
-'''
-
-def extract_cells_from_gene_expression(adata,sample_col,col_cell,cell_list=[],normalize=True):
-    
-        path_results='Results_PILOT'
-        orders=adata.uns['orders']
-        
-        if len(cell_list)==0:
-            cell_types=adata.uns['cellnames']
-        else:
-            cell_types=cell_list
-            
-        
-        for cell in cell_types:
-            
-            adata_new = adata[adata.obs[col_cell].isin([cell]),:]
-            if normalize:
-                sc.pp.normalize_total(adata_new, target_sum=1e4)
-                sc.pp.log1p(adata_new)
-            df=adata_new[:,adata_new.var_names].X
-            df=pd.DataFrame(df.toarray())
-            df.columns=adata_new.var_names
-            df['sampleID']=list(adata_new.obs[sample_col])
-            joint=orders.merge(df,on='sampleID')
-            if not os.path.exists(path_results+'/cells/'):
-                os.makedirs(path_results+'/cells/') 
-            joint.to_csv(path_results+'/cells/'+cell+'.csv')
-
 
 
             

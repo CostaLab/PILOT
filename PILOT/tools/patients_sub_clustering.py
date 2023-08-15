@@ -56,7 +56,7 @@ def map_color(a, fc_thrr, pv_thrr):
         return 'no'
 
 def volcano_plot(scores, foldchanges, p_values, cell_type, feature1, feature2, fc_thr = 1, pv_thr = 1,
-                 figsize = (20,10), output_path = None):
+                 figsize = (20,20), output_path = None):
     df = pd.DataFrame(columns=['log2FoldChange', 'nlog10', 'symbol'])
     df['log2FoldChange'] = foldchanges
     df['nlog10'] = -np.log10(p_values.values)
@@ -103,17 +103,17 @@ def volcano_plot(scores, foldchanges, p_values, cell_type, feature1, feature2, f
     for i in range(len(df)):
         if df.iloc[i].nlog10 >= pv_thr and (df.iloc[i].log2FoldChange >= fc_thr):
             texts.append(plt.text(x = df.iloc[i].log2FoldChange, y = df.iloc[i].nlog10, s = df.iloc[i].symbol,
-                                 fontsize = 14, weight = 'bold', family = 'sans-serif'))
+                                 fontsize = 16, weight = 'bold', family = 'sans-serif'))
         if df.iloc[i].nlog10 >= pv_thr and ( df.iloc[i].log2FoldChange <= -fc_thr):
             texts.append(plt.text(x = df.iloc[i].log2FoldChange, y = df.iloc[i].nlog10, s = df.iloc[i].symbol,
                                  fontsize = 16, weight = 'bold', family = 'sans-serif'))
     adjust_text(texts)
 
-    custom_lines = [Line2D([0], [0], marker='o', color='w', markerfacecolor='#d62a2b', markersize=10),
-                   Line2D([0], [0], marker='o', color='w', markerfacecolor='#1f77b4', markersize=10)]
+    custom_lines = [Line2D([0], [0], marker='o', color='w', markerfacecolor='#d62a2b', markersize=8),
+                   Line2D([0], [0], marker='o', color='w', markerfacecolor='#1f77b4', markersize=8)]
 
     plt.legend(custom_lines, ['Higher expressions in ' + feature2, 'Higher expressions in ' + feature1],loc = 1,
-               bbox_to_anchor = (1,1.1), frameon = False, prop = {'weight': 'normal', 'size': 16})
+               bbox_to_anchor = (1,1.1), frameon = False, prop = {'weight': 'normal', 'size': 12})
 
     for axis in ['bottom', 'left']:
         ax.spines[axis].set_linewidth(2)
@@ -124,9 +124,8 @@ def volcano_plot(scores, foldchanges, p_values, cell_type, feature1, feature2, f
     ax.tick_params(width = 2)
 
     plt.title("Expression Score \n "+feature1+" - "+feature2, fontsize = 24)
-    plt.xticks(size = 15, weight = 'bold')
-    plt.yticks(size = 15, weight = 'bold')
-
+    plt.xticks(size = 18, weight = 'bold')
+    plt.yticks(size = 18, weight = 'bold')
     plt.xlabel("$log_{2}$ (Fold Change)", size = 18)
     plt.ylabel("-$log_{10}$ (P-value)", size = 18)
 
@@ -138,15 +137,28 @@ def volcano_plot(scores, foldchanges, p_values, cell_type, feature1, feature2, f
  
 
 
-def extract_cells_from_gene_expression_for_clustering(adata,sample_col,col_cell,cell_list,path_results=None,normalization=True):
+def extract_cells_from_gene_expression_for_clustering(adata,sample_col,col_cell,cell_list,path_results=None,normalization=True,n_top_genes=2000,highly_variable_genes_=False):
     for cell in cell_list:
         adata_new = adata[adata.obs[col_cell].isin([cell]),:]
         if normalization:
             sc.pp.normalize_total(adata_new, target_sum=1e4)
             sc.pp.log1p(adata_new)
-        df=adata_new[:,adata_new.var_names].X
-        df=pd.DataFrame(df.toarray())
-        df.columns=adata_new.var_names
+        
+        if highly_variable_genes_:
+            
+            sc.pp.highly_variable_genes(adata_new, n_top_genes=n_top_genes)
+                # Access the list of highly variable genes
+            highly_variable_genes = adata_new.var['highly_variable']
+            df=adata_new[:,highly_variable_genes].X
+            df=pd.DataFrame(df.toarray())
+            df.columns=list(highly_variable_genes)
+        else:
+            
+            df=adata_new[:,adata_new.var_names].X
+            df=pd.DataFrame(df.toarray())
+            df.columns=adata_new.var_names
+            
+    
         df['sampleID']=list(adata_new.obs[sample_col])
         
         if path_results==None:
@@ -160,7 +172,7 @@ def extract_cells_from_gene_expression_for_clustering(adata,sample_col,col_cell,
         df.to_csv(path_results+cell+'.csv')
         
 
-def compute_diff_expressions(cell_type: str = None,
+def compute_diff_expressions(adata,cell_type: str = None,
                              proportions: pd.DataFrame = None,
                              selected_genes: list = None,
                              group1: str = 'Tumor 1',
@@ -168,6 +180,13 @@ def compute_diff_expressions(cell_type: str = None,
                              label_name: str = 'Predicted_Labels',
                              fc_thr: float = 0.5,
                              pval_thr: float = 0.01,
+                             sample_col:str='sampleID',
+                             col_cell:str ='cell_types',
+                             path=None,
+                             normalization=True,
+                             n_top_genes=2000,
+                             highly_variable_genes_=False
+
                              ):
     """
     Using limma R package, lmFit fits a linear model using weighted least squares for each gene
@@ -201,16 +220,30 @@ def compute_diff_expressions(cell_type: str = None,
     Save significantly differentiate genes in each group
 
     """
+    path_to_result='Results_PILOT'
+    
+    if os.path.exists(path_to_result + "/cells/" + cell_type + ".csv"):
+
+        cells = pd.read_csv(path_to_result + "/cells/" + cell_type + ".csv", index_col = 0)  
+   
+    elif cell_type not in adata.uns:
+        extract_cells_from_gene_expression_for_clustering(adata,sample_col=sample_col,col_cell=col_cell,cell_list=[cell_type],path_results=path,normalization=normalization,n_top_genes=n_top_genes,highly_variable_genes_=highly_variable_genes_)
+        cells = pd.read_csv(path_to_result + "/cells/" + cell_type + ".csv", index_col = 0)
+    
+    elif cell_type in adata.uns :
+         cells=adata.uns[cell_type] 
+    
+    
     
     import rpy2.robjects as robjects
     import rpy2.robjects.numpy2ri
     from rpy2.robjects import pandas2ri
     from rpy2.robjects.packages import importr
     pandas2ri.activate()
-    path_to_result='Results_PILOT'
+    
     # prepare data for R
     proportions.index = proportions['sampIeD']
-    cells = pd.read_csv(path_to_result + "/cells/" + cell_type + ".csv", index_col = 0)
+   
     if selected_genes is None:
         selected_genes = cells.iloc[:,1:-1].columns
     data = cells[selected_genes]
@@ -255,7 +288,18 @@ def compute_diff_expressions(cell_type: str = None,
     
 
     
+def install_r_packages():
+    # Install R packages using rpy2
+    import rpy2.robjects as robjects
 
+    robjects.r('''
+    if (!requireNamespace("BiocManager", quietly = TRUE))
+        install.packages("BiocManager")
+    ''')
+
+    robjects.r('''
+    BiocManager::install("limma")
+    ''')
    
 
    
