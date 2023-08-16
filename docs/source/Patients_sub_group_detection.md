@@ -61,13 +61,13 @@ pl.pl.heatmaps(adata)
 
 
     
-![png](Patients%20sub-group%20detection_files/Patients%20sub-group%20detection_9_0.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_9_0.png)
     
 
 
 
     
-![png](Patients%20sub-group%20detection_files/Patients%20sub-group%20detection_9_1.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_9_1.png)
     
 
 
@@ -83,7 +83,7 @@ pl.pl.trajectory(adata,colors=['red','Blue'])
 
 
     
-![png](Patients%20sub-group%20detection_files/Patients%20sub-group%20detection_11_0.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_11_0.png)
     
 
 
@@ -100,13 +100,13 @@ pl.pl.select_best_sil(adata)
 
 
     
-![png](Patients%20sub-group%20detection_files/Patients%20sub-group%20detection_13_0.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_13_0.png)
     
 
 
 
     
-![png](Patients%20sub-group%20detection_files/Patients%20sub-group%20detection_13_1.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_13_1.png)
     
 
 
@@ -125,7 +125,7 @@ proportion_df=pl.pl.clustering_emd(adata,res=adata.uns['best_res'])
 
 
     
-![png](Patients%20sub-group%20detection_files/Patients%20sub-group%20detection_15_1.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_15_1.png)
     
 
 
@@ -727,7 +727,7 @@ pl.pl.cell_type_diff_two_sub_patient_groups(proportion_df, proportion_df.columns
 
 
     
-![png](Patients%20sub-group%20detection_files/Patients%20sub-group%20detection_20_0.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_20_0.png)
     
 
 
@@ -743,7 +743,7 @@ pl.pl.plot_cell_types_distributions(proportion_df, cell_types=['Stellate cell','
 
 
     
-![png](Patients%20sub-group%20detection_files/Patients%20sub-group%20detection_22_0.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_22_0.png)
     
 
 
@@ -791,7 +791,7 @@ pl.tl.compute_diff_expressions(adata,cell_type, proportion_df,
 
 
     
-![png](Patients%20sub-group%20detection_files/Patients%20sub-group%20detection_29_1.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_29_1.png)
     
 
 
@@ -809,7 +809,7 @@ pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 1
 
 
     
-![png](Patients%20sub-group%20detection_files/Patients%20sub-group%20detection_32_0.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_32_0.png)
     
 
 
@@ -821,7 +821,7 @@ pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 2
 
 
     
-![png](Patients%20sub-group%20detection_files/Patients%20sub-group%20detection_33_0.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_33_0.png)
     
 
 
@@ -842,7 +842,7 @@ pl.tl.compute_diff_expressions(adata,cell_type, proportion_df,
 
 
     
-![png](Patients%20sub-group%20detection_files/Patients%20sub-group%20detection_35_1.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_35_1.png)
     
 
 
@@ -854,7 +854,7 @@ pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 1
 
 
     
-![png](Patients%20sub-group%20detection_files/Patients%20sub-group%20detection_36_0.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_36_0.png)
     
 
 
@@ -866,7 +866,7 @@ pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 2
 
 
     
-![png](Patients%20sub-group%20detection_files/Patients%20sub-group%20detection_37_0.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_37_0.png)
     
 
 
@@ -887,7 +887,7 @@ pl.tl.compute_diff_expressions(adata,cell_type, proportion_df,
 
 
     
-![png](Patients%20sub-group%20detection_files/Patients%20sub-group%20detection_39_1.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_39_1.png)
     
 
 
@@ -899,7 +899,7 @@ pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 1
 
 
     
-![png](Patients%20sub-group%20detection_files/Patients%20sub-group%20detection_40_0.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_40_0.png)
     
 
 
@@ -911,7 +911,7 @@ pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 2
 
 
     
-![png](Patients%20sub-group%20detection_files/Patients%20sub-group%20detection_41_0.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_41_0.png)
     
 
 

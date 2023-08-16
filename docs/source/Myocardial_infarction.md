@@ -57,13 +57,13 @@ pl.pl.heatmaps(adata)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_8_0.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_8_0.png)
     
 
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_8_1.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_8_1.png)
     
 
 
@@ -79,7 +79,7 @@ pl.pl.trajectory(adata,colors=['Blue','red'])
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_10_0.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_10_0.png)
     
 
 
@@ -98,7 +98,7 @@ pl.pl.fit_pricipla_graph(adata,source_node=7)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_12_0.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_12_0.png)
     
 
 
@@ -114,13 +114,13 @@ pl.tl.cell_importance(adata)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_14_0.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_14_0.png)
     
 
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_14_1.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_14_1.png)
     
 
 
@@ -157,7 +157,7 @@ pl.tl.genes_importance(adata,name_cell=adata.uns['cellnames'][1],sample_col='sam
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_17_1.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_17_1.png)
     
 
 
@@ -185,7 +185,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_1.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_1.png)
     
 
 
@@ -195,7 +195,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_3.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_3.png)
     
 
 
@@ -205,7 +205,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_5.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_5.png)
     
 
 
@@ -215,7 +215,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_7.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_7.png)
     
 
 
@@ -225,7 +225,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_9.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_9.png)
     
 
 
@@ -235,7 +235,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_11.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_11.png)
     
 
 
@@ -245,7 +245,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_13.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_13.png)
     
 
 
@@ -255,7 +255,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_15.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_15.png)
     
 
 
@@ -265,7 +265,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_17.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_17.png)
     
 
 
@@ -275,7 +275,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_19.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_19.png)
     
 
 
@@ -285,7 +285,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_21.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_21.png)
     
 
 
@@ -295,7 +295,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_23.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_23.png)
     
 
 
@@ -305,7 +305,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_25.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_25.png)
     
 
 
@@ -315,7 +315,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_27.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_27.png)
     
 
 
@@ -325,7 +325,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_29.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_29.png)
     
 
 
@@ -335,7 +335,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_31.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_31.png)
     
 
 
@@ -345,7 +345,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_33.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_33.png)
     
 
 
@@ -355,7 +355,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_35.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_35.png)
     
 
 
@@ -365,7 +365,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_37.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_37.png)
     
 
 
@@ -375,7 +375,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_39.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_39.png)
     
 
 
@@ -385,7 +385,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_41.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_41.png)
     
 
 
@@ -395,7 +395,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_43.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_43.png)
     
 
 
@@ -405,7 +405,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM'],number_genes=1)
 
 
     
-![png](Myocardial%20infarction_files/Myocardial%20infarction_19_45.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_19_45.png)
     
 
 
