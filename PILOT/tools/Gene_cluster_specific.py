@@ -459,6 +459,7 @@ def _fit_best_model_(target: pd.DataFrame = None,
                 best_r2.update({index: [best_func, best_results, exp_pattern, slope, pval]})
                 
         except BaseException:
+            
             print(index)
         
     sorted_best = {k: v for k, v in sorted(best_r2.items(),
@@ -879,7 +880,7 @@ def infer_gene_cluster_differentiation(gene_list: list = None,
 
     all_stats = pd.DataFrame(columns = ['gene', 'cluster', 'waldStat', 'df', 'pvalue', 'FC'])
     for gene_name in gene_list:
-        print(gene_name)
+       # print(gene_name)
         gene_clusters = gene_dict[gene_name]
         if(len(gene_clusters) > 1):
             for i in range(len(gene_clusters)):
@@ -989,8 +990,8 @@ def infer_gene_cluster_differentiation(gene_list: list = None,
                                                    waldStat_score, r,
                                                    waldStat_pval,
                                                    log_fold_change]
-                print([str(gene_name), str(gene_clusters[i]), waldStat_score, r,
-                       waldStat_pval, log_fold_change])
+              #  print([str(gene_name), str(gene_clusters[i]), waldStat_score, r,
+               #        waldStat_pval, log_fold_change])
         else:
             if(len(gene_clusters) == 1):
                 all_stats.loc[len(all_stats)] = [str(gene_name), str(gene_clusters[0]),
