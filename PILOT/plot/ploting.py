@@ -28,21 +28,60 @@ from ..tools.patients_sub_clustering import *
 
 
 
-'''
-Finding the trajecories by applying DM
-@param: EMD, is the output of OT,
-@param: n_evecs, number of embeddings
-@param: k : int, optional Number of nearest neighbors over which to construct the kernel.
-       
-@param: epsilon, string or scalar, optional
-            Method for choosing the epsilon.  Currently, the only options are to provide a scalar (epsilon is set to the provided scalar) 'bgh' (Berry, Giannakis and Harlim), and 'bgh_generous' ('bgh' method, with answer multiplied by 2.
+"""
+Find trajectories using Diffusion Maps and visualize the trajectory plot.
 
-@param: alpha, normalization in bandwith function
+Parameters
+----------
+adata : AnnData
+    Annotated data matrix containing EMD, annotations, and other necessary data.
+n_evecs : int, optional
+    Number of embedding vectors, by default 2.
+epsilon : float or str, optional
+    Method for choosing the epsilon in diffusion maps, by default 1.
+alpha : float, optional
+    Normalization parameter in the bandwidth function, by default 0.5.
+knn : int, optional
+    Number of nearest neighbors for constructing the kernel, by default 64.
+sample_col : int, optional
+    Index of the column representing sample IDs in annotation data, by default 1.
+clusters : str, optional
+    Name of the column representing clusters/categories in annotation data, by default 'status'.
+label_act : bool, optional
+    Whether to label data points with sample IDs, by default False.
+colors : list, optional
+    List of colors for different categories, by default ['#377eb8', '#ff7f00', '#e41a1c'].
+location_labels : str, optional
+    Location of the legend labels, by default 'center'.
+fig_h : int, optional
+    Height of the figure, by default 12.
+fig_w : int, optional
+    Width of the figure, by default 12.
+font_size : int, optional
+    Font size for labels and annotations, by default 24.
+axes_line_width : float, optional
+    Line width of the axes, by default 1.
+axes_color : str, optional
+    Color of the axes lines, by default 'black'.
+facecolor : str, optional
+    Background color of the figure, by default 'white'.
+point_size : int, optional
+    Size of the data points in the plot, by default 100.
+cmap : str, optional
+    Colormap for scatter plot, by default 'viridis'.
+fontsize_legend : int, optional
+    Font size of the legend, by default 24.
+alpha_trans : float, optional
+    Transparency level for data points, by default 1.
+plot_title : str, optional
+    Title of the plot, by default "Trajectory of the disease progression".
 
-Reference:
- .. [1] T. Berry, and J. Harlim, Applied and Computational Harmonic Analysis 40, 68-96
-           (2016).
-'''
+Returns
+-------
+None
+    Visualizes and saves the trajectory plot.
+"""
+
 def trajectory(adata,n_evecs = 2, epsilon =1, alpha = 0.5,knn= 64, sample_col=1, clusters = 'status',label_act = False,colors=['#377eb8','#ff7f00','#e41a1c'],location_labels='center', fig_h=12,fig_w=12,font_size=24,axes_line_width=1,axes_color='black',facecolor='white',point_size=100,cmap='viridis',fontsize_legend=24,alpha_trans=1,plot_titel = "Trajectory of the disease progression"):
     
     EMD=adata.uns['EMD']/adata.uns['EMD'].max()
@@ -96,6 +135,31 @@ def trajectory(adata,n_evecs = 2, epsilon =1, alpha = 0.5,knn= 64, sample_col=1,
     
     adata.uns['embedding']=embedding
     
+"""
+Plot heatmaps of cost matrix and Wasserstein distances.
+
+Parameters
+----------
+adata : AnnData
+    Annotated data matrix containing annotations, cost matrix, and Wasserstein distances.
+figsize_h : int, optional
+    Height of the heatmap figure, by default 12.
+figsize_w : int, optional
+    Width of the heatmap figure, by default 12.
+col_cluster : bool, optional
+    Whether to cluster the columns, by default True.
+row_cluster : bool, optional
+    Whether to cluster the rows, by default True.
+cmap : str, optional
+    Colormap for the heatmaps, by default 'Blues_r'.
+font_scale : int, optional
+    Font scale for labels and annotations, by default 2.
+
+Returns
+-------
+None
+    Plots and saves heatmaps of the cost matrix and Wasserstein distances.
+"""
 
     
 def heatmaps(adata,figsize_h=12,figsize_w=12,col_cluster=True,row_cluster=True,cmap='Blues_r',font_scale=2):
@@ -125,18 +189,41 @@ def heatmaps(adata,figsize_h=12,figsize_w=12,col_cluster=True,row_cluster=True,c
     
     
 
-'''
-Getting the pseudotime based on the pricipla graph
+"""
+Fit an Elastic Principal Graph to the data and extract pseudotime information.
 
-@param: emb, embeddings of DM.
-@param: NumNodes, number of node for buiding the backbone.
-@param: source_node, start from this node
-@param: show_text, showing the numbers in the backbone
-@param: Do_PCA Perform PCA on the nodes
-@param: DimToPlot a integer vector specifing the PCs (if Do_PCA=TRUE) or dimension (if Do_PCA=FALSE) to plot. 
-@param: Node_color, colors of backbon's  node.
-@return orders of samples based on the trajectory and selected cell-types
-'''
+Parameters
+----------
+adata : AnnData
+    Annotated data matrix containing embeddings and other necessary data.
+NumNodes : int, optional
+    Number of nodes for building the backbone, by default 20.
+source_node : int, optional
+    Index of the source node to start pseudotime estimation, by default 0.
+show_text : bool, optional
+    Whether to show numbers in the backbone plot, by default True.
+Do_PCA : bool, optional
+    Whether to perform PCA on the nodes, by default False.
+fig_x_size : int, optional
+    Width of the figure, by default 12.
+fig_y_size : int, optional
+    Height of the figure, by default 12.
+X_color : str, optional
+    Color of the X-axis in the plot, by default 'r'.
+Node_color : str, optional
+    Color of the backbone's nodes, by default 'k'.
+DimToPlot : list, optional
+    List of integers specifying the PCs or dimensions to plot, by default [0, 1].
+facecolor : str, optional
+    Background color of the figure, by default 'white'.
+title : str, optional
+    Title of the plot, by default 'Principal graph'.
+
+Returns
+-------
+None
+    Fits an Elastic Principal Graph, plots it, and extracts pseudotime information.
+"""
 
 def fit_pricipla_graph(adata,NumNodes=20,source_node=0,show_text=True,Do_PCA=False,fig_x_size=12,fig_y_size=12,X_color='r', Node_color='k', DimToPlot=[0, 1],facecolor='white',title='Principal graph'):
     
