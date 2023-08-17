@@ -22,7 +22,7 @@ import scanpy as sc
 adata=sc.read_h5ad('Datasets/myocardial_infarction.h5ad')
 ```
 
-#### Loading the required information and computing the Wasserstein distance:
+###### Loading the required information and computing the Wasserstein distance:
 <div class="alert alert-block alert-info"> In order to work with PILOT, ensure that your Anndata object is loaded and contains the required information.
     
 Use the following parameters to configure PILOT for your analysis (Setting Parameters):
@@ -45,7 +45,7 @@ pl.tl.wasserstein_distance(adata,emb_matrix='PCA',
 clusters_col='cell_subtype',sample_col='sampleID',status='Status')
 ```
 
-#### Ploting the Cost matrix and the Wasserstein distance:
+##### Ploting the Cost matrix and the Wasserstein distance:
 <div class="alert alert-block alert-info"> 
  Here we show the heatmaps of Cost matrix (cells) and Wasserstein distance (samples).      
 </div>
@@ -67,7 +67,7 @@ pl.pl.heatmaps(adata)
     
 
 
-#### Trajectory:
+##### Trajectory:
 <div class="alert alert-block alert-info"> 
  Here we show the Diffusion map of Wasserstein distance.
 </div>
@@ -83,7 +83,7 @@ pl.pl.trajectory(adata,colors=['Blue','red'])
     
 
 
-####  Fit a principal graph:
+#####  Fit a principal graph:
 <div class="alert alert-block alert-info"> 
 Utilizing the EIPLGraph, we sketch the foundational structure of the trajectory. The source_node bears significance as it dictates where the sample ranking begins. If you have a clear starting point in mind, such as control samples, you can designate it as the source node. This method enables us to rank samples using a disease progression score (t = t1, ..., tn), where tl represents the ranking of the nth sample
 </div>
@@ -100,7 +100,7 @@ pl.pl.fit_pricipla_graph(adata,source_node=7)
     
 
 
-####  Cell-type importance:
+#####  Cell-type importance:
 <div class="alert alert-block alert-info"> 
 Here we get the critical cells that are changing over the disease progression(sorted samples based on the trajectory of PILOT with EIPLGraph).
 </div>
@@ -122,9 +122,9 @@ pl.tl.cell_importance(adata)
     
 
 
-### Applyin PILOT for finding Markers
+##### Applyin PILOT for finding Markers
 
-#### Gene selection:
+##### Gene selection:
 <div class="alert alert-block alert-info"> 
 In this step, we find marker genes that are changed specifically over the disease progression (order of Trajectory from Control to IZ) per specific cell. In other words, we uncover genes with different patterns.You need to reproduce whole markers for cells by running the following code. After running the code, you can  see a folder named 'Markers' that for each cell there is a folder inside that includes 'Whole_expressions.csv'. 
 Whole_expressions file covers the found genes and their statistics.    
@@ -159,7 +159,7 @@ pl.tl.genes_importance(adata,name_cell=adata.uns['cellnames'][1],sample_col='sam
     
 
 
-#### Gene Cluster Differentiation:
+##### Gene Cluster Differentiation:
 <div class="alert alert-block alert-info"> 
 In this stage, we deploy the Gene_Cluster_Differentiation function to unveil gene patterns unique to each cell type compared to others. Before diving in, complete the preceding steps for all cell types.
 
@@ -180,7 +180,7 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM','Myofib'],number_gene
     
 
 
-#### Exploring the results for a specific cell type :
+##### Exploring the results for a specific cell type :
 <div class="alert alert-block alert-info"> 
 If you have specific genes of interest or prefer to select certain genes according to your preferences, you can proceed with this phase.
     
