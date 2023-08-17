@@ -18,7 +18,7 @@ conda activate PILOT
 conda install -c conda-forge rpy2
 conda install jupyter
 pip install 
-
+```
 Once you've completed these steps, you can proceed to run the tutorials and explore the features of PILOT.
 
 
