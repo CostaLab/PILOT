@@ -11,13 +11,15 @@
 Follow these steps to install and set up PILOT:
 
 ```bash
+
 git clone https://github.com/CostaLab/PILOT
 cd PILOT
 conda create --name PILOT r-base
 conda activate PILOT
 conda install -c conda-forge rpy2
 conda install jupyter
-pip install 
+pip install .
+
 ```
 Once you've completed these steps, you can proceed to run the tutorials and explore the features of PILOT.
 
@@ -25,7 +27,7 @@ Once you've completed these steps, you can proceed to run the tutorials and expl
 
 ```{toctree}
 ---
-caption: Tutorial for scRNA
+caption: Tutorial for scRNA-seq Analysis
 maxdepth: 2
 ---
 Myocardial_infarction
@@ -34,7 +36,7 @@ Myocardial_infarction
 ```{toctree}
 ---
 maxdepth: 2
-caption: Tutorial for pathomics data
+caption: Tutorial for pathomics data Analysis
 ---
 Combination_Kidney_IgAN
 ```
@@ -42,7 +44,7 @@ Combination_Kidney_IgAN
 ```{toctree}
 ---
 maxdepth: 2
-caption: Tutorial for  Patients sub-group detection and then ranking cells/genes
+caption: Tutorial for Patients sub-group detection
 ---
 Patients_sub_group_detection
 ```

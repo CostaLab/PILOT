@@ -20,8 +20,8 @@ conda install -c conda-forge rpy2
 conda install jupyter
 pip install .
 ```
-## [Tutorial](https://github.com/CostaLab/PILOT/tree/main/Tutorial)
-There are three tutorials, one for [Myocardial Infarction (single cell data)](https://github.com/CostaLab/PILOT/blob/main/Tutorial/Myocardial%20infarction.ipynb), and the second tutorial for [pathomics data, the combination of Kidney IgAN(G) & Kidney IgAN(T)](https://github.com/CostaLab/PILOT/blob/main/Tutorial/Combination_Kidney_IgAN.ipynb) and the last one is for [Patients sub-group detection and then ranking cells/genes (Pancreas data)](https://github.com/CostaLab/PILOT/blob/main/Tutorial/Patients%20sub-group%20detection.ipynb)
+## [Tutorial](https://pilot.readthedocs.io/en/latest/index.html)
+There are three tutorials, one for [Myocardial Infarction (single cell data)](https://pilot.readthedocs.io/en/latest/Myocardial_infarction.html), and the second tutorial for [pathomics data, the combination of Kidney IgAN(G) & Kidney IgAN(T)](https://pilot.readthedocs.io/en/latest/Combination_Kidney_IgAN.html) and the last one is for [Patients sub-group detection and then ranking cells/genes (Pancreas data)](https://pilot.readthedocs.io/en/latest/Patients_sub_group_detection.html)
  
 
 
