@@ -624,8 +624,11 @@ def extend_stats(all_stats: pd.DataFrame = None,
         all_stats_extend.at[i,'fit-mod-rsquared'] = data[data['Gene ID'] == row['gene']]['mod_rsquared_adj'].values[0]
         # for col in col_names:
         #     all_stats_extend.at[i, 'fit-'+str(col)] = data[data['Gene ID'] == row['gene']][str(col)].values[0]
-    
-    all_stats_extend.to_csv(path_to_results + "/gene_clusters_stats_extend.csv", index = None)
+       
+    if  os.path.exists(path_to_results + "/gene_clusters_stats_extend.csv"):
+        all_stats_extend.to_csv(path_to_results + "/gene_clusters_stats_extend_exploring_specific_genes.csv", index = None)
+    else:
+        all_stats_extend.to_csv(path_to_results + "/gene_clusters_stats_extend.csv", index = None)
     return all_stats_extend
 
 def get_coordinates(WT_adata: pd.DataFrame = None,
@@ -1095,6 +1098,8 @@ def plot_stats_by_pattern(cluster_names: list = None,
                     k += 1
                 p += 1
             plt.subplots_adjust(wspace = 0.5, hspace = 0.7)
-            save_path = path_to_results + '/plot_' + str(cluster) + ".png"
+            if not os.path.exists(path_to_results+'/plots_gene_cluster_differentiation/'):  
+                    os.makedirs(path_to_results+'/plots_gene_cluster_differentiation/')
+            save_path = path_to_results+'/plots_gene_cluster_differentiation/'+str(cluster) + ".png"
             plt.savefig(save_path)
             plt.show()

@@ -1283,6 +1283,8 @@ cluster_names : list, optional
     List of cluster names to consider for gene cluster differentiation, by default [].
 font_size : int, optional
     Font size for plots, by default 12.
+    gene_list=list, optional
+    Your interested genes. If you have any intereted genes!
 
 Returns
 -------
@@ -1290,18 +1292,21 @@ None.
 Performs gene cluster differentiation analysis based on specified parameters and saves the results.
 """
 
-def gene_cluster_differentiation(cellnames=[],sort=['Expression pattern', 'adjusted P-value', 'R-squared'],number_genes=10,cluster_names=[],font_size=12):
+def gene_cluster_differentiation(cellnames=[],sort=['Expression pattern', 'adjusted P-value', 'R-squared'],number_genes=10,cluster_names=[],font_size=12,gene_list=[]):
     path='Results_PILOT/'
-    gene_list=[]
-    for cell in cellnames: #Your interested cell, this gets the genes of these cells and compares with others
-        data = pd.read_csv(path + '/Markers/' + cell + '/Whole_expressions.csv', index_col = 0)
-        specific_data = data.sort_values(sort,
-                   ascending=[True, True, False]).groupby('Expression pattern').head(number_genes)
-        gene_list.extend(specific_data['Gene ID'].tolist())
+    if len(gene_list)==0:
+        gene_list=[]
+        for cell in cellnames: #Your interested cell, this gets the genes of these cells and compares with others
+            data = pd.read_csv(path + '/Markers/' + cell + '/Whole_expressions.csv', index_col = 0)
+            specific_data = data.sort_values(sort,
+                       ascending=[True, True, False]).groupby('Expression pattern').head(number_genes)
+            gene_list.extend(specific_data['Gene ID'].tolist())
         
-    gene_list = np.unique(gene_list)
-    infer_gene_cluster_differentiation(gene_list,path_to_results = path,font_size=font_size)
-    
+        gene_list = np.unique(gene_list)
+        infer_gene_cluster_differentiation(gene_list,path_to_results = path,font_size=font_size)
+    else:
+        gene_list = np.unique(gene_list)
+        infer_gene_cluster_differentiation(gene_list,path_to_results = path,font_size=font_size)
 
 """
 Perform importance analysis for morphological features.
@@ -1455,4 +1460,55 @@ def norm_morphological_features(path=None,column_names=[],name_cell=None):
     return data
                 
              
-    
+def results_gene_cluster_differentiation(cluster_name=None,sort_columns=['FC', 'fit-pvalue'],ascending=[False, True]):
+    """
+    Retrieve and sort gene cluster statistics based on specified criteria.
+
+    Parameters:
+        cluster_name : str, optional
+            The name of the gene cluster to retrieve statistics for. Default is None.
+        sort_columns : list of str, optional
+            List of column names to sort the data by. Default is ['FC', 'fit-pvalue'].
+        ascending : list of bool, optional
+            List indicating sorting order for each corresponding column. Default is [False, True].
+
+    Returns:
+        pandas.DataFrame
+            A sorted dataframe containing gene cluster statistics based on the specified criteria.
+    """
+    path='Results_PILOT/'
+    statistics=pd.read_csv(path+'/gene_clusters_stats_extend.csv')
+    df=statistics[statistics['cluster']==cluster_name]
+    df['FC']=df['FC'].astype(float)
+    df_sorted = df.sort_values(by=sort_columns, ascending=ascending)
+    return df_sorted  
+
+
+
+
+
+"""
+Explore specific genes within a cluster to analyze their patterns in comparison to other cell types.
+
+Parameters:
+    cluster_name : str
+        The name of the cluster you're interested in exploring.
+    sort : list
+        List of column names for sorting the results.
+    number_genes : int
+        Number of top genes to display for each pattern (linear, quadratic, etc.).
+    cluster_names : list
+        List of cluster names for exploration (if empty, all clusters will be considered).
+    font_size : int
+        Font size for text and labels in plots.
+    gene_list : list
+        List of specific genes to explore within the cluster.
+
+Returns:
+    None
+"""
+
+def exploring_specific_genes(cluster_name='name_cell', sort=['Expression pattern', 'adjusted P-value', 'R-squared'],number_genes=10,cluster_names=[],font_size=12,gene_list=[]):
+    path='Results_PILOT/'
+    gene_list = np.unique(gene_list)
+    infer_gene_cluster_differentiation(gene_list,path_to_results = path,font_size=font_size) 

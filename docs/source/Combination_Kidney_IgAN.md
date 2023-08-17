@@ -1,4 +1,4 @@
-# Exploring Kidney IgAN  Data (Glomeruli and Tubuli) using PILOT: Unraveling Disease Trajectory and Molecular Changes.
+### Trajectory Analysis of Kidney IgAN Data with PILOT
 
 <div class="alert alert-block alert-info">
 <b>PILOT</b>
@@ -15,11 +15,11 @@ import PILOT as pl
 import scanpy as sc
 ```
 
-# Kidney_IgAN Tubuli
+#### Kidney_IgAN Tubuli
 
-### Reading Anndata
+##### Reading Anndata
 <div class="alert alert-block alert-info">
-Data is in the Datasets folder.
+The Anndata (h5ad) file is in the Datasets folder.
 </div>
 
 
@@ -27,14 +27,14 @@ Data is in the Datasets folder.
 adata_T=sc.read_h5ad('Datasets/Kidney_IgAN_T.h5ad') 
 ```
 
-### Loading the required information and computing the Wasserstein distance:
+#### Loading the required information and computing the Wasserstein distance:
 <div class="alert alert-block alert-info"> In order to work with PILOT, ensure that your Anndata object is loaded and contains the required information.
     
 Use the following parameters to configure PILOT for your analysis (Setting Parameters):
     
 adata: Pass your loaded Anndata object to PILOT.
     
-emb_matrix: Provide the name of the variable in the obsm level that holds the PCA representation.
+emb_matrix: Provide the name of the variable in the obsm level that holds the dimension reduction ( PCA representation).
     
 clusters_col: Specify the name of the column in the observation level of your Anndata that corresponds to cell types or clusters.
     
@@ -50,7 +50,7 @@ pl.tl.wasserstein_distance(adata_T,clusters_col='Cell_type',sample_col='sampleID
                            ,data_type='Pathomics')
 ```
 
-### Ploting the Cost matrix and the Wasserstein distance:
+##### Ploting the Cost matrix and the Wasserstein distance:
 <div class="alert alert-block alert-info"> 
  Here we show the heatmaps of Cost matrix (cells) and Wasserstein distance (samples).      
 </div>
@@ -72,9 +72,9 @@ pl.pl.heatmaps(adata_T)
     
 
 
-### Trajectory:
+##### Trajectory:
 <div class="alert alert-block alert-info"> 
- Here we show the Diffusion map of Wasserstein distance.
+ Here we show the Diffusion map of Wasserstein distance. In the upcoming trajectory analysis, the labels ">30" signify an eGFR level below 30 (considered as Low), "30-60" denotes a reduced eGFR range (marked as Reduced), and ">60" indicates a normal eGFR level
 </div>
 
 
@@ -88,11 +88,11 @@ pl.pl.trajectory(adata_T,colors=['red','blue','orange'])
     
 
 
-# Kidney_IgAN Glomeruli
+#### Kidney_IgAN Glomeruli
 
-### Reading Anndata
+##### Reading Anndata
 <div class="alert alert-block alert-info">
-Data is in the Datasets folder.
+The Anndata (h5ad) file is in the Datasets folder.
    </div>
 
 
@@ -134,7 +134,7 @@ pl.pl.trajectory(adata_G,colors=['red','blue','orange'])
     
 
 
-### Combination:
+#### Combination:
 <div class="alert alert-block alert-info"> 
 Here, we combine the distances of samples. We get the sum of distances of samples based on Tubuli and Glomeruli distances.   
 </div>
@@ -156,11 +156,9 @@ pl.pl.trajectory(adata_Com,colors=['red','blue','orange'])
     
 
 
-###  Fit a principal graph:
+####  Fit a principal graph:
 <div class="alert alert-block alert-info"> 
-Drawing the backbone of the trajectory with EIPLGraph.
-Here the source_node is important to start ranking samples, simply you can choose the start point from control samples.  It also allows
-us to rank samples with a disease progression score t = t1, ...,tn, where tl is the ranking of the sample n
+Utilizing the EIPLGraph, we sketch the foundational structure of the trajectory. The source_node bears significance as it dictates where the sample ranking begins. If you have a clear starting point in mind, such as control samples, you can designate it as the source node. This method enables us to rank samples using a disease progression score (t = t1, ..., tn), where tl represents the ranking of the nth sample
 </div>
 
 
@@ -174,7 +172,7 @@ pl.pl.fit_pricipla_graph(adata_Com,source_node=2)
     
 
 
-### Cell-type Importance Glomeruli:
+##### Cell-type Importance Glomeruli:
 
 
 ```python
@@ -193,9 +191,9 @@ pl.tl.cell_importance(adata_Com,xlim=125)
     
 
 
-# Feature selection for Glomeruli based on Combination:
+#### Feature selection for Glomeruli based on Combination:
 
-### Saving morphological features and map them with the obtained order by PILOT  (for Glomeruli):
+##### Saving morphological features and map them with the obtained order by PILOT  (for Glomeruli):
 
 <div class="alert alert-block alert-info"> 
 This step extracts features associated with all clusters and map them with the obtained time by PILOT (based on the Trjaectory order of Samples).
@@ -209,7 +207,7 @@ This step extracts features associated with all clusters and map them with the o
 pl.tl.extract_cells_from_pathomics(adata_Com)
 ```
 
-### Getting the log scale of features 
+##### Getting the log scale of features 
 
 
 ```python
@@ -217,7 +215,7 @@ data=pl.tl.norm_morphological_features(column_names=['glom_sizes',
  'glom_distance_to_closest_glom','glom_diameters','glom_tuft_sizes','glom_bowman_sizes'],name_cell='All')
 ```
 
-### Morphological features changes for Glomeruli:
+##### Morphological features changes for Glomeruli:
 
 <div class="alert alert-block alert-info">
       
@@ -248,9 +246,9 @@ pl.tl.morphological_features_importance(data,height=10,x_lim=160,width=20)
     
 
 
-# Feature slection for Tubuli based on Combination
+#### Feature slection for Tubuli based on Combination
 
-### Saving morphological features and map them with the obtained order by PILOT  (for Tubuli):
+#### Saving morphological features and map them with the obtained order by PILOT  (for Tubuli):
 
 
 
@@ -259,7 +257,7 @@ adata_T.uns['orders']=adata_Com.uns['orders']
 pl.tl.extract_cells_from_pathomics(adata_T)
 ```
 
-### Getting the log scale of features 
+#####  Getting the log scale of features 
 
 
 ```python
@@ -268,7 +266,7 @@ data=pl.tl.norm_morphological_features(column_names=['tubule_diameters',
  'tubule_distance_to_closest_instance'],name_cell='All')
 ```
 
-### Morphological features changes for Tubuli
+##### Morphological features changes for Tubuli
 
 
 ```python

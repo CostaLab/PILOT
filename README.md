@@ -8,7 +8,7 @@ PILOT uses optimal transport to compute the Wasserstein distance between two sin
 
 Current version for PILOT is 1.1.0
 
-## User installation
+##installation
 The easiest way to install PILOT and the required packages is using the following way,
 
 ```terminal
