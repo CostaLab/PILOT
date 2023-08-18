@@ -22,6 +22,7 @@ import warnings
 import ot
 from logging import info, warn
 from cycler import cycler
+from matplotlib.image import imread
 warnings.filterwarnings('ignore')
 
 
@@ -883,7 +884,7 @@ None
 
 
 
-def cell_importance(adata,heatmap_h=20,heatmap_w=12,width=40,height=35,xlim=5,p_val=1,plot_cell=True,point_size=100,color_back='white',fontsize=20,alpha=1,cmap='viridis',save_as_pdf=False):
+def cell_importance(adata,heatmap_h=20,heatmap_w=12,width=40,height=35,xlim=5,p_val=1,plot_cell=True,point_size=100,color_back='white',fontsize=20,alpha=1,cmap='viridis',save_as_pdf=True):
     
     path=path_to_results
     real_labels=adata.uns['real_labels']
@@ -1071,10 +1072,11 @@ None
             
 def genes_importance(adata,name_cell,col='Time_score',genes_index=[],p_value=0.05,max_iter_huber=100,epsilon_huber=1.35,x_lim=4,width=20,height=30,store_data=True,genes_interesting=[],modify_r2 = False,model_type = 'HuberRegressor',fontsize=8,alpha=0.5,cmap='viridis',color_back=None,save_as_pdf=False,plot_genes=True,colnames=[],sample_col='sampleID',col_cell='cell_types'):
     
-   
-    extract_cells_from_gene_expression(adata,sample_col=sample_col,col_cell=col_cell,cell_list=[name_cell])
-    
     path='Results_PILOT'
+    if not os.path.exists(path+'/cells/'+name_cell+'.csv'):
+        extract_cells_from_gene_expression(adata,sample_col=sample_col,col_cell=col_cell,cell_list=[name_cell])
+    
+    
     data =loadTarget(path+'/cells/', name_cell)
     if len(colnames)!=0:  #for pathmics data
         for col in colnames:
@@ -1460,7 +1462,7 @@ def norm_morphological_features(path=None,column_names=[],name_cell=None):
     return data
                 
              
-def results_gene_cluster_differentiation(cluster_name=None,sort_columns=['FC', 'fit-pvalue'],ascending=[False, True]):
+def results_gene_cluster_differentiation(cluster_name=None,sort_columns=['pvalue'],ascending=[True],threshold=0.5):
     """
     Retrieve and sort gene cluster statistics based on specified criteria.
 
@@ -1471,6 +1473,8 @@ def results_gene_cluster_differentiation(cluster_name=None,sort_columns=['FC', '
             List of column names to sort the data by. Default is ['FC', 'fit-pvalue'].
         ascending : list of bool, optional
             List indicating sorting order for each corresponding column. Default is [False, True].
+        threshold: float, optional.
+             filtering the genes that their FCs are highter that threshold.
 
     Returns:
         pandas.DataFrame
@@ -1480,8 +1484,9 @@ def results_gene_cluster_differentiation(cluster_name=None,sort_columns=['FC', '
     statistics=pd.read_csv(path+'/gene_clusters_stats_extend.csv')
     df=statistics[statistics['cluster']==cluster_name]
     df['FC']=df['FC'].astype(float)
+    df=df[df['FC'] >= threshold]
     df_sorted = df.sort_values(by=sort_columns, ascending=ascending)
-    return df_sorted  
+    return df_sorted[['gene','cluster','waldStat','pvalue','FC','Expression pattern','fit-pvalue','fit-mod-rsquared']]  
 
 
 
@@ -1503,12 +1508,25 @@ Parameters:
         Font size for text and labels in plots.
     gene_list : list
         List of specific genes to explore within the cluster.
+    fig_size: tuple,optional
+          Size of the plot.
 
 Returns:
-    None
+    Show the genes for the interested cell types
 """
 
-def exploring_specific_genes(cluster_name='name_cell', sort=['Expression pattern', 'adjusted P-value', 'R-squared'],number_genes=10,cluster_names=[],font_size=12,gene_list=[]):
+def exploring_specific_genes(cluster_name='name_cell', sort=['Expression pattern', 'adjusted P-value', 'R-squared'],number_genes=10,cluster_names=[],font_size=12,gene_list=[],fig_size=(64, 56)):
     path='Results_PILOT/'
     gene_list = np.unique(gene_list)
-    infer_gene_cluster_differentiation(gene_list,path_to_results = path,font_size=font_size) 
+    infer_gene_cluster_differentiation(gene_list,path_to_results = path,font_size=font_size,cell_show_plot=cluster_name) 
+
+    # Load the PNG image file
+    image_path =path+'plots_gene_cluster_differentiation/'+cluster_name+'.png'  # Replace with the actual path to your PNG image
+    image = imread(image_path)
+    # Set the size of the figure
+    fig, ax = plt.subplots(figsize=fig_size)  # Adjust the width and height as needed
+
+    # Display the PNG image
+    ax.imshow(image)
+    ax.axis('off')  # Turn off axis labels and ticks
+    plt.show()

@@ -380,7 +380,7 @@ def fit_best_model(target, data, model_type,max_iter_huber,epsilon_huber,pval_th
     return sorted_best    
 
 
-def plot_best_matches_cell_types(target, data,df,sorted_best, scale_name, min_target=0, max_target=35,num=11,width=25,height=25,xlim=4,point_size=100,color_back=None,fontsize=20,alpha=1,cmap='viridis'):
+def plot_best_matches_cell_types(target, data,df,sorted_best, scale_name, min_target=0, max_target=35,num=11,width=25,height=25,xlim=4,point_size=100,color_back=None,fontsize=28,alpha=1,cmap='viridis'):
     """
     plot 16 best fitted model
     """
@@ -429,7 +429,7 @@ def plot_best_matches_cell_types(target, data,df,sorted_best, scale_name, min_ta
         if float(sorted_best[best_tf_name][-1]) <= 0.05:
             title =line1+"{}".format(bold_word)
             font_props = FontProperties(weight='bold')
-            ax.set_title(title, fontproperties=font_props)
+            ax.set_title(title, fontproperties=font_props,fontsize=fontsize)
         else:
             combined_line = "{} {}".format(line1,bold_word)
             ax.set_title(combined_line,fontsize=fontsize)
@@ -463,7 +463,7 @@ def plot_best_matches_cell_types(target, data,df,sorted_best, scale_name, min_ta
 
 
   
-def plot_best_matches(target, data,df, sorted_best, scale_name, plot_color='tab:orange',num=16,width=25,height=25,x_lim=4,fontsize=20,alpha=0.5,cmap='viridis',color_back=None):
+def plot_best_matches(target, data,df, sorted_best, scale_name, plot_color='tab:orange',num=16,width=25,height=25,x_lim=4,fontsize=24,alpha=0.5,cmap='viridis',color_back=None):
     """
     plot 4 of each best fitted pattern
     

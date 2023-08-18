@@ -236,7 +236,7 @@ pl.tl.compute_diff_expressions(adata,cell_type, proportion_df,
     
 
 
-#### Gene Ontology analysis
+###### Gene Ontology analysis
 
 <div class="alert alert-block alert-info">  Based on the adjusted p-value and fold change threshold, we select genes that are highly differentiated in each patient sub-groups and specify their annotation using the <a href="https://biit.cs.ut.ee/gprofiler/gost">gProfiler</a>
     
@@ -287,6 +287,8 @@ pl.tl.compute_diff_expressions(adata,cell_type, proportion_df,
     
 
 
+###### Gene Ontology analysis
+
 
 ```python
 pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 1',
@@ -295,7 +297,7 @@ pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 1
 
 
     
-![png](Patients_sub_group_detection_files/Patients_sub_group_detection_36_0.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_37_0.png)
     
 
 
@@ -307,7 +309,7 @@ pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 2
 
 
     
-![png](Patients_sub_group_detection_files/Patients_sub_group_detection_37_0.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_38_0.png)
     
 
 
@@ -328,9 +330,11 @@ pl.tl.compute_diff_expressions(adata,cell_type, proportion_df,
 
 
     
-![png](Patients_sub_group_detection_files/Patients_sub_group_detection_39_1.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_40_1.png)
     
 
+
+###### Gene Ontology analysis
 
 
 ```python
@@ -340,7 +344,7 @@ pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 1
 
 
     
-![png](Patients_sub_group_detection_files/Patients_sub_group_detection_40_0.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_42_0.png)
     
 
 
@@ -352,7 +356,7 @@ pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 2
 
 
     
-![png](Patients_sub_group_detection_files/Patients_sub_group_detection_41_0.png)
+![png](Patients_sub_group_detection_files/Patients_sub_group_detection_43_0.png)
     
 
 

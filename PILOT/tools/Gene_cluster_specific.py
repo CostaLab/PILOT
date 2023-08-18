@@ -822,7 +822,7 @@ def infer_gene_cluster_differentiation(gene_list: list = None,
                                        start: int = 1,
                                        end: int = 20,
                                        path_to_results: str = None,
-                                       file_name: str = "/Whole_expressions.csv",font_size=12):
+                                       file_name: str = "/Whole_expressions.csv",font_size=24,cell_show_plot=None):
     """
     
 
@@ -1003,7 +1003,7 @@ def infer_gene_cluster_differentiation(gene_list: list = None,
     # all_pvals = smf.multitest.multipletests(list(all_stats['pvalue'].values), method='fdr_bh')[1]
     # all_stats['pvalue'] = all_pvals
     all_stats_extend = extend_stats(all_stats, path_to_results)
-    plot_stats_by_pattern(cluster_names, all_stats_extend, gene_dict, pline, path_to_results, file_name,font_size=font_size)
+    plot_stats_by_pattern(cluster_names, all_stats_extend, gene_dict, pline, path_to_results, file_name,font_size=font_size,cell_show_plot=cell_show_plot)
     
     
 def plot_stats_by_pattern(cluster_names: list = None,
@@ -1012,7 +1012,7 @@ def plot_stats_by_pattern(cluster_names: list = None,
                           pline: list = None,
                           path_to_results: str = None,
                           file_name: str = "/Whole_expressions.csv",
-                          font_size: int = 16):
+                          font_size: int = 24,cell_show_plot=None):
     """
     
 
@@ -1039,7 +1039,7 @@ def plot_stats_by_pattern(cluster_names: list = None,
     return figures for each cluster ploting top 4 genes for each pattern.
 
     """
-    plt.rcParams.update({'font.size': font_size})
+    plt.rcParams.update({'font.size': 24})
     # plot results
     for cluster in cluster_names:
         my_data = all_stats_extend[ (all_stats_extend['cluster'] == str(cluster)) & (all_stats_extend['pvalue'] < 0.01)]
@@ -1053,9 +1053,13 @@ def plot_stats_by_pattern(cluster_names: list = None,
             n_px = 10
 
             plt.rcParams["figure.facecolor"] = 'w'
-            plt.figure()
-            f, axs = plt.subplots(n_row, n_col, figsize=(n_col * n_px * 2, n_row * n_px))
+            
+                
+            plt.figure(figsize=(64, 56))
+            f, axs = plt.subplots(n_row, n_col, figsize=(16, 8))
             axs = np.atleast_2d(axs)
+           
+          
 
             p = 0
             for pattern in expression_patterns:
@@ -1100,6 +1104,14 @@ def plot_stats_by_pattern(cluster_names: list = None,
             plt.subplots_adjust(wspace = 0.5, hspace = 0.7)
             if not os.path.exists(path_to_results+'/plots_gene_cluster_differentiation/'):  
                     os.makedirs(path_to_results+'/plots_gene_cluster_differentiation/')
+            
             save_path = path_to_results+'/plots_gene_cluster_differentiation/'+str(cluster) + ".png"
             plt.savefig(save_path)
-            plt.show()
+            plt.close()
+           # if cell_show_plot!=None:
+            #    if cluster==cell_show_plot:
+             #       print('Plots for '+cluster)
+              #      plt.show()
+               #     plt.close()
+            #else:
+             #   plt.show()

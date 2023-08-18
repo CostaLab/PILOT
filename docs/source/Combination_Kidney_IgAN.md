@@ -158,7 +158,7 @@ pl.pl.trajectory(adata_Com,colors=['red','blue','orange'])
 
 ####  Fit a principal graph:
 <div class="alert alert-block alert-info"> 
-Utilizing the EIPLGraph, we sketch the foundational structure of the trajectory. The source_node bears significance as it dictates where the sample ranking begins. If you have a clear starting point in mind, such as control samples, you can designate it as the source node. This method enables us to rank samples using a disease progression score (t = t1, ..., tn), where tl represents the ranking of the nth sample
+The difussion map creates an embeding that potentially reveals a trajectory in the data. Next, PILOT explores EIPLGraph to find the structure of the trajectory. An important parameter is the source_node, which indicate the start of the trajectory. Here, we selected a normal sample. This method returns a rank samples, which we define as a disease progression score (t = t1, ..., tn), where tl represents the ranking of the nth sample.
 </div>
 
 
