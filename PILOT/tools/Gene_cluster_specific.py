@@ -1003,7 +1003,7 @@ def infer_gene_cluster_differentiation(gene_list: list = None,
     # all_pvals = smf.multitest.multipletests(list(all_stats['pvalue'].values), method='fdr_bh')[1]
     # all_stats['pvalue'] = all_pvals
     all_stats_extend = extend_stats(all_stats, path_to_results)
-    plot_stats_by_pattern(cluster_names, all_stats_extend, gene_dict, pline, path_to_results, file_name,font_size=font_size,cell_show_plot=cell_show_plot)
+   # plot_stats_by_pattern(cluster_names, all_stats_extend, gene_dict, pline, path_to_results, file_name,font_size=font_size)
     
     
 def plot_stats_by_pattern(cluster_names: list = None,
@@ -1012,7 +1012,7 @@ def plot_stats_by_pattern(cluster_names: list = None,
                           pline: list = None,
                           path_to_results: str = None,
                           file_name: str = "/Whole_expressions.csv",
-                          font_size: int = 24,cell_show_plot=None):
+                          font_size: int = 24,p_value=0.05,create_new_plot_folder=False):
     """
     
 
@@ -1039,12 +1039,14 @@ def plot_stats_by_pattern(cluster_names: list = None,
     return figures for each cluster ploting top 4 genes for each pattern.
 
     """
-    plt.rcParams.update({'font.size': 24})
+    plt.rcParams.update({'font.size': font_size})
     # plot results
     for cluster in cluster_names:
-        my_data = all_stats_extend[ (all_stats_extend['cluster'] == str(cluster)) & (all_stats_extend['pvalue'] < 0.01)]
-        sort_my_data = my_data.sort_values(['Expression pattern', 'FC', 'fit-pvalue'],
-                ascending=[True, False, True]).groupby('Expression pattern').head(4)
+        my_data = all_stats_extend[ (all_stats_extend['cluster'] == str(cluster)) & (all_stats_extend['pvalue'] < p_value)]
+        my_data['FC']=my_data['FC'].astype(float)
+        my_data=my_data[my_data['FC'] >= 0.5]
+        sort_my_data = my_data.sort_values(['pvalue'],
+                ascending=[True]).groupby('Expression pattern').head(4)
         expression_patterns = np.unique(sort_my_data['Expression pattern'])
         if(len(expression_patterns)):
 
@@ -1055,8 +1057,15 @@ def plot_stats_by_pattern(cluster_names: list = None,
             plt.rcParams["figure.facecolor"] = 'w'
             
                 
-            plt.figure(figsize=(64, 56))
-            f, axs = plt.subplots(n_row, n_col, figsize=(16, 8))
+            #plt.figure(figsize=(80, 80))
+            #f, axs = plt.subplots(n_row, n_col, figsize=(16, 8))
+            plt.figure(figsize=(80, 80))  # Set the overall figure size
+
+            # Adjust the size of individual subplots
+            subplot_width = 8  # Choose an appropriate value
+            subplot_height = 6  # Choose an appropriate value
+
+            f, axs = plt.subplots(n_row, n_col, figsize=(n_col * subplot_width, n_row * subplot_height))
             axs = np.atleast_2d(axs)
            
           
@@ -1086,9 +1095,12 @@ def plot_stats_by_pattern(cluster_names: list = None,
 
                     axs[p, k].set_title(gene_name, size = font_size, weight = 'bold')
                     if( k == 0):
-                        axs[p, k].set_ylabel(pattern, size = font_size)
-                    else:
-                        axs[p, k].set_ylabel('Gene expression', size = font_size)
+                        plt.rcParams.update({'font.size': font_size-4})
+                        axs[p, k].set_ylabel(pattern, size = font_size-4)
+                    #else:
+                        
+                     #   axs[p, k].set_ylabel('Gene expression', size = 16)
+                    plt.rcParams.update({'font.size': font_size})
                     for item in (axs[p, k].get_xticklabels() + axs[p, k].get_yticklabels()):
                         item.set_fontsize(font_size)
 
@@ -1102,16 +1114,19 @@ def plot_stats_by_pattern(cluster_names: list = None,
                     k += 1
                 p += 1
             plt.subplots_adjust(wspace = 0.5, hspace = 0.7)
-            if not os.path.exists(path_to_results+'/plots_gene_cluster_differentiation/'):  
-                    os.makedirs(path_to_results+'/plots_gene_cluster_differentiation/')
             
-            save_path = path_to_results+'/plots_gene_cluster_differentiation/'+str(cluster) + ".png"
-            plt.savefig(save_path)
-            plt.close()
-           # if cell_show_plot!=None:
-            #    if cluster==cell_show_plot:
-             #       print('Plots for '+cluster)
-              #      plt.show()
-               #     plt.close()
-            #else:
-             #   plt.show()
+            if create_new_plot_folder:
+                if not os.path.exists(path_to_results+'/plot_genes_for_'+str(cluster)+'/'):  
+                    os.makedirs(path_to_results+'/plot_genes_for_'+str(cluster)+'/')
+            
+                save_path = path_to_results+'/plot_genes_for_'+str(cluster)+'/'+str(cluster) + ".png"
+                plt.savefig(save_path)
+                plt.close()
+            else:   
+                if not os.path.exists(path_to_results+'/plots_gene_cluster_differentiation/'):  
+                        os.makedirs(path_to_results+'/plots_gene_cluster_differentiation/')
+
+                save_path = path_to_results+'/plots_gene_cluster_differentiation/'+str(cluster) + ".png"
+                plt.savefig(save_path)
+                plt.close()
+        

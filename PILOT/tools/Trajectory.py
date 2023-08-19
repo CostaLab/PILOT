@@ -1294,7 +1294,7 @@ None.
 Performs gene cluster differentiation analysis based on specified parameters and saves the results.
 """
 
-def gene_cluster_differentiation(cellnames=[],sort=['Expression pattern', 'adjusted P-value', 'R-squared'],number_genes=10,cluster_names=[],font_size=12,gene_list=[]):
+def gene_cluster_differentiation(cellnames=[],sort=['Expression pattern', 'adjusted P-value', 'R-squared'],number_genes=10,cluster_names=[],font_size=14,gene_list=[]):
     path='Results_PILOT/'
     if len(gene_list)==0:
         gene_list=[]
@@ -1462,7 +1462,7 @@ def norm_morphological_features(path=None,column_names=[],name_cell=None):
     return data
                 
              
-def results_gene_cluster_differentiation(cluster_name=None,sort_columns=['pvalue'],ascending=[True],threshold=0.5):
+def results_gene_cluster_differentiation(cluster_name=None,sort_columns=['pvalue'],ascending=[True],threshold=0.5,p_value=0.05):
     """
     Retrieve and sort gene cluster statistics based on specified criteria.
 
@@ -1485,48 +1485,12 @@ def results_gene_cluster_differentiation(cluster_name=None,sort_columns=['pvalue
     df=statistics[statistics['cluster']==cluster_name]
     df['FC']=df['FC'].astype(float)
     df=df[df['FC'] >= threshold]
+    df['pvalue']=df['pvalue'].astype(float)
+    df=df[df['pvalue'] < p_value]
     df_sorted = df.sort_values(by=sort_columns, ascending=ascending)
+ 
     return df_sorted[['gene','cluster','waldStat','pvalue','FC','Expression pattern','fit-pvalue','fit-mod-rsquared']]  
 
 
 
 
-
-"""
-Explore specific genes within a cluster to analyze their patterns in comparison to other cell types.
-
-Parameters:
-    cluster_name : str
-        The name of the cluster you're interested in exploring.
-    sort : list
-        List of column names for sorting the results.
-    number_genes : int
-        Number of top genes to display for each pattern (linear, quadratic, etc.).
-    cluster_names : list
-        List of cluster names for exploration (if empty, all clusters will be considered).
-    font_size : int
-        Font size for text and labels in plots.
-    gene_list : list
-        List of specific genes to explore within the cluster.
-    fig_size: tuple,optional
-          Size of the plot.
-
-Returns:
-    Show the genes for the interested cell types
-"""
-
-def exploring_specific_genes(cluster_name='name_cell', sort=['Expression pattern', 'adjusted P-value', 'R-squared'],number_genes=10,cluster_names=[],font_size=12,gene_list=[],fig_size=(64, 56)):
-    path='Results_PILOT/'
-    gene_list = np.unique(gene_list)
-    infer_gene_cluster_differentiation(gene_list,path_to_results = path,font_size=font_size,cell_show_plot=cluster_name) 
-
-    # Load the PNG image file
-    image_path =path+'plots_gene_cluster_differentiation/'+cluster_name+'.png'  # Replace with the actual path to your PNG image
-    image = imread(image_path)
-    # Set the size of the figure
-    fig, ax = plt.subplots(figsize=fig_size)  # Adjust the width and height as needed
-
-    # Display the PNG image
-    ax.imshow(image)
-    ax.axis('off')  # Turn off axis labels and ticks
-    plt.show()

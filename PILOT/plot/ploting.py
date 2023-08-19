@@ -25,7 +25,7 @@ warnings.filterwarnings('ignore')
 import elpigraph
 from ..tools.Trajectory import *
 from ..tools.patients_sub_clustering import *
-
+from ..tools.Gene_cluster_specific import *
 
 
 """
@@ -614,3 +614,156 @@ def gene_annotation_cell_type_subgroup(cell_type: str = None,
             os.makedirs(path_to_results+'/Diff_Expressions_Results/'+cell_type+'/GO_analysis/')
     path_to_results=path_to_results+'/Diff_Expressions_Results/'+cell_type+'/GO_analysis/'
     plt.savefig(path_to_results+ group + ".pdf", bbox_inches = 'tight', facecolor='white', transparent=False)
+    
+
+"""
+Explore specific genes within a cluster to analyze their patterns in comparison to other cell types.
+
+Parameters:
+    cluster_name : str
+        The name of the cluster you're interested in exploring.
+    sort : list
+        List of column names for sorting the results.
+    number_genes : int
+        Number of top genes to display for each pattern (linear, quadratic, etc.).
+    cluster_names : list
+        List of cluster names for exploration (if empty, all clusters will be considered).
+    font_size : int
+        Font size for text and labels in plots.
+    gene_list : list
+        List of specific genes to explore within the cluster.
+    fig_size: tuple,optional
+          Size of the plot.
+
+Returns:
+    Show the genes for the interested cell types
+"""
+
+def exploring_specific_genes(cluster_name='cell_type',font_size=16,gene_list=[],fig_size=(64, 56),p_value=0.05,create_new_plot_folder=True):
+    path='Results_PILOT/'
+    file_name = "/Whole_expressions.csv"
+    cluster_names = [os.path.splitext(f)[0] for f in listdir(path + '/cells/') \
+                         if isfile(join(path + '/cells/', f))]
+    
+    all_stats_extend = pd.read_csv(path + "/gene_clusters_stats_extend.csv", sep = ",")
+    
+    with open(path + '/genes_dictionary.pkl', 'rb') as handle:
+        gene_dict = pickle.load(handle)
+    
+    pline = np.linspace(1, 20, 20)
+    filtered_all_stats_extend=all_stats_extend[all_stats_extend['gene'].isin(gene_list)]
+    filtered_all_stats_extend=filtered_all_stats_extend[filtered_all_stats_extend['cluster'].isin([cluster_name])]
+    
+ 
+    plot_stats_by_pattern(cluster_names, filtered_all_stats_extend, gene_dict, pline, path, file_name,font_size=font_size,p_value=p_value,create_new_plot_folder=create_new_plot_folder)
+    
+    # Load the PNG image file
+    if create_new_plot_folder:
+        image_path =path+'/plot_genes_for_'+str(cluster_name)+'/'+str(cluster_name) + ".png"  # Replace with the actual path to your PNG image
+        image = imread(image_path)
+    else:
+        
+        image_path =path+'plots_gene_cluster_differentiation/'+cluster_name+'.png'  # Replace with the actual path to your PNG image
+        image = imread(image_path)
+    
+    # Set the size of the figure
+    fig, ax = plt.subplots(figsize=fig_size)  # Adjust the width and height as needed
+
+    # Display the PNG image
+    ax.imshow(image)
+    ax.axis('off')  # Turn off axis labels and ticks
+    plt.show()
+    
+    
+    
+def go_enrichment(df,num_gos=20,cell_type='cell_type',fontsize=32,s=200, figsize = (15,12),color = 'tab:blue',dpi=100):
+    
+    
+    """
+    Perform Gene Ontology (GO) enrichment analysis and create a scatterplot of enriched terms.
+
+    Parameters:
+    -----------
+    df : DataFrame
+        Input DataFrame containing gene information.
+    num_gos : int, optional
+        Number of top enriched GO terms to visualize. Default is 20.
+    cell_type : str, optional
+        Name of the cell type for which the GO enrichment is performed. Default is 'cell_type'.
+    fontsize : int, optional
+        Font size for the plot title and labels. Default is 32.
+    s : int, optional
+        Marker size for the scatterplot. Default is 200.
+    figsize : tuple, optional
+        Figure size (width, height) in inches. Default is (15, 12).
+    color : str, optional
+        Color of the scatterplot markers. Default is 'tab:blue'.
+    dpi : int, optional
+        Dots per inch for the saved plot image. Default is 100.
+
+    Returns:
+    --------
+    None
+        Saves the scatterplot of enriched GO terms as a PDF file.
+    """
+    path='Results_PILOT/'
+    df_sorted =df
+    gp = GProfiler(return_dataframe=True)
+    gprofiler_results = gp.profile(organism = 'hsapiens',
+                query = list(df_sorted['gene'].values))
+
+    if(gprofiler_results.shape[0] < num_gos):
+        num_gos = gprofiler_results.shape[0]
+
+    #selected_gps = gprofiler_results.loc[0:num_gos,['name', 'p_value']]
+    selected_gps = gprofiler_results.head(num_gos)[['name', 'p_value']]
+
+    selected_gps['nlog10'] = -np.log10(selected_gps['p_value'].values)
+
+    figsize = figsize
+
+    plt.figure(figsize = figsize, dpi = dpi)
+    plt.style.use('default')
+    sns.scatterplot(data = selected_gps, x="nlog10", y="name", s = s, color =color)
+
+    plt.title('GO enrichment in ' + cell_type, fontsize = fontsize)
+
+    plt.xticks(size = fontsize)
+    plt.yticks(size = fontsize)
+
+    plt.ylabel("GO Terms", size = fontsize)
+    plt.xlabel("-$log_{10}$ (P-value)", size = fontsize)
+    if not os.path.exists(path+'GO/'):
+        os.makedirs(path+'GO/')
+    plt.savefig(path+'GO/'+cell_type+".pdf", bbox_inches = 'tight', facecolor='white', transparent=False)
+    
+def plt_gene_cluster_differentiation(cellnames=['healthy_CM','Myofib'],font_size=16,p_value=0.05):
+    """
+    Generate and save plots showcasing gene expression patterns for selected cell clusters.
+
+    Parameters:
+    -----------
+    cellnames : list, optional
+        List of cluster names for which gene expression patterns will be visualized. Default is ['healthy_CM', 'Myofib'].
+    font_size : int, optional
+        Font size for labels and titles in the plots. Default is 16.
+    p_value : float, optional
+        P-value threshold for significance. Default is 0.05.
+
+    Returns:
+    --------
+    None
+        Generates and saves scatterplots of gene expression patterns for selected clusters.
+    """
+    
+    file_name = "/Whole_expressions.csv"
+    path='Results_PILOT/'
+    all_stats_extend=pd.read_csv(path+'gene_clusters_stats_extend.csv')
+    with open(path + '/genes_dictionary.pkl', 'rb') as handle:
+        gene_dict = pickle.load(handle)
+    
+    pline = np.linspace(1, 20, 20)
+    plot_stats_by_pattern(cluster_names=cellnames, all_stats_extend=all_stats_extend, gene_dict=gene_dict, 
+                          pline=pline, path_to_results=path, file_name=file_name,font_size=font_size,
+                          p_value=p_value)
+    

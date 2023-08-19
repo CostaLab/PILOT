@@ -19,7 +19,7 @@ import scanpy as sc
 
 
 ```python
-adata=sc.read_h5ad('/Datasets/myocardial_infarction.h5ad')
+adata=sc.read_h5ad('Datasets/myocardial_infarction.h5ad')
 ```
 
 ###### Loading the required information and computing the Wasserstein distance:
@@ -107,7 +107,7 @@ Next, we can use the robust regression model to find cells whose proportions cha
 
 
 ```python
-pl.tl.cell_importance(adata)
+pl.tl.cell_importance(adata,height=45,width=38,fontsize=28)
 ```
 
 
@@ -142,9 +142,8 @@ for cell in adata.uns['cellnames']:
 
 ##### Cluster Specific Marker Changes:
 <div class="alert alert-block alert-info"> 
-The previous test, only finds genes with significant changes over time for a given cell type. However, it does not consider if a similar pattern and expression values are found in other clusters. To test this, we use a Wald test that compares the fit of the gene in the cluster vs. the fit of the gene in other clusters.
-
-The code snippet below emphasizes genes associated with ‘healthy CM’ and ‘Myofib’. Results are saved in ‘gene_clusters_stats_extend.csv’. You can also see the plots of significant marker genes at “plots_gene_cluster_differentiation”. There, the orange line indicates the fit in the target cell type (shown as orange lines) compared to other cell types (represented by grey lines) 
+The previous test, only finds genes with significant changes over time for a given cell type. However, it does not consider if a similar pattern and expression values are found in other clusters. To further select genes, we use a Wald test that compares the fit of the gene in the cluster vs. the fit of the gene in other clusters.
+In the code below, we consider top genes (regarding the regression fit) for two interesting cell types discussed in the manuscript (‘healthy CM’ and ‘Myofib’).
 </div>
 
 
@@ -155,14 +154,28 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM','Myofib'],number_gene
     
 
 
-##### Exploring the results for a specific cell type :
+
+```python
+pl.pl.plt_gene_cluster_differentiation(cellnames=['healthy_CM','Myofib'],font_size=20)
+```
+
+
+    <Figure size 8000x8000 with 0 Axes>
+
+
+
+    <Figure size 8000x8000 with 0 Axes>
+
+
+
 <div class="alert alert-block alert-info"> 
-For example, if we want to find the same myofibroblast genes as reported in the manuscript, we can do the following. To assist you in exploring the results, we offer a function called ‘results_gene_cluster_differentiation’. This function enables you to sort the results according to your preferences. For instance, if you’re interested in obtaining genes related to ‘Myofib’, you can use the function to first filter genes with larger FC than 0.5 and then sort the results based on p-values. This allows you to gain insights into the most relevant genes for your specific analysis.
+Test results are saved in ‘gene_clusters_stats_extend.csv’ and plots are saved at “plots_gene_cluster_differentiation”. To find a final list of genes, we only consider genes with a fold change higher than 0.5, i.e. genes which expression is increased in the cluster at hand; and we sort the genes based on the Wald test p-value. These can be seen bellow.
 </div>
 
 
 ```python
-pl.tl.results_gene_cluster_differentiation(cluster_name='Myofib').head(10)
+df=pl.tl.results_gene_cluster_differentiation(cluster_name='Myofib').head(50)
+df.head(15)
 ```
 
 
@@ -198,114 +211,169 @@ pl.tl.results_gene_cluster_differentiation(cluster_name='Myofib').head(10)
   </thead>
   <tbody>
     <tr>
-      <th>5775</th>
+      <th>5845</th>
       <td>RORA</td>
       <td>Myofib</td>
-      <td>1461.764959</td>
-      <td>0.000000e+00</td>
-      <td>0.899459</td>
+      <td>726.167859</td>
+      <td>4.443328e-157</td>
+      <td>0.940741</td>
       <td>quadratic down</td>
       <td>7.232834e-174</td>
       <td>0.587234</td>
     </tr>
     <tr>
-      <th>2642</th>
+      <th>2673</th>
       <td>GAS7</td>
       <td>Myofib</td>
-      <td>1120.683802</td>
-      <td>1.184877e-242</td>
-      <td>1.086644</td>
+      <td>405.944093</td>
+      <td>1.141824e-87</td>
+      <td>0.927879</td>
       <td>linear up quadratic down</td>
       <td>1.873033e-107</td>
       <td>0.570704</td>
     </tr>
     <tr>
-      <th>2151</th>
-      <td>EXT1</td>
+      <th>6418</th>
+      <td>SRSF11</td>
       <td>Myofib</td>
-      <td>146.307312</td>
-      <td>1.649235e-31</td>
-      <td>0.786136</td>
-      <td>linear up quadratic down</td>
-      <td>3.159831e-35</td>
-      <td>0.555757</td>
+      <td>97.018608</td>
+      <td>6.799134e-21</td>
+      <td>0.865734</td>
+      <td>linear down quadratic up</td>
+      <td>2.897170e-83</td>
+      <td>0.540767</td>
     </tr>
     <tr>
-      <th>1437</th>
+      <th>5027</th>
+      <td>PKNOX2</td>
+      <td>Myofib</td>
+      <td>78.876085</td>
+      <td>5.346793e-17</td>
+      <td>0.855504</td>
+      <td>quadratic down</td>
+      <td>1.039404e-117</td>
+      <td>0.544122</td>
+    </tr>
+    <tr>
+      <th>2876</th>
+      <td>GSN</td>
+      <td>Myofib</td>
+      <td>38.588189</td>
+      <td>2.121753e-08</td>
+      <td>0.633831</td>
+      <td>linear up quadratic down</td>
+      <td>2.942472e-279</td>
+      <td>0.601684</td>
+    </tr>
+    <tr>
+      <th>1282</th>
+      <td>CHD9</td>
+      <td>Myofib</td>
+      <td>33.359494</td>
+      <td>2.704617e-07</td>
+      <td>0.566664</td>
+      <td>linear up quadratic down</td>
+      <td>7.658862e-77</td>
+      <td>0.559604</td>
+    </tr>
+    <tr>
+      <th>2518</th>
+      <td>FN1</td>
+      <td>Myofib</td>
+      <td>27.507285</td>
+      <td>4.608276e-06</td>
+      <td>1.573680</td>
+      <td>linear down quadratic up</td>
+      <td>2.947389e-188</td>
+      <td>0.633774</td>
+    </tr>
+    <tr>
+      <th>1488</th>
       <td>COL6A3</td>
       <td>Myofib</td>
-      <td>95.945158</td>
-      <td>1.156600e-20</td>
+      <td>23.179833</td>
+      <td>3.704328e-05</td>
       <td>1.069156</td>
       <td>linear down quadratic up</td>
       <td>3.514298e-172</td>
       <td>0.608543</td>
     </tr>
     <tr>
-      <th>1231</th>
-      <td>CHD9</td>
-      <td>Myofib</td>
-      <td>60.300667</td>
-      <td>5.070009e-13</td>
-      <td>0.527488</td>
-      <td>linear up quadratic down</td>
-      <td>7.658862e-77</td>
-      <td>0.559604</td>
-    </tr>
-    <tr>
-      <th>2824</th>
-      <td>GSN</td>
-      <td>Myofib</td>
-      <td>41.793611</td>
-      <td>4.437819e-09</td>
-      <td>0.638136</td>
-      <td>linear up quadratic down</td>
-      <td>2.942472e-279</td>
-      <td>0.601684</td>
-    </tr>
-    <tr>
-      <th>1710</th>
-      <td>DCN</td>
-      <td>Myofib</td>
-      <td>27.320866</td>
-      <td>5.042427e-06</td>
-      <td>1.033697</td>
-      <td>linear up quadratic down</td>
-      <td>1.866152e-284</td>
-      <td>0.588602</td>
-    </tr>
-    <tr>
-      <th>5929</th>
+      <th>5983</th>
       <td>SEC24D</td>
       <td>Myofib</td>
-      <td>22.793274</td>
-      <td>4.459441e-05</td>
-      <td>0.806642</td>
+      <td>18.968725</td>
+      <td>2.775001e-04</td>
+      <td>0.812640</td>
       <td>linear down quadratic up</td>
       <td>6.604860e-64</td>
       <td>0.522700</td>
     </tr>
     <tr>
-      <th>1372</th>
+      <th>1881</th>
+      <td>DST</td>
+      <td>Myofib</td>
+      <td>16.720179</td>
+      <td>8.068366e-04</td>
+      <td>0.509683</td>
+      <td>linear down quadratic up</td>
+      <td>5.705082e-10</td>
+      <td>0.559501</td>
+    </tr>
+    <tr>
+      <th>3869</th>
+      <td>MGP</td>
+      <td>Myofib</td>
+      <td>14.382736</td>
+      <td>2.427875e-03</td>
+      <td>0.838889</td>
+      <td>quadratic down</td>
+      <td>1.327779e-225</td>
+      <td>0.571374</td>
+    </tr>
+    <tr>
+      <th>1443</th>
+      <td>COL3A1</td>
+      <td>Myofib</td>
+      <td>13.488091</td>
+      <td>3.691628e-03</td>
+      <td>1.240454</td>
+      <td>linear down quadratic up</td>
+      <td>0.000000e+00</td>
+      <td>0.665616</td>
+    </tr>
+    <tr>
+      <th>1423</th>
       <td>COL1A2</td>
       <td>Myofib</td>
-      <td>17.891454</td>
-      <td>4.631138e-04</td>
+      <td>13.174701</td>
+      <td>4.273640e-03</td>
       <td>1.327753</td>
       <td>linear down quadratic up</td>
       <td>0.000000e+00</td>
       <td>0.655032</td>
     </tr>
     <tr>
-      <th>2832</th>
-      <td>GXYLT2</td>
+      <th>2138</th>
+      <td>EXT1</td>
       <td>Myofib</td>
-      <td>16.558622</td>
-      <td>8.709144e-04</td>
-      <td>2.000205</td>
+      <td>13.100268</td>
+      <td>4.424713e-03</td>
+      <td>0.570081</td>
       <td>linear up quadratic down</td>
-      <td>2.402171e-85</td>
-      <td>0.537920</td>
+      <td>3.159831e-35</td>
+      <td>0.555757</td>
+    </tr>
+    <tr>
+      <th>1712</th>
+      <td>DCN</td>
+      <td>Myofib</td>
+      <td>9.286334</td>
+      <td>2.571648e-02</td>
+      <td>1.137701</td>
+      <td>linear up quadratic down</td>
+      <td>1.866152e-284</td>
+      <td>0.588602</td>
     </tr>
   </tbody>
 </table>
@@ -313,48 +381,48 @@ pl.tl.results_gene_cluster_differentiation(cluster_name='Myofib').head(10)
 
 
 
-
-```python
-pl.tl.exploring_specific_genes(cluster_name='Myofib',gene_list=['COL1A2','DCN','EXT1'])
-```
-
-
-    <Figure size 6400x5600 with 0 Axes>
-
-
-
-    <Figure size 6400x5600 with 0 Axes>
-
-
-
-    <Figure size 6400x5600 with 0 Axes>
-
-
-
-    <Figure size 6400x5600 with 0 Axes>
-
-
-
-    <Figure size 6400x5600 with 0 Axes>
-
-
-
-    <Figure size 6400x5600 with 0 Axes>
-
-
-
-    
-![png](Myocardial_infarction_files/Myocardial_infarction_22_6.png)
-    
-
-
 <div class="alert alert-block alert-info"> 
-The same criteria for healthy_CM cell type.
+Plots of genes are saved at 'plot_genes_for_Myofib' folder. We can also vizualise specfici genes, for example the ones discussed in PILOT manuscript (COL1A2, DCN and EXT1). In the plot, the orange line indicates the fit in the target cell type (shown as orange lines) compared to other cell types (represented by grey lines).
 </div>
 
 
 ```python
-pl.tl.results_gene_cluster_differentiation(cluster_name='healthy_CM').head(10)
+pl.pl.exploring_specific_genes(cluster_name='Myofib',font_size=20,gene_list=['COL1A2','DCN','EXT1'])
+```
+
+
+    <Figure size 8000x8000 with 0 Axes>
+
+
+
+    
+![png](Myocardial_infarction_files/Myocardial_infarction_24_1.png)
+    
+
+
+<div class="alert alert-block alert-info"> 
+Here is the GO enrichment for 50 the first top genes for Myofib.
+</div>
+
+
+```python
+pl.pl.go_enrichment(df,cell_type='Myofib')
+```
+
+
+    
+![png](Myocardial_infarction_files/Myocardial_infarction_26_0.png)
+    
+
+
+<div class="alert alert-block alert-info"> 
+We can repeate the same analysis for healthy_CM cell type by using the following commands.
+</div>
+
+
+```python
+df=pl.tl.results_gene_cluster_differentiation(cluster_name='healthy_CM').head(50)
+df.head(15)
 ```
 
 
@@ -390,114 +458,169 @@ pl.tl.results_gene_cluster_differentiation(cluster_name='healthy_CM').head(10)
   </thead>
   <tbody>
     <tr>
-      <th>4056</th>
-      <td>MYBPC3</td>
+      <th>7527</th>
+      <td>ZSWIM6</td>
       <td>healthy_CM</td>
-      <td>1845.821359</td>
-      <td>0.000000e+00</td>
-      <td>0.686940</td>
-      <td>linear up quadratic down</td>
-      <td>0.000000e+00</td>
-      <td>0.557570</td>
-    </tr>
-    <tr>
-      <th>729</th>
-      <td>C15orf41</td>
-      <td>healthy_CM</td>
-      <td>724.671481</td>
-      <td>9.379853e-157</td>
-      <td>1.310601</td>
+      <td>10732.437845</td>
+      <td>0.0</td>
+      <td>2.439606</td>
       <td>linear down quadratic up</td>
-      <td>1.773534e-200</td>
-      <td>0.556761</td>
+      <td>3.203533e-07</td>
+      <td>0.539056</td>
     </tr>
     <tr>
-      <th>3281</th>
-      <td>LDB3</td>
+      <th>755</th>
+      <td>BRAF</td>
       <td>healthy_CM</td>
-      <td>656.486992</td>
-      <td>5.713129e-142</td>
-      <td>1.426196</td>
+      <td>11070.052527</td>
+      <td>0.0</td>
+      <td>2.784995</td>
       <td>linear down quadratic up</td>
-      <td>1.511694e-238</td>
-      <td>0.546327</td>
+      <td>1.651067e-154</td>
+      <td>0.572363</td>
     </tr>
     <tr>
-      <th>1071</th>
-      <td>CDH2</td>
+      <th>6357</th>
+      <td>SRPK2</td>
       <td>healthy_CM</td>
-      <td>454.785922</td>
-      <td>2.994244e-98</td>
-      <td>1.556840</td>
-      <td>quadratic down</td>
-      <td>5.715370e-59</td>
-      <td>0.524421</td>
-    </tr>
-    <tr>
-      <th>1276</th>
-      <td>CMYA5</td>
-      <td>healthy_CM</td>
-      <td>397.294439</td>
-      <td>8.534816e-86</td>
-      <td>1.559703</td>
+      <td>2899.114236</td>
+      <td>0.0</td>
+      <td>2.343306</td>
       <td>linear down quadratic up</td>
-      <td>3.774063e-66</td>
-      <td>0.527869</td>
+      <td>4.902958e-02</td>
+      <td>0.529040</td>
     </tr>
     <tr>
-      <th>4747</th>
-      <td>PDE1C</td>
+      <th>6244</th>
+      <td>SORBS1</td>
       <td>healthy_CM</td>
-      <td>381.616277</td>
-      <td>2.123076e-82</td>
-      <td>1.317905</td>
+      <td>2038.349722</td>
+      <td>0.0</td>
+      <td>1.828163</td>
       <td>linear down quadratic up</td>
-      <td>0.000000e+00</td>
-      <td>0.591473</td>
+      <td>5.178918e-179</td>
+      <td>0.560146</td>
     </tr>
     <tr>
-      <th>2724</th>
-      <td>GPC5</td>
+      <th>1444</th>
+      <td>COL4A2</td>
       <td>healthy_CM</td>
-      <td>342.819206</td>
-      <td>5.351668e-74</td>
-      <td>0.940037</td>
-      <td>quadratic up</td>
-      <td>5.506685e-207</td>
-      <td>0.532028</td>
+      <td>2697.352511</td>
+      <td>0.0</td>
+      <td>1.928972</td>
+      <td>linear down quadratic up</td>
+      <td>5.469598e-47</td>
+      <td>0.547734</td>
     </tr>
     <tr>
-      <th>5718</th>
-      <td>RNF150</td>
+      <th>1564</th>
+      <td>CPNE5</td>
       <td>healthy_CM</td>
-      <td>334.905459</td>
-      <td>2.766278e-72</td>
-      <td>1.387484</td>
+      <td>7898.219297</td>
+      <td>0.0</td>
+      <td>2.928602</td>
       <td>linear down quadratic up</td>
       <td>0.000000e+00</td>
-      <td>0.577805</td>
+      <td>0.765984</td>
     </tr>
     <tr>
-      <th>6466</th>
-      <td>SVIL</td>
+      <th>1582</th>
+      <td>CREB5</td>
       <td>healthy_CM</td>
-      <td>276.206091</td>
-      <td>1.401942e-59</td>
-      <td>0.949376</td>
-      <td>linear down</td>
-      <td>6.592469e-10</td>
-      <td>0.517454</td>
-    </tr>
-    <tr>
-      <th>4578</th>
-      <td>PALLD</td>
-      <td>healthy_CM</td>
-      <td>245.180527</td>
-      <td>7.213877e-53</td>
-      <td>0.895723</td>
+      <td>14355.325817</td>
+      <td>0.0</td>
+      <td>3.577095</td>
       <td>linear down quadratic up</td>
-      <td>2.137328e-320</td>
-      <td>0.558163</td>
+      <td>2.412752e-295</td>
+      <td>0.669214</td>
+    </tr>
+    <tr>
+      <th>1659</th>
+      <td>CUX1</td>
+      <td>healthy_CM</td>
+      <td>11836.217139</td>
+      <td>0.0</td>
+      <td>2.296052</td>
+      <td>linear down quadratic up</td>
+      <td>2.555804e-16</td>
+      <td>0.584346</td>
+    </tr>
+    <tr>
+      <th>1688</th>
+      <td>DAB1</td>
+      <td>healthy_CM</td>
+      <td>2333.703271</td>
+      <td>0.0</td>
+      <td>3.148011</td>
+      <td>linear down quadratic up</td>
+      <td>0.000000e+00</td>
+      <td>0.645854</td>
+    </tr>
+    <tr>
+      <th>2520</th>
+      <td>FNDC3A</td>
+      <td>healthy_CM</td>
+      <td>2999.657669</td>
+      <td>0.0</td>
+      <td>2.638358</td>
+      <td>linear down quadratic up</td>
+      <td>1.411204e-18</td>
+      <td>0.541994</td>
+    </tr>
+    <tr>
+      <th>2613</th>
+      <td>FRMD5</td>
+      <td>healthy_CM</td>
+      <td>6497.378414</td>
+      <td>0.0</td>
+      <td>1.279514</td>
+      <td>linear up quadratic up</td>
+      <td>3.445313e-286</td>
+      <td>0.543240</td>
+    </tr>
+    <tr>
+      <th>3185</th>
+      <td>KDM2A</td>
+      <td>healthy_CM</td>
+      <td>3498.453036</td>
+      <td>0.0</td>
+      <td>2.095851</td>
+      <td>linear down quadratic up</td>
+      <td>7.834409e-04</td>
+      <td>0.519640</td>
+    </tr>
+    <tr>
+      <th>3269</th>
+      <td>L3MBTL4</td>
+      <td>healthy_CM</td>
+      <td>6616.669429</td>
+      <td>0.0</td>
+      <td>2.849918</td>
+      <td>linear down quadratic up</td>
+      <td>0.000000e+00</td>
+      <td>0.643816</td>
+    </tr>
+    <tr>
+      <th>3334</th>
+      <td>LDLRAD4</td>
+      <td>healthy_CM</td>
+      <td>1950.046140</td>
+      <td>0.0</td>
+      <td>1.231544</td>
+      <td>linear down quadratic up</td>
+      <td>4.568236e-276</td>
+      <td>0.567330</td>
+    </tr>
+    <tr>
+      <th>4942</th>
+      <td>PDLIM3</td>
+      <td>healthy_CM</td>
+      <td>3489.299461</td>
+      <td>0.0</td>
+      <td>3.290811</td>
+      <td>linear down quadratic up</td>
+      <td>2.326237e-257</td>
+      <td>0.589730</td>
     </tr>
   </tbody>
 </table>
@@ -507,13 +630,29 @@ pl.tl.results_gene_cluster_differentiation(cluster_name='healthy_CM').head(10)
 
 
 ```python
-
+pl.pl.exploring_specific_genes(cluster_name='healthy_CM',gene_list=list(df['gene'][0:20]))
 ```
+
+
+    <Figure size 8000x8000 with 0 Axes>
+
+
+
+    
+![png](Myocardial_infarction_files/Myocardial_infarction_29_1.png)
+    
+
 
 
 ```python
-
+pl.pl.go_enrichment(df,cell_type='healthy_CM')
 ```
+
+
+    
+![png](Myocardial_infarction_files/Myocardial_infarction_30_0.png)
+    
+
 
 
 ```python
