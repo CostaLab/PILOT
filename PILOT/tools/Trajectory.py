@@ -1462,7 +1462,7 @@ def norm_morphological_features(path=None,column_names=[],name_cell=None):
     return data
                 
              
-def results_gene_cluster_differentiation(cluster_name=None,sort_columns=['pvalue'],ascending=[True],threshold=0.5,p_value=0.05):
+def results_gene_cluster_differentiation(cluster_name=None,sort_columns=['pvalue'],ascending=[True],threshold=0.5,p_value=0.01):
     """
     Retrieve and sort gene cluster statistics based on specified criteria.
 

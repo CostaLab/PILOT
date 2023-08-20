@@ -639,7 +639,7 @@ Returns:
     Show the genes for the interested cell types
 """
 
-def exploring_specific_genes(cluster_name='cell_type',font_size=16,gene_list=[],fig_size=(64, 56),p_value=0.05,create_new_plot_folder=True):
+def exploring_specific_genes(cluster_name='cell_type',font_size=24,gene_list=[],fig_size=(64, 56),p_value=0.01,create_new_plot_folder=True):
     path='Results_PILOT/'
     file_name = "/Whole_expressions.csv"
     cluster_names = [os.path.splitext(f)[0] for f in listdir(path + '/cells/') \
@@ -737,7 +737,7 @@ def go_enrichment(df,num_gos=20,cell_type='cell_type',fontsize=32,s=200, figsize
         os.makedirs(path+'GO/')
     plt.savefig(path+'GO/'+cell_type+".pdf", bbox_inches = 'tight', facecolor='white', transparent=False)
     
-def plt_gene_cluster_differentiation(cellnames=['healthy_CM','Myofib'],font_size=16,p_value=0.05):
+def plt_gene_cluster_differentiation(cellnames=['healthy_CM','Myofib'],font_size=22,p_value=0.01):
     """
     Generate and save plots showcasing gene expression patterns for selected cell clusters.
 

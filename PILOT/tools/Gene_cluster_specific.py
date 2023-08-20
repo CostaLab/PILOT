@@ -1012,7 +1012,7 @@ def plot_stats_by_pattern(cluster_names: list = None,
                           pline: list = None,
                           path_to_results: str = None,
                           file_name: str = "/Whole_expressions.csv",
-                          font_size: int = 24,p_value=0.05,create_new_plot_folder=False):
+                          font_size: int = 24,p_value=0.01,create_new_plot_folder=False):
     """
     
 
