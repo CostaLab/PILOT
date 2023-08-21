@@ -149,7 +149,6 @@ In the code below, we consider top genes (regarding the regression fit) for two 
 
 ```python
 pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM','Myofib'],number_genes=70)
-
 ```
 
     
@@ -160,6 +159,29 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM','Myofib'],number_gene
 pl.pl.plt_gene_cluster_differentiation(cellnames=['healthy_CM','Myofib'])
 ```
 
+    Plot for healthy_CM
+
+
+
+    <Figure size 8000x8000 with 0 Axes>
+
+
+
+    
+![png](Myocardial_infarction_files/Myocardial_infarction_20_2.png)
+    
+
+
+    Plot for Myofib
+
+
+
+    <Figure size 8000x8000 with 0 Axes>
+
+
+
+    
+![png](Myocardial_infarction_files/Myocardial_infarction_20_5.png)
     
 
 
@@ -626,7 +648,7 @@ df.head(15)
 
 
 ```python
-pl.pl.exploring_specific_genes(cluster_name='healthy_CM',gene_list=list(df['gene'][0:20]))
+pl.pl.exploring_specific_genes(cluster_name='healthy_CM',gene_list=['HDAC9','MLIP','FHOD3'],p_value=0.05)
 ```
 
 

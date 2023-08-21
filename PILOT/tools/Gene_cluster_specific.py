@@ -1128,5 +1128,7 @@ def plot_stats_by_pattern(cluster_names: list = None,
 
                 save_path = path_to_results+'/plots_gene_cluster_differentiation/'+str(cluster) + ".png"
                 plt.savefig(save_path)
+                print('Plot for '+str(cluster))
+                plt.show()
                 plt.close()
         
