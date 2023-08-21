@@ -1484,7 +1484,7 @@ def results_gene_cluster_differentiation(cluster_name=None,sort_columns=['pvalue
     statistics=pd.read_csv(path+'/gene_clusters_stats_extend.csv')
     df=statistics[statistics['cluster']==cluster_name]
     df['FC']=df['FC'].astype(float)
-    df=df[df['FC'] >= threshold]
+    df=df[df['FC'] > threshold]
     df['pvalue']=df['pvalue'].astype(float)
     df=df[df['pvalue'] < p_value]
     df_sorted = df.sort_values(by=sort_columns, ascending=ascending)

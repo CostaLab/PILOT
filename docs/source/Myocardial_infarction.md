@@ -155,39 +155,8 @@ pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM','Myofib'],number_gene
 
 
 
-```python
-pl.pl.plt_gene_cluster_differentiation(cellnames=['healthy_CM','Myofib'])
-```
-
-    Plot for healthy_CM
-
-
-
-    <Figure size 8000x8000 with 0 Axes>
-
-
-
-    
-![png](Myocardial_infarction_files/Myocardial_infarction_20_2.png)
-    
-
-
-    Plot for Myofib
-
-
-
-    <Figure size 8000x8000 with 0 Axes>
-
-
-
-    
-![png](Myocardial_infarction_files/Myocardial_infarction_20_5.png)
-    
-
-
-
 <div class="alert alert-block alert-info"> 
-Test results are saved in ‘gene_clusters_stats_extend.csv’ and plots are saved at “plots_gene_cluster_differentiation”. To find a final list of genes, we only consider genes with a fold change higher than 0.5, i.e. genes which expression is increased in the cluster at hand; and we sort the genes based on the Wald test p-value. These can be seen bellow.
+Test results are saved in ‘gene_clusters_stats_extend.csv’. To find a final list of genes, we only consider genes with a fold change higher than 0.5, i.e. genes which expression is increased in the cluster at hand; and we sort the genes based on the Wald test p-value. These can be seen bellow.
 </div>
 
 
@@ -400,25 +369,6 @@ df.head(15)
 
 
 <div class="alert alert-block alert-info"> 
-Plots of genes are saved at 'plot_genes_for_Myofib' folder. We can also vizualise specfici genes, for example the ones discussed in PILOT manuscript (COL1A2, DCN and EXT1). In the plot, the orange line indicates the fit in the target cell type (shown as orange lines) compared to other cell types (represented by grey lines).
-</div>
-
-
-```python
-pl.pl.exploring_specific_genes(cluster_name='Myofib',gene_list=['COL1A2','DCN','EXT1'])
-```
-
-
-    <Figure size 8000x8000 with 0 Axes>
-
-
-
-    
-![png](Myocardial_infarction_files/Myocardial_infarction_24_1.png)
-    
-
-
-<div class="alert alert-block alert-info"> 
 Here is the GO enrichment for  the 50 first top genes of Myofib (FC >= 0.5 and p-value < 0.01).
 </div>
 
@@ -429,7 +379,26 @@ pl.pl.go_enrichment(df,cell_type='Myofib')
 
 
     
-![png](Myocardial_infarction_files/Myocardial_infarction_26_0.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_23_0.png)
+    
+
+
+<div class="alert alert-block alert-info"> 
+Plots of genes are saved at 'plot_genes_for_Myofib' folder. We can also vizualise specfici genes, for example the ones discussed in PILOT manuscript (COL1A2, DCN and EXT1). In the plot, the orange line indicates the fit in the target cell type (shown as orange lines) compared to other cell types (represented by grey lines).
+</div>
+
+
+```python
+pl.pl.exploring_specific_genes(cluster_name='Myofib',gene_list=['COL1A2','DCN','EXT1'])
+```
+
+
+
+
+
+
+    
+![png](Myocardial_infarction_files/Myocardial_infarction_25_1.png)
     
 
 
@@ -648,26 +617,26 @@ df.head(15)
 
 
 ```python
-pl.pl.exploring_specific_genes(cluster_name='healthy_CM',gene_list=['HDAC9','MLIP','FHOD3'],p_value=0.05)
-```
-
-
-    <Figure size 8000x8000 with 0 Axes>
-
-
-
-    
-![png](Myocardial_infarction_files/Myocardial_infarction_29_1.png)
-    
-
-
-
-```python
 pl.pl.go_enrichment(df,cell_type='healthy_CM')
 ```
 
 
     
-![png](Myocardial_infarction_files/Myocardial_infarction_30_0.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_28_0.png)
+    
+
+
+
+```python
+pl.pl.exploring_specific_genes(cluster_name='healthy_CM',gene_list=['MYBPC3','MYOM1','FHOD3'])
+```
+
+
+
+
+
+
+    
+![png](Myocardial_infarction_files/Myocardial_infarction_29_1.png)
     
 

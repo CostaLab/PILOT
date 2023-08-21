@@ -1044,7 +1044,7 @@ def plot_stats_by_pattern(cluster_names: list = None,
     for cluster in cluster_names:
         my_data = all_stats_extend[ (all_stats_extend['cluster'] == str(cluster)) & (all_stats_extend['pvalue'] < p_value)]
         my_data['FC']=my_data['FC'].astype(float)
-        my_data=my_data[my_data['FC'] >= 0.5]
+        my_data=my_data[my_data['FC'] > 0.5]
         sort_my_data = my_data.sort_values(['pvalue'],
                 ascending=[True]).groupby('Expression pattern').head(4)
         expression_patterns = np.unique(sort_my_data['Expression pattern'])
@@ -1104,7 +1104,7 @@ def plot_stats_by_pattern(cluster_names: list = None,
                     for item in (axs[p, k].get_xticklabels() + axs[p, k].get_yticklabels()):
                         item.set_fontsize(font_size)
 
-                    plt.text(.01, .99, 'p-value = %.2e ' % + Decimal(str(row['fit-pvalue'])),
+                    plt.text(.01, .99, 'p-value = %.2e ' % + Decimal(str(row['pvalue'])),
                              ha = 'left', va = 'top',
                              transform=axs[p, k].transAxes, size = font_size)
                     axs[p, k].yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
