@@ -148,7 +148,7 @@ In the code below, we consider top genes (regarding the regression fit) for two 
 
 
 ```python
-pl.tl.gene_cluster_differentiation(cellnames=['healthy_CM','Myofib'],number_genes=70)
+pl.tl.gene_cluster_differentiation(adata,cellnames=['healthy_CM','Myofib'],number_genes=70)
 ```
 
     
@@ -389,11 +389,11 @@ Plots of genes are saved at 'plot_genes_for_Myofib' folder. We can also vizualis
 
 
 ```python
-pl.pl.exploring_specific_genes(cluster_name='Myofib',gene_list=['COL1A2','DCN','EXT1'])
+pl.pl.exploring_specific_genes(cluster_name='Myofib',gene_list=['COL1A2','DCN','EXT1'],)
 ```
 
 
-
+    <Figure size 8000x8000 with 0 Axes>
 
 
 
@@ -632,7 +632,7 @@ pl.pl.exploring_specific_genes(cluster_name='healthy_CM',gene_list=['MYBPC3','MY
 ```
 
 
-
+    <Figure size 8000x8000 with 0 Axes>
 
 
 
@@ -640,3 +640,8 @@ pl.pl.exploring_specific_genes(cluster_name='healthy_CM',gene_list=['MYBPC3','MY
 ![png](Myocardial_infarction_files/Myocardial_infarction_29_1.png)
     
 
+
+
+```python
+
+```

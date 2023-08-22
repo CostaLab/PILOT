@@ -634,12 +634,15 @@ Parameters:
         List of specific genes to explore within the cluster.
     fig_size: tuple,optional
           Size of the plot.
+          
+    fc_ther: float, optional
+        threshold for FC.
 
 Returns:
     Show the genes for the interested cell types
 """
 
-def exploring_specific_genes(cluster_name='cell_type',font_size=24,gene_list=[],fig_size=(64, 56),p_value=0.01,create_new_plot_folder=True):
+def exploring_specific_genes(cluster_name='cell_type',font_size=24,gene_list=[],fig_size=(64, 56),p_value=0.01,create_new_plot_folder=True,fc_ther=0.5):
     path='Results_PILOT/'
     file_name = "/Whole_expressions.csv"
     cluster_names = [os.path.splitext(f)[0] for f in listdir(path + '/cells/') \
@@ -655,7 +658,7 @@ def exploring_specific_genes(cluster_name='cell_type',font_size=24,gene_list=[],
     filtered_all_stats_extend=filtered_all_stats_extend[filtered_all_stats_extend['cluster'].isin([cluster_name])]
     
  
-    plot_stats_by_pattern(cluster_names, filtered_all_stats_extend, gene_dict, pline, path, file_name,font_size=font_size,p_value=p_value,create_new_plot_folder=create_new_plot_folder)
+    plot_stats_by_pattern(cluster_names, filtered_all_stats_extend, gene_dict, pline, path, file_name,font_size=font_size,p_value=p_value,create_new_plot_folder=create_new_plot_folder,fc_ther=fc_ther)
     
     # Load the PNG image file
     if create_new_plot_folder:
@@ -737,7 +740,7 @@ def go_enrichment(df,num_gos=20,cell_type='cell_type',fontsize=32,s=200, figsize
         os.makedirs(path+'GO/')
     plt.savefig(path+'GO/'+cell_type+".pdf", bbox_inches = 'tight', facecolor='white', transparent=False)
     
-def plt_gene_cluster_differentiation(cellnames=['healthy_CM','Myofib'],font_size=22,p_value=0.01):
+def plt_gene_cluster_differentiation(cellnames=['healthy_CM','Myofib'],font_size=22,p_value=0.01,fc_ther=0.5):
     """
     Generate and save plots showcasing gene expression patterns for selected cell clusters.
 
@@ -749,7 +752,8 @@ def plt_gene_cluster_differentiation(cellnames=['healthy_CM','Myofib'],font_size
         Font size for labels and titles in the plots. Default is 16.
     p_value : float, optional
         P-value threshold for significance. Default is 0.05.
-
+    fc_ther: float, optional
+            threshold for FC.
     Returns:
     --------
     None
@@ -765,5 +769,5 @@ def plt_gene_cluster_differentiation(cellnames=['healthy_CM','Myofib'],font_size
     pline = np.linspace(1, 20, 20)
     plot_stats_by_pattern(cluster_names=cellnames, all_stats_extend=all_stats_extend, gene_dict=gene_dict, 
                           pline=pline, path_to_results=path, file_name=file_name,font_size=font_size,
-                          p_value=p_value)
+                          p_value=p_value,fc_ther=fc_ther)
     

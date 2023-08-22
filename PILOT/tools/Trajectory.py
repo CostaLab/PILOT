@@ -1294,8 +1294,10 @@ None.
 Performs gene cluster differentiation analysis based on specified parameters and saves the results.
 """
 
-def gene_cluster_differentiation(cellnames=[],sort=['Expression pattern', 'adjusted P-value', 'R-squared'],number_genes=10,cluster_names=[],font_size=14,gene_list=[]):
+def gene_cluster_differentiation(adata,cellnames=[],sort=['Expression pattern', 'adjusted P-value', 'R-squared'],number_genes=10,cluster_names=[],font_size=14,gene_list=[]):
     path='Results_PILOT/'
+    start=min(adata.uns['orders']['Time_score'])
+    end=max(adata.uns['orders']['Time_score'])
     if len(gene_list)==0:
         gene_list=[]
         for cell in cellnames: #Your interested cell, this gets the genes of these cells and compares with others
@@ -1305,10 +1307,12 @@ def gene_cluster_differentiation(cellnames=[],sort=['Expression pattern', 'adjus
             gene_list.extend(specific_data['Gene ID'].tolist())
         
         gene_list = np.unique(gene_list)
-        infer_gene_cluster_differentiation(gene_list,path_to_results = path,font_size=font_size)
+        infer_gene_cluster_differentiation(gene_list,path_to_results = path,font_size=font_size,start=start,
+                                       end=end)
     else:
         gene_list = np.unique(gene_list)
-        infer_gene_cluster_differentiation(gene_list,path_to_results = path,font_size=font_size)
+        infer_gene_cluster_differentiation(gene_list,path_to_results = path,font_size=font_size,start=start,
+                                       end=end)
 
 """
 Perform importance analysis for morphological features.

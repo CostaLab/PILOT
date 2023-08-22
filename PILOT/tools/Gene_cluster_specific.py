@@ -1012,7 +1012,7 @@ def plot_stats_by_pattern(cluster_names: list = None,
                           pline: list = None,
                           path_to_results: str = None,
                           file_name: str = "/Whole_expressions.csv",
-                          font_size: int = 24,p_value=0.01,create_new_plot_folder=False):
+                          font_size: int = 24,p_value=0.01,create_new_plot_folder=False,fc_ther=0.5):
     """
     
 
@@ -1033,6 +1033,8 @@ def plot_stats_by_pattern(cluster_names: list = None,
         The default is "/Whole_expressions.csv".
     font_size : int, optional
         Specify font size for labels and names. The default is 12.
+    fc_ther: float, optional
+        Threshold for FC.
 
     Returns
     -------
@@ -1044,7 +1046,7 @@ def plot_stats_by_pattern(cluster_names: list = None,
     for cluster in cluster_names:
         my_data = all_stats_extend[ (all_stats_extend['cluster'] == str(cluster)) & (all_stats_extend['pvalue'] < p_value)]
         my_data['FC']=my_data['FC'].astype(float)
-        my_data=my_data[my_data['FC'] > 0.5]
+        my_data=my_data[my_data['FC'] > fc_ther]
         sort_my_data = my_data.sort_values(['pvalue'],
                 ascending=[True]).groupby('Expression pattern').head(4)
         expression_patterns = np.unique(sort_my_data['Expression pattern'])
