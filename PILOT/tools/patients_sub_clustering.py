@@ -236,7 +236,6 @@ Returns:
     None
 '''
 
-
 def extract_cells_from_gene_expression_for_clustering(adata,sample_col,col_cell,cell_list,path_results=None,normalization=True,n_top_genes=2000,highly_variable_genes_=False):
     for cell in cell_list:
         adata_new = adata[adata.obs[col_cell].isin([cell]),:]
@@ -251,7 +250,8 @@ def extract_cells_from_gene_expression_for_clustering(adata,sample_col,col_cell,
             highly_variable_genes = adata_new.var['highly_variable']
             df=adata_new[:,highly_variable_genes].X
             df=pd.DataFrame(df.toarray())
-            df.columns=list(highly_variable_genes)
+            highly_variable_gene_names = adata_new.var_names[np.array(adata_new.var['highly_variable'])]
+            df.columns=list(highly_variable_gene_names)
         else:
             
             df=adata_new[:,adata_new.var_names].X
@@ -271,7 +271,6 @@ def extract_cells_from_gene_expression_for_clustering(adata,sample_col,col_cell,
         
         df.to_csv(path_results+cell+'.csv')
         
-
 def compute_diff_expressions(adata,cell_type: str = None,
                              proportions: pd.DataFrame = None,
                              selected_genes: list = None,
