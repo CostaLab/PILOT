@@ -20,8 +20,11 @@ import scanpy as sc
 
 
 ```python
-adata=sc.read_h5ad('Datasets/PDAC.h5ad')
+adata=sc.read_h5ad('PDAC.h5ad')
 ```
+
+    
+
 
 ##### Loading the required information and computing the Wasserstein distance:
 <div class="alert alert-block alert-info"> In order to work with PILOT, ensure that your Anndata object is loaded and contains the required information.
@@ -48,7 +51,7 @@ clusters_col='cell_types',sample_col='sampleID',status='status')
 
 ##### Ploting the Cost matrix and the Wasserstein distance:
 <div class="alert alert-block alert-info"> 
- Here we show the heatmaps of Cost matrix (cells) and Wasserstein distance (samples).      
+ Here we show the heatmaps of the Cost matrix (cells) and Wasserstein distance (samples).      
 </div>
 
 
@@ -117,16 +120,13 @@ Using the Silhouette scores of the previous step, we can find the optimal number
 proportion_df=pl.pl.clustering_emd(adata,res=adata.uns['best_res'])
 ```
 
-    WARNING: dendrogram data not found (using key=dendrogram_Leiden). Running `sc.tl.dendrogram` with default parameters. For fine tuning it is recommended to run `sc.tl.dendrogram` independently.
-
-
 
     
 ![png](Patients_sub_group_detection_files/Patients_sub_group_detection_14_1.png)
     
 
 
-Here we can see that whole of the Normal samples are in cluster 1, so we can rename the name of clusters for future analysis. This step is optional!
+Here we can see that all of the Normal samples are in cluster 1, so we can rename the name of clusters for future analysis. This step is optional!
 
 
 ```python
@@ -137,7 +137,7 @@ proportion_df.loc[proportion_df['Predicted_Labels']=='2', 'Predicted_Labels'] = 
 
 ##### Cell-type selection. 
 <div class="alert alert-block alert-info"> 
-Importantly, we determine which cell type derives the disease from the first stage to the second stage by detecting cell types having statistically significant changes between two sub-groups. This is done using Welch’s t-test, which is appropriate for unequal variances in two groups of samples.
+Importantly, we determine which cell type derives the disease from the first stage to the second stage by detecting cell types have statistically significant changes between two sub-groups. This is done using Welch’s t-test, which is appropriate for unequal variances in two groups of samples.
 
 Based on the adjusted p-value threshold you consider, you can choose how statistically significant the cell types you want to have.
   
@@ -189,7 +189,7 @@ pl.pl.plot_cell_types_distributions(proportion_df, cell_types=list(proportion_df
 
 
 <div class="alert alert-block alert-info"> 
-In the statistical table generated in your results path, all cell types sorted based on the score and their adjusted p-value.
+In the statistical table generated in your results path, all cell types are sorted based on the score and their adjusted p-value.
 cell types with positive scores shows the most differences cell types in group 1 compared with group 2 and negative scores shows the other way. 
 You can the results in 'Results_PILOT/Diff_Expressions_Results' folder.
 </div>
@@ -199,7 +199,7 @@ You can the results in 'Results_PILOT/Diff_Expressions_Results' folder.
 ##### Note:
 
 <div class="alert alert-block alert-info"> 
-This step needs the 'limma' package in R, You need to run this function to install it (if you already have not done)!
+This step needs the 'limma' package in R, You need to run this function to install it (if you have not already done)!
 </div>
 
 
@@ -359,8 +359,3 @@ pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 2
 ![png](Patients_sub_group_detection_files/Patients_sub_group_detection_43_0.png)
     
 
-
-
-```python
-
-```

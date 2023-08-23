@@ -29,43 +29,7 @@ warnings.filterwarnings('ignore')
 
 
 
-"""
-Calculate the Wasserstein (W) distance among samples using PCA representation and clustering information.
 
-Parameters
-----------
-adata : AnnData
-    Loaded AnnData object containing the data.
-emb_matrix : numpy.ndarray
-    PCA representation of data (variable).
-clusters_col : str
-    Column name in the observation level of 'adata' that represents cell types or clustering.
-sample_col : str
-    Column name in the observation level of 'adata' that represents samples or patients.
-status : str
-    Column name in the observation level of 'adata' that represents status or disease, e.g., control/case.
-regulizer : float, optional
-    Hyper-parameter of a Dirichlet distribution for regularization, by default 0.1.
-metric : str, optional
-    Metric for calculating the cost matrix, by default 'cosine'.
-regularized : bool, optional
-    Whether to use regularized optimal transport, by default True.
-reg : float, optional
-    Regularization parameter if 'regularized' is True, by default 0.1.
-res : float, optional
-    Resolution for Leiden clustering to achieve desired cluster count, by default 0.1.
-steper : float, optional
-    Stepper value for finding the best Leiden resolution, by default 0.01.
-data_type : str, optional
-    Type of your data, e.g., 'scRNA' or 'pathomics', by default 'scRNA'.
-return_sil_ari : bool, optional
-    Whether to return ARI (Adjusted Rand Index) or Silhouette score for assessing W distance effects, by default False.
-
-Returns
--------
-None
-    Calculates and stores the W distance among samples in the adata object.
-"""
 
 def wasserstein_distance(adata,emb_matrix='X_PCA',
 clusters_col='cell_types',sample_col='sampleID',status='status',
@@ -73,6 +37,44 @@ clusters_col='cell_types',sample_col='sampleID',status='status',
                                regulizer=0.2,normalization=True,
                                regularized='unreg',reg=0.1,
                                res=0.01,steper=0.01,data_type='scRNA',return_sil_ari=False):
+    
+    """
+    Calculate the Wasserstein (W) distance among samples using PCA representation and clustering information.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Loaded AnnData object containing the data.
+    emb_matrix : numpy.ndarray
+        PCA representation of data (variable).
+    clusters_col : str
+        Column name in the observation level of 'adata' that represents cell types or clustering.
+    sample_col : str
+        Column name in the observation level of 'adata' that represents samples or patients.
+    status : str
+        Column name in the observation level of 'adata' that represents status or disease, e.g., control/case.
+    regulizer : float, optional
+        Hyper-parameter of a Dirichlet distribution for regularization, by default 0.1.
+    metric : str, optional
+        Metric for calculating the cost matrix, by default 'cosine'.
+    regularized : bool, optional
+        Whether to use regularized optimal transport, by default True.
+    reg : float, optional
+        Regularization parameter if 'regularized' is True, by default 0.1.
+    res : float, optional
+        Resolution for Leiden clustering to achieve desired cluster count, by default 0.1.
+    steper : float, optional
+        Stepper value for finding the best Leiden resolution, by default 0.01.
+    data_type : str, optional
+        Type of your data, e.g., 'scRNA' or 'pathomics', by default 'scRNA'.
+    return_sil_ari : bool, optional
+        Whether to return ARI (Adjusted Rand Index) or Silhouette score for assessing W distance effects, by default False.
+
+    Returns
+    -------
+    None
+        Calculates and stores the W distance among samples in the adata object.
+    """
     
     
     if data_type=='scRNA':
@@ -112,21 +114,22 @@ clusters_col=clusters_col,sample_col=sample_col,status=status)
       
         
 
-"""
-Load h5ad data from the specified path.
 
-Parameters
-----------
-path : str
-    Path to the h5ad data file.
-
-Returns
--------
-AnnData
-    Loaded AnnData object containing the data from the specified path.
-"""
 
 def load_h5ad(path):
+    """
+    Load h5ad data from the specified path.
+
+    Parameters
+    ----------
+    path : str
+        Path to the h5ad data file.
+
+    Returns
+    -------
+    AnnData
+        Loaded AnnData object containing the data from the specified path.
+    """
     if isfile(path):
         adata=sc.read_h5ad(path)
         return adata
@@ -136,20 +139,21 @@ def load_h5ad(path):
     
     
 
-"""
-Create a folder named 'Results_PILOT' to save the generated results by PILOT.
 
-Parameters
-----------
-dataset : str
-    Name of your data.
-
-Returns
--------
-Created path.
-"""
 
 def set_path_for_results():
+    """
+    Create a folder named 'Results_PILOT' to save the generated results by PILOT.
+
+    Parameters
+    ----------
+    dataset : str
+        Name of your data.
+
+    Returns
+    -------
+    Created path.
+    """
     if not os.path.exists('Results_PILOT/plots'):
         os.makedirs('Results_PILOT/plots')
         return 'Results_PILOT/plots'
@@ -160,89 +164,91 @@ def set_path_for_results():
  
 
 
-"""
-Extract annotations and expression data from a scRNA dataset.
 
-Parameters
-----------
-adata : AnnData
-    Annotated data matrix.
-columns : list, optional
-    List of column names to extract from observation annotations, by default ['cell_type_original', 'patient_region', 'region', 'X_pca'].
-reclustering : bool, optional
-    Whether to perform reclustering based on annotations, by default False.
-reduction : bool, optional
-    Whether to apply dimensionality reduction, by default False.
-resu : float, optional
-    Resolution for Leiden clustering during reclustering, by default 0.1.
-max_value : int, optional
-    Maximum value to clip expression data, by default 10.
-target_sum : float, optional
-    Target sum for normalization, by default 1e4.
 
-Returns
--------
-AnnData
-    Annotated data matrix with extracted annotations and processed expression data.
+def extract_annot_expression(adata,columns=['cell_type_original','patient_region','region','X_pca'],reclustering=False,reduction=False,resu=0.1,max_value=10,target_sum=1e4): 
+    """
+    Extract annotations and expression data from a scRNA dataset.
 
-"""
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data matrix.
+    columns : list, optional
+        List of column names to extract from observation annotations, by default ['cell_type_original', 'patient_region', 'region', 'X_pca'].
+    reclustering : bool, optional
+        Whether to perform reclustering based on annotations, by default False.
+    reduction : bool, optional
+        Whether to apply dimensionality reduction, by default False.
+    resu : float, optional
+        Resolution for Leiden clustering during reclustering, by default 0.1.
+    max_value : int, optional
+        Maximum value to clip expression data, by default 10.
+    target_sum : float, optional
+        Target sum for normalization, by default 1e4.
 
-def extract_annot_expression(adata,columns=['cell_type_original','patient_region','region','X_pca'],reclustering=False,reduction=False,resu=0.1,max_value=10,target_sum=1e4):
+    Returns
+    -------
+    AnnData
+        Annotated data matrix with extracted annotations and processed expression data.
+
+    """
     
-        if reduction:
-                    sc.pp.normalize_total(adata, target_sum=target_sum)
-                    sc.pp.log1p(adata)
-                    sc.pp.scale(adata, max_value=max_value)
-                    sc.tl.pca(adata, svd_solver='arpack')
-                    data=adata.obsm['X_pca']  
-                    cols=[]
-                    for i in range(1,data.shape[1]+1):
-                            cols.append('PCA_'+str(i))
-                    data=pd.DataFrame(data,columns=cols)
-        if not reduction:
-                    data=adata.obsm[columns[3]]
+    if reduction:
+                sc.pp.normalize_total(adata, target_sum=target_sum)
+                sc.pp.log1p(adata)
+                sc.pp.scale(adata, max_value=max_value)
+                sc.tl.pca(adata, svd_solver='arpack')
+                data=adata.obsm['X_pca']  
+                cols=[]
+                for i in range(1,data.shape[1]+1):
+                        cols.append('PCA_'+str(i))
+                data=pd.DataFrame(data,columns=cols)
+    if not reduction:
+                data=adata.obsm[columns[3]]
 
-                    cols=[]
-                    for i in range(1,data.shape[1]+1):
-                            cols.append('PCA_'+str(i))
-                    data=pd.DataFrame(data,columns=cols)
+                cols=[]
+                for i in range(1,data.shape[1]+1):
+                        cols.append('PCA_'+str(i))
+                data=pd.DataFrame(data,columns=cols)
 
-        if reclustering:
-                    sc.pp.neighbors(adata)
-                    louvain = Louvain(resolution = resu)
-                    labels = louvain.fit_transform(adata.obsp['distances'])
-                    annot = pd.DataFrame()
-                    annot['cell_types']=labels 
-                    annot['sampleID']=list(adata.obs[columns[1]])
-                    annot['status']=list(adata.obs[columns[2]])
-        if not reclustering:
-                    annot=adata.obs[columns[0:3]]
-                    annot.columns=['cell_types','sampleID','status']                          
-        return data,annot    
+    if reclustering:
+                sc.pp.neighbors(adata)
+                louvain = Louvain(resolution = resu)
+                labels = louvain.fit_transform(adata.obsp['distances'])
+                annot = pd.DataFrame()
+                annot['cell_types']=labels 
+                annot['sampleID']=list(adata.obs[columns[1]])
+                annot['status']=list(adata.obs[columns[2]])
+    if not reclustering:
+                annot=adata.obs[columns[0:3]]
+                annot.columns=['cell_types','sampleID','status']                          
+    return data,annot    
 
 
-    
-'''
-This function extracts the needed inputs for PILOT(pathomics)
-Parameters
-----------
-adata : AnnData
-    Loaded AnnData object containing the data.
-emb_matrix : numpy.ndarray
-    PCA representation of data (variable).
-clusters_col : str
-    Column name in the observation level of 'adata' that represents cell types or clustering.
-sample_col : str
-    Column name in the observation level of 'adata' that represents samples or patients.
-status : str
-    Column name in the observation level of 'adata' that represents status or disease, e.g., control/case.
-Returns
--------
-AnnData
-    Annotated data matrix with extracted annotations and processed expression data.
-'''
+
+
 
 def extract_data_anno_scRNA_from_h5ad(adata,emb_matrix='PCA',clusters_col='cell_type',sample_col='sampleID',status='status'):
+    """
+    This function extracts the needed inputs for PILOT(pathomics)
+    Parameters
+    ----------
+    adata : AnnData
+        Loaded AnnData object containing the data.
+    emb_matrix : numpy.ndarray
+        PCA representation of data (variable).
+    clusters_col : str
+        Column name in the observation level of 'adata' that represents cell types or clustering.
+    sample_col : str
+        Column name in the observation level of 'adata' that represents samples or patients.
+    status : str
+        Column name in the observation level of 'adata' that represents status or disease, e.g., control/case.
+    Returns
+    -------
+    AnnData
+        Annotated data matrix with extracted annotations and processed expression data.
+    """
     global path_to_results
     data=adata.obsm[emb_matrix]  
     col_add=[]
@@ -258,26 +264,27 @@ def extract_data_anno_scRNA_from_h5ad(adata,emb_matrix='PCA',clusters_col='cell_
     return data,annot
 
 
-'''
-This function extracts the needed inputs for PILOT (scRNA)
-Parameters
-----------
-adata : AnnData
-    Loaded AnnData object containing the data.
-emb_matrix : numpy.ndarray
-    PCA representation of data (variable).
-clusters_col : str
-    Column name in the observation level of 'adata' that represents cell types or clustering.
-sample_col : str
-    Column name in the observation level of 'adata' that represents samples or patients.
-status : str
-    Column name in the observation level of 'adata' that represents status or disease, e.g., control/case.
-Returns
--------
-AnnData
-    Annotated data matrix with extracted annotations and processed expression data.
-'''
+
 def extract_data_anno_pathomics_from_h5ad(adata,var_names=[],clusters_col='Cell_type',sample_col='sampleID',status='status'):
+    """
+    This function extracts the needed inputs for PILOT (scRNA)
+    Parameters
+    ----------
+    adata : AnnData
+        Loaded AnnData object containing the data.
+    emb_matrix : numpy.ndarray
+        PCA representation of data (variable).
+    clusters_col : str
+        Column name in the observation level of 'adata' that represents cell types or clustering.
+    sample_col : str
+        Column name in the observation level of 'adata' that represents samples or patients.
+    status : str
+        Column name in the observation level of 'adata' that represents status or disease, e.g., control/case.
+    Returns
+    -------
+    AnnData
+        Annotated data matrix with extracted annotations and processed expression data.
+    """
     global path_to_results
     data=adata[:,var_names].X
     data=pd.DataFrame(data,columns=var_names)
@@ -290,27 +297,27 @@ def extract_data_anno_pathomics_from_h5ad(adata,var_names=[],clusters_col='Cell_
     return data,annot
 
               
-"""
-Load the annotation matrix from a specified path.
 
-Parameters
-----------
-path : str
-    Path to the annotation matrix file.
-name : str
-    Name of the annotation dataset.
-
-Returns
--------
-AnnotationMatrix
-    Loaded annotation matrix from the specified path.
-"""
        
     
 def load_annot(path,name):
+    
     """
-    loads the annotation matrix
+    Load the annotation matrix from a specified path.
+
+    Parameters
+    ----------
+    path : str
+    Path to the annotation matrix file.
+    name : str
+    Name of the annotation dataset.
+
+    Returns
+    -------
+    AnnotationMatrix
+    Loaded annotation matrix from the specified path.
     """
+    
    
     for format in [".csv"]:
         p = os.path.join(path,name + format)
@@ -325,23 +332,24 @@ def load_annot(path,name):
                 warn("loading " + name + "failed, check the path/name of this data")
                 
                 
-"""
-Load the gene expression matrix from a specified path.
 
-Parameters
-----------
-path : str
-    Path to the gene expression matrix file.
-name : str
-    Name of the expression dataset.
-
-Returns
--------
-ExpressionMatrix
-    Loaded gene expression matrix from the specified path.
-"""
                      
 def load_expression(path,name):
+    """
+    Load the gene expression matrix from a specified path.
+
+    Parameters
+    ----------
+    path : str
+        Path to the gene expression matrix file.
+    name : str
+        Name of the expression dataset.
+
+    Returns
+    -------
+    ExpressionMatrix
+        Loaded gene expression matrix from the specified path.
+    """
 
     
     for format in [".csv"]:
@@ -360,31 +368,32 @@ def load_expression(path,name):
         
    
 
-"""
-Calculate proportions of clusters per sample.
 
-Parameters
-----------
-df : DataFrame
-    Annotation data containing sample, cell/cluster, and status information.
-cell_col : int or str, optional
-    Cell-type/cluster column index or name in the annotation data, by default 0 (the 0th column).
-sample_col : str, optional
-    Sample column name in the annotation data, by default 1.
-regulizer : float, optional
-    Regularizer for smoothing proportions, by default 0.2.
-normalization : bool, optional
-    Whether to normalize the proportions, by default True.
-
-Returns
--------
-Dictionary
-    Cluster proportions per sample.
-    """
               
     
 
-def Cluster_Representations(df, cell_col = 0, sample_col = 1,regulizer=0.2,normalization=True):    
+def Cluster_Representations(df, cell_col = 0, sample_col = 1,regulizer=0.2,normalization=True): 
+    """
+    Calculate proportions of clusters per sample.
+
+    Parameters
+    ----------
+    df : DataFrame
+        Annotation data containing sample, cell/cluster, and status information.
+    cell_col : int or str, optional
+        Cell-type/cluster column index or name in the annotation data, by default 0 (the 0th column).
+    sample_col : str, optional
+        Sample column name in the annotation data, by default 1.
+    regulizer : float, optional
+        Regularizer for smoothing proportions, by default 0.2.
+    normalization : bool, optional
+        Whether to normalize the proportions, by default True.
+
+    Returns
+    -------
+    Dictionary
+        Cluster proportions per sample.
+    """
 
     dict ={}
 
@@ -424,29 +433,30 @@ def Cluster_Representations(df, cell_col = 0, sample_col = 1,regulizer=0.2,norma
     
     return dict
 
-"""
-Compute the cost matrix to find distances between clusters/cell-types.
 
-First, it calculates the median of each cluster, and then the dissimilarity between clusters is computed.
-
-Parameters
-----------
-annot : DataFrame
-    Annotation data containing cluster/cell-type information.
-data : numpy.ndarray
-    PCA representations.
-path : str
-    Path for saving the cost matrix.
-metric : str
-    Metric for calculating the distances between centroids.
-
-Returns
--------
-matrix of distances and dataframe    
-"""
 
 
 def cost_matrix(annot,data,metric='cosine'):
+    """
+    Compute the cost matrix to find distances between clusters/cell-types.
+
+    First, it calculates the median of each cluster, and then the dissimilarity between clusters is computed.
+
+    Parameters
+    ----------
+    annot : DataFrame
+        Annotation data containing cluster/cell-type information.
+    data : numpy.ndarray
+        PCA representations.
+    path : str
+        Path for saving the cost matrix.
+    metric : str
+        Metric for calculating the distances between centroids.
+
+    Returns
+    -------
+    matrix of distances and dataframe    
+    """
     cells = annot[annot.columns[0]].unique() # gets cells 
     centroids = []
 
@@ -462,29 +472,30 @@ def cost_matrix(annot,data,metric='cosine'):
          
     return dis,cost
 
-"""
-Compute Wasserstein distances among samples.
 
-By default, the method is classical OT (unregularized). You can change the method to regularized OT.
-
-Parameters
-----------
-Clu_rep : dict
-    Dictionary containing proportions matrix for each sample.
-cost : numpy.ndarray
-    Cost matrix.
-regularized : str, optional
-    Type of OT method, by default "unreg" (classical OT without regularization). Use "reg" for regularized OT.
-reg : float, optional
-    Regularization parameter for Sinkhorn regularization, by default 0.1.
-
-Returns
--------
-numpy.ndarray, DataFrame
-    Array of Wasserstein distances and a DataFrame of distances indexed by sample IDs.
-"""
 
 def wasserstein_d(Clu_rep, cost,regularized = "unreg", reg = 0.1):
+    """
+    Compute Wasserstein distances among samples.
+
+    By default, the method is classical OT (unregularized). You can change the method to regularized OT.
+
+    Parameters
+    ----------
+    Clu_rep : dict
+        Dictionary containing proportions matrix for each sample.
+    cost : numpy.ndarray
+        Cost matrix.
+    regularized : str, optional
+        Type of OT method, by default "unreg" (classical OT without regularization). Use "reg" for regularized OT.
+    reg : float, optional
+        Regularization parameter for Sinkhorn regularization, by default 0.1.
+
+    Returns
+    -------
+    numpy.ndarray, DataFrame
+        Array of Wasserstein distances and a DataFrame of distances indexed by sample IDs.
+    """
     
    
     samples_id = list(Clu_rep.keys())
@@ -509,33 +520,34 @@ def wasserstein_d(Clu_rep, cost,regularized = "unreg", reg = 0.1):
     
     return EMD,emd
 
-"""
-Perform clustering based on Wasserstein distances.
 
-Parameters
-----------
-EMD : numpy.ndarray
-    Wasserstein distances matrix.
-df : DataFrame
-    Annotation data.
-category : str, optional
-    Name of the column representing disease/status in annotation data, by default 'status'.
-sample_col : int, optional
-    Index of the column representing sample IDs in annotation data, by default 1.
-res : float, optional
-    Initial resolution for Leiden clustering, by default 0.01.
-metric : str, optional
-    Metric for neighborhood graph construction in knn space, by default 'cosine'.
-steper : float, optional
-    Stepper value for adjusting resolution to match the number of true labels, by default 0.01.
-
-Returns
--------
-numpy.ndarray, float, list
-    Cluster labels, Adjusted Rand Index (ARI), and true labels.
-"""
 
 def Clustering(EMD, df, category = 'status', sample_col=1,res = 0.01,metric ='cosine',steper=0.01):
+    """
+    Perform clustering based on Wasserstein distances.
+
+    Parameters
+    ----------
+    EMD : numpy.ndarray
+        Wasserstein distances matrix.
+    df : DataFrame
+        Annotation data.
+    category : str, optional
+        Name of the column representing disease/status in annotation data, by default 'status'.
+    sample_col : int, optional
+        Index of the column representing sample IDs in annotation data, by default 1.
+    res : float, optional
+        Initial resolution for Leiden clustering, by default 0.01.
+    metric : str, optional
+        Metric for neighborhood graph construction in knn space, by default 'cosine'.
+    steper : float, optional
+        Stepper value for adjusting resolution to match the number of true labels, by default 0.01.
+
+    Returns
+    -------
+    numpy.ndarray, float, list
+        Cluster labels, Adjusted Rand Index (ARI), and true labels.
+    """
 
     samples = df[df.columns[sample_col]].unique()
     condition = df[category]
@@ -574,88 +586,90 @@ def Clustering(EMD, df, category = 'status', sample_col=1,res = 0.01,metric ='co
     return labels, S, true_labels;
 
 
-"""
-Compute the Silhouette score based on Wasserstein distances.
 
-Parameters
-----------
-EMD : numpy.ndarray
-    Wasserstein distances matrix.
-real_labels : list or numpy.ndarray
-    True labels or ground truth.
-metric : str, optional
-    Metric for calculating pairwise distances, by default 'cosine'.
-
-Returns
--------
-float
-    Silhouette score indicating cluster quality.
-"""
 
 def Sil_computing(EMD, real_labels, metric='cosine'):
+    """
+    Compute the Silhouette score based on Wasserstein distances.
+
+    Parameters
+    ----------
+    EMD : numpy.ndarray
+        Wasserstein distances matrix.
+    real_labels : list or numpy.ndarray
+        True labels or ground truth.
+    metric : str, optional
+        Metric for calculating pairwise distances, by default 'cosine'.
+
+    Returns
+    -------
+    float
+        Silhouette score indicating cluster quality.
+    """
     Silhouette = metrics.silhouette_score(EMD, real_labels, metric =metric)
     #print("Silhouette score: ", Silhouette) 
     return Silhouette
 
 
 
-"""
-Find trajectories using Diffusion Maps and visualize the trajectory plot.
-
-Parameters
-----------
-adata : AnnData
-    Annotated data matrix containing EMD, annotations, and other necessary data.
-n_evecs : int, optional
-    Number of embedding vectors, by default 2.
-epsilon : float or str, optional
-    Method for choosing the epsilon in diffusion maps, by default 1.
-alpha : float, optional
-    Normalization parameter in the bandwidth function, by default 0.5.
-knn : int, optional
-    Number of nearest neighbors for constructing the kernel, by default 64.
-sample_col : int, optional
-    Index of the column representing sample IDs in annotation data, by default 1.
-clusters : str, optional
-    Name of the column representing clusters/categories in annotation data, by default 'status'.
-label_act : bool, optional
-    Whether to label data points with sample IDs, by default False.
-colors : list, optional
-    List of colors for different categories, by default ['#377eb8', '#ff7f00', '#e41a1c'].
-location_labels : str, optional
-    Location of the legend labels, by default 'center'.
-fig_h : int, optional
-    Height of the figure, by default 12.
-fig_w : int, optional
-    Width of the figure, by default 12.
-font_size : int, optional
-    Font size for labels and annotations, by default 24.
-axes_line_width : float, optional
-    Line width of the axes, by default 1.
-axes_color : str, optional
-    Color of the axes lines, by default 'black'.
-facecolor : str, optional
-    Background color of the figure, by default 'white'.
-point_size : int, optional
-    Size of the data points in the plot, by default 100.
-cmap : str, optional
-    Colormap for scatter plot, by default 'viridis'.
-fontsize_legend : int, optional
-    Font size of the legend, by default 24.
-alpha_trans : float, optional
-    Transparency level for data points, by default 1.
-plot_title : str, optional
-    Title of the plot, by default "Trajectory of the disease progression".
-
-Returns
--------
-None
-    Visualizes and saves the trajectory plot.
-"""
 
 
 
 def plt_trajectory(adata,n_evecs = 2, epsilon =1, alpha = 0.5,knn= 64, sample_col=1, clusters = 'status',label_act = False,colors=['#377eb8','#ff7f00','#e41a1c'],location_labels='center', fig_h=12,fig_w=12,font_size=24,axes_line_width=1,axes_color='black',facecolor='white',point_size=100,cmap='viridis',fontsize_legend=24,alpha_trans=1,plot_titel = "Trajectory of the disease progression"):
+    """
+    Find trajectories using Diffusion Maps and visualize the trajectory plot.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data matrix containing EMD, annotations, and other necessary data.
+    n_evecs : int, optional
+        Number of embedding vectors, by default 2.
+    epsilon : float or str, optional
+        Method for choosing the epsilon in diffusion maps, by default 1.
+    alpha : float, optional
+        Normalization parameter in the bandwidth function, by default 0.5.
+    knn : int, optional
+        Number of nearest neighbors for constructing the kernel, by default 64.
+    sample_col : int, optional
+        Index of the column representing sample IDs in annotation data, by default 1.
+    clusters : str, optional
+        Name of the column representing clusters/categories in annotation data, by default 'status'.
+    label_act : bool, optional
+        Whether to label data points with sample IDs, by default False.
+    colors : list, optional
+        List of colors for different categories, by default ['#377eb8', '#ff7f00', '#e41a1c'].
+    location_labels : str, optional
+        Location of the legend labels, by default 'center'.
+    fig_h : int, optional
+        Height of the figure, by default 12.
+    fig_w : int, optional
+        Width of the figure, by default 12.
+    font_size : int, optional
+        Font size for labels and annotations, by default 24.
+    axes_line_width : float, optional
+        Line width of the axes, by default 1.
+    axes_color : str, optional
+        Color of the axes lines, by default 'black'.
+    facecolor : str, optional
+        Background color of the figure, by default 'white'.
+    point_size : int, optional
+        Size of the data points in the plot, by default 100.
+    cmap : str, optional
+        Colormap for scatter plot, by default 'viridis'.
+    fontsize_legend : int, optional
+        Font size of the legend, by default 24.
+    alpha_trans : float, optional
+        Transparency level for data points, by default 1.
+    plot_title : str, optional
+        Title of the plot, by default "Trajectory of the disease progression".
+
+    Returns
+    -------
+    None
+        Visualizes and saves the trajectory plot.
+    """
+
     
     EMD=adata.uns['EMD']/adata.uns['EMD'].max()
     df=adata.uns['annot']
@@ -707,21 +721,22 @@ def plt_trajectory(adata,n_evecs = 2, epsilon =1, alpha = 0.5,knn= 64, sample_co
     
     
     
-"""
-Load Annotaion of the data.
-
-Parameters
-----------
-df : dataframe
-    the annotaion (samples/cells/status).
-
-Returns
--------
-Real lables of samples
-  
-"""        
+      
         
 def return_real_labels(df, category = 'status', sample_col=1):
+    """
+    Load Annotaion of the data.
+
+    Parameters
+    ----------
+    df : dataframe
+        the annotaion (samples/cells/status).
+
+    Returns
+    -------
+    Real lables of samples
+
+    """  
 
     samples = df[df.columns[sample_col]].unique()
     condition = df[category]
@@ -735,34 +750,35 @@ def return_real_labels(df, category = 'status', sample_col=1):
     
     return true_labels;
         
-"""
-Plot heatmaps of cost matrix and Wasserstein distances.
 
-Parameters
-----------
-adata : AnnData
-    Annotated data matrix containing annotations, cost matrix, and Wasserstein distances.
-figsize_h : int, optional
-    Height of the heatmap figure, by default 12.
-figsize_w : int, optional
-    Width of the heatmap figure, by default 12.
-col_cluster : bool, optional
-    Whether to cluster the columns, by default True.
-row_cluster : bool, optional
-    Whether to cluster the rows, by default True.
-cmap : str, optional
-    Colormap for the heatmaps, by default 'Blues_r'.
-font_scale : int, optional
-    Font scale for labels and annotations, by default 2.
-
-Returns
--------
-None
-    Plots and saves heatmaps of the cost matrix and Wasserstein distances.
-"""
 
     
 def plt_heatmaps(adata,figsize_h=12,figsize_w=12,col_cluster=True,row_cluster=True,cmap='Blues_r',font_scale=2):
+    """
+    Plot heatmaps of cost matrix and Wasserstein distances.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data matrix containing annotations, cost matrix, and Wasserstein distances.
+    figsize_h : int, optional
+        Height of the heatmap figure, by default 12.
+    figsize_w : int, optional
+        Width of the heatmap figure, by default 12.
+    col_cluster : bool, optional
+        Whether to cluster the columns, by default True.
+    row_cluster : bool, optional
+        Whether to cluster the rows, by default True.
+    cmap : str, optional
+        Colormap for the heatmaps, by default 'Blues_r'.
+    font_scale : int, optional
+        Font scale for labels and annotations, by default 2.
+
+    Returns
+    -------
+    None
+        Plots and saves heatmaps of the cost matrix and Wasserstein distances.
+    """
     annot=adata.uns['annot']
     cost=adata.uns['cost']
     path=path_to_results
@@ -785,44 +801,45 @@ def plt_heatmaps(adata,figsize_h=12,figsize_w=12,col_cluster=True,row_cluster=Tr
     
     
 
-"""
-Fit an Elastic Principal Graph to the data and extract pseudotime information.
 
-Parameters
-----------
-adata : AnnData
-    Annotated data matrix containing embeddings and other necessary data.
-NumNodes : int, optional
-    Number of nodes for building the backbone, by default 20.
-source_node : int, optional
-    Index of the source node to start pseudotime estimation, by default 0.
-show_text : bool, optional
-    Whether to show numbers in the backbone plot, by default True.
-Do_PCA : bool, optional
-    Whether to perform PCA on the nodes, by default False.
-fig_x_size : int, optional
-    Width of the figure, by default 12.
-fig_y_size : int, optional
-    Height of the figure, by default 12.
-X_color : str, optional
-    Color of the X-axis in the plot, by default 'r'.
-Node_color : str, optional
-    Color of the backbone's nodes, by default 'k'.
-DimToPlot : list, optional
-    List of integers specifying the PCs or dimensions to plot, by default [0, 1].
-facecolor : str, optional
-    Background color of the figure, by default 'white'.
-title : str, optional
-    Title of the plot, by default 'Principal graph'.
-
-Returns
--------
-None
-    Fits an Elastic Principal Graph, plots it, and extracts pseudotime information.
-"""
 
 
 def fit_pricipla_graph(adata,NumNodes=20,source_node=0,show_text=True,Do_PCA=False,fig_x_size=12,fig_y_size=12,X_color='r', Node_color='k', DimToPlot=[0, 1],facecolor='white',title='Principal graph'):
+    """
+    Fit an Elastic Principal Graph to the data and extract pseudotime information.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data matrix containing embeddings and other necessary data.
+    NumNodes : int, optional
+        Number of nodes for building the backbone, by default 20.
+    source_node : int, optional
+        Index of the source node to start pseudotime estimation, by default 0.
+    show_text : bool, optional
+        Whether to show numbers in the backbone plot, by default True.
+    Do_PCA : bool, optional
+        Whether to perform PCA on the nodes, by default False.
+    fig_x_size : int, optional
+        Width of the figure, by default 12.
+    fig_y_size : int, optional
+        Height of the figure, by default 12.
+    X_color : str, optional
+        Color of the X-axis in the plot, by default 'r'.
+    Node_color : str, optional
+        Color of the backbone's nodes, by default 'k'.
+    DimToPlot : list, optional
+        List of integers specifying the PCs or dimensions to plot, by default [0, 1].
+    facecolor : str, optional
+        Background color of the figure, by default 'white'.
+    title : str, optional
+        Title of the plot, by default 'Principal graph'.
+
+    Returns
+    -------
+    None
+        Fits an Elastic Principal Graph, plots it, and extracts pseudotime information.
+    """
     path=path_to_results
     emb=adata.uns['embedding']
     pg_curve = elpigraph.computeElasticPrincipalTree(emb,NumNodes=NumNodes)[0]
@@ -842,49 +859,50 @@ def fit_pricipla_graph(adata,NumNodes=20,source_node=0,show_text=True,Do_PCA=Fal
     
 
 
-"""
-Order cells based on estimated time and visualize cell type importance.
-
-Parameters
-----------
-adata : AnnData
-    Annotated data matrix containing necessary data.
-heatmap_h : int, optional
-    Height of the heatmap figure, by default 20.
-heatmap_w : int, optional
-    Width of the heatmap figure, by default 12.
-width : int, optional
-    Width of the plot, by default 40.
-height : int, optional
-    Height of the plot, by default 35.
-xlim : int, optional
-    Limit for x-axis in the plot, by default 5.
-p_val : float, optional
-    P-value for filtering the fitting models, by default 1.
-plot_cell : bool, optional
-    Whether to plot the cell type importance, by default True.
-point_size : int, optional
-    Size of points in the plot, by default 100.
-color_back : str, optional
-    Background color of the plot, by default 'white'.
-fontsize : int, optional
-    Font size for labels and annotations, by default 20.
-alpha : float, optional
-    Transparency level for plotting, by default 1.
-cmap : str, optional
-    Colormap for plotting, by default 'viridis'.
-save_as_pdf : bool, optional
-    Whether to save the plot as PDF, by default False.
-
-Returns
--------
-None
-    Visualizes and saves the cell type importance plot.
-"""
 
 
 
 def cell_importance(adata,heatmap_h=20,heatmap_w=12,width=40,height=35,xlim=5,p_val=1,plot_cell=True,point_size=100,color_back='white',fontsize=20,alpha=1,cmap='viridis',save_as_pdf=True):
+    """
+    Order cells based on estimated time and visualize cell type importance.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data matrix containing necessary data.
+    heatmap_h : int, optional
+        Height of the heatmap figure, by default 20.
+    heatmap_w : int, optional
+        Width of the heatmap figure, by default 12.
+    width : int, optional
+        Width of the plot, by default 40.
+    height : int, optional
+        Height of the plot, by default 35.
+    xlim : int, optional
+        Limit for x-axis in the plot, by default 5.
+    p_val : float, optional
+        P-value for filtering the fitting models, by default 1.
+    plot_cell : bool, optional
+        Whether to plot the cell type importance, by default True.
+    point_size : int, optional
+        Size of points in the plot, by default 100.
+    color_back : str, optional
+        Background color of the plot, by default 'white'.
+    fontsize : int, optional
+        Font size for labels and annotations, by default 20.
+    alpha : float, optional
+        Transparency level for plotting, by default 1.
+    cmap : str, optional
+        Colormap for plotting, by default 'viridis'.
+    save_as_pdf : bool, optional
+        Whether to save the plot as PDF, by default False.
+
+    Returns
+    -------
+    None
+        Visualizes and saves the cell type importance plot.
+    """
+
     
     path=path_to_results
     real_labels=adata.uns['real_labels']
@@ -959,125 +977,133 @@ def cell_importance(adata,heatmap_h=20,heatmap_w=12,width=40,height=35,xlim=5,p_
     adata.uns['orders']=pathies_cell_proportions[['sampleID','Time_score']]
  
 
-"""
-Extract gene expression data for specific cells and associate them with pseudotime.
-
-Parameters
-----------
-adata : AnnData
-    Annotated data matrix containing gene expression data.
-sample_col : str
-    Name of the column representing sample IDs in annotation data.
-col_cell : str
-    Name of the column representing cell types in annotation data.
-cell_list : list, optional
-    List of cell types to extract, by default an empty list (extract all cell types).
-normalize : bool, optional
-    Whether to normalize and log-transform the gene expression data, by default True.
-
-Returns
--------
-None
-    Extracts and saves gene expression data for specified cells associated with pseudotime.
-"""
 
 
 def extract_cells_from_gene_expression(adata,sample_col,col_cell,cell_list=[],normalize=True):
+    """
+    Extract gene expression data for specific cells and associate them with pseudotime.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data matrix containing gene expression data.
+    sample_col : str
+        Name of the column representing sample IDs in annotation data.
+    col_cell : str
+        Name of the column representing cell types in annotation data.
+    cell_list : list, optional
+        List of cell types to extract, by default an empty list (extract all cell types).
+    normalize : bool, optional
+        Whether to normalize and log-transform the gene expression data, by default True.
+
+    Returns
+    -------
+    None
+        Extracts and saves gene expression data for specified cells associated with pseudotime.
+    """
+
     
-        path_results='Results_PILOT'
-        orders=adata.uns['orders']
-        
-        if len(cell_list)==0:
-            cell_types=adata.uns['cellnames']
-        else:
-            cell_types=cell_list
-            
-        
-        for cell in cell_types:
-            
-            adata_new = adata[adata.obs[col_cell].isin([cell]),:]
-            if normalize:
-                sc.pp.normalize_total(adata_new, target_sum=1e4)
-                sc.pp.log1p(adata_new)
-            df=adata_new[:,adata_new.var_names].X
-            df=pd.DataFrame(df.toarray())
-            df.columns=adata_new.var_names
-            df['sampleID']=list(adata_new.obs[sample_col])
-            joint=orders.merge(df,on='sampleID')
-            if not os.path.exists(path_results+'/cells/'):
-                os.makedirs(path_results+'/cells/') 
-            joint.to_csv(path_results+'/cells/'+cell+'.csv')
+    path_results='Results_PILOT'
+    orders=adata.uns['orders']
+
+    if len(cell_list)==0:
+        cell_types=adata.uns['cellnames']
+    else:
+        cell_types=cell_list
+
+
+    for cell in cell_types:
+
+        adata_new = adata[adata.obs[col_cell].isin([cell]),:]
+        if normalize:
+            sc.pp.normalize_total(adata_new, target_sum=1e4)
+            sc.pp.log1p(adata_new)
+        df=adata_new[:,adata_new.var_names].X
+        df=pd.DataFrame(df.toarray())
+        df.columns=adata_new.var_names
+        df['sampleID']=list(adata_new.obs[sample_col])
+        joint=orders.merge(df,on='sampleID')
+        if not os.path.exists(path_results+'/cells/'):
+            os.makedirs(path_results+'/cells/') 
+        joint.to_csv(path_results+'/cells/'+cell+'.csv')
+
+        return joint
 
 
 
 
-"""
-Order genes based on estimated time and visualize gene importance.
-
-Parameters
-----------
-adata : AnnData
-    Annotated data matrix containing gene expression data.
-name_cell : str
-    Name of the cell type for which to analyze gene importance.
-col : str, optional
-    Name of the time column, by default 'Time_score'.
-genes_index : list, optional
-    Indices of genes in the data file, by default an empty list (use all genes).
-p_value : float, optional
-    P-value for filtering the fitting models, by default 0.05.
-max_iter_huber : int, optional
-    Number of iterations for Huber model, by default 100.
-epsilon_huber : float, optional
-    Epsilon parameter for Huber model, by default 1.35.
-x_lim : int, optional
-    Limit for x-axis in the plot, by default 4.
-width : int, optional
-    Width of the plot, by default 20.
-height : int, optional
-    Height of the plot, by default 30.
-store_data : bool, optional
-    Whether to save the data, by default True.
-genes_interesting : list, optional
-    List of interesting gene names, by default an empty list.
-modify_r2 : bool, optional
-    Use modified R squared, by default False.
-model_type : str, optional
-    Model type ('HuberRegressor' or 'LinearRegression'), by default 'HuberRegressor'.
-fontsize : int, optional
-    Font size for labels and annotations, by default 8.
-alpha : float, optional
-    Transparency level for plotting, by default 0.5.
-cmap : str, optional
-    Colormap for plotting, by default 'viridis'.
-color_back : str, optional
-    Background color of the plot, by default None.
-save_as_pdf : bool, optional
-    Whether to save the plot as PDF, by default False.
-plot_genes : bool, optional
-    Whether to plot the gene importance, by default True.
-colnames : list, optional
-    List of column names (for pathmics data), by default an empty list.
-sample_col : str, optional
-    Name of the sample ID column, by default 'sampleID'.
-col_cell : str, optional
-    Name of the cell type column, by default 'cell_types'.
-
-Returns
--------
-None
-    Visualizes and saves gene importance plots.
-"""
 
             
 def genes_importance(adata,name_cell,col='Time_score',genes_index=[],p_value=0.05,max_iter_huber=100,epsilon_huber=1.35,x_lim=4,width=20,height=30,store_data=True,genes_interesting=[],modify_r2 = False,model_type = 'HuberRegressor',fontsize=8,alpha=0.5,cmap='viridis',color_back=None,save_as_pdf=False,plot_genes=True,colnames=[],sample_col='sampleID',col_cell='cell_types'):
     
+    """
+    Order genes based on estimated time and visualize gene importance.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data matrix containing gene expression data.
+    name_cell : str
+        Name of the cell type for which to analyze gene importance.
+    col : str, optional
+        Name of the time column, by default 'Time_score'.
+    genes_index : list, optional
+        Indices of genes in the data file, by default an empty list (use all genes).
+    p_value : float, optional
+        P-value for filtering the fitting models, by default 0.05.
+    max_iter_huber : int, optional
+        Number of iterations for Huber model, by default 100.
+    epsilon_huber : float, optional
+        Epsilon parameter for Huber model, by default 1.35.
+    x_lim : int, optional
+        Limit for x-axis in the plot, by default 4.
+    width : int, optional
+        Width of the plot, by default 20.
+    height : int, optional
+        Height of the plot, by default 30.
+    store_data : bool, optional
+        Whether to save the data, by default True.
+    genes_interesting : list, optional
+        List of interesting gene names, by default an empty list.
+    modify_r2 : bool, optional
+        Use modified R squared, by default False.
+    model_type : str, optional
+        Model type ('HuberRegressor' or 'LinearRegression'), by default 'HuberRegressor'.
+    fontsize : int, optional
+        Font size for labels and annotations, by default 8.
+    alpha : float, optional
+        Transparency level for plotting, by default 0.5.
+    cmap : str, optional
+        Colormap for plotting, by default 'viridis'.
+    color_back : str, optional
+        Background color of the plot, by default None.
+    save_as_pdf : bool, optional
+        Whether to save the plot as PDF, by default False.
+    plot_genes : bool, optional
+        Whether to plot the gene importance, by default True.
+    colnames : list, optional
+        List of column names (for pathmics data), by default an empty list.
+    sample_col : str, optional
+        Name of the sample ID column, by default 'sampleID'.
+    col_cell : str, optional
+        Name of the cell type column, by default 'cell_types'.
+
+    Returns
+    -------
+    None
+        Visualizes and saves gene importance plots.
+    """
+
+    
     path='Results_PILOT'
     if not os.path.exists(path+'/cells/'+name_cell+'.csv'):
-        extract_cells_from_gene_expression(adata,sample_col=sample_col,col_cell=col_cell,cell_list=[name_cell])
+        data=extract_cells_from_gene_expression(adata,sample_col=sample_col,col_cell=col_cell,cell_list=[name_cell])
     
-    
-    data =loadTarget(path+'/cells/', name_cell)
+    elif os.path.exists(path+'/cells/'+name_cell+'.csv'):
+        
+        data =loadTarget(path+'/cells/', name_cell)
+        
+        
     if len(colnames)!=0:  #for pathmics data
         for col in colnames:
             data[col]=np.log(data[col]+1)
@@ -1144,41 +1170,42 @@ def genes_importance(adata,name_cell,col='Time_score',genes_index=[],p_value=0.0
                 plt.savefig(path+'/Markers/'+name_cell+'/'+'Interesting genes_ranking for cell type '+name_cell+'.png')
 
 
-"""
-Recluster data using Louvain clustering algorithm.
 
-Parameters
-----------
-adata : AnnData or ndarray
-    Annotated data matrix or ndarray containing gene expression data.
-resu : float, optional
-    Resolution parameter for Louvain clustering, by default 0.01.
-normalization : bool, optional
-    Whether to perform data normalization, by default False.
-target_sum : float, optional
-    Target sum for data normalization, by default 1e6.
-n_neighbor : int, optional
-    Number of neighbors for neighborhood graph construction, by default 15.
-method_ : str, optional
-    Method for constructing the neighborhood graph ('umap' or other), by default 'umap'.
-metric_t : str, optional
-    Metric for calculating distances between cells, by default 'cosine'.
-mode : str, optional
-    Mode for clustering ('distances' or 'connectivities'), by default 'distances'.
-origine_scr_rna : bool, optional
-    Whether the data comes from original single-cell RNA-seq data, by default False.
-dimension_rect : bool, optional
-    Whether to use dimensionality reduction (PCA), by default False.
-n_component : int, optional
-    Number of components for PCA if dimension_rect is True, by default 25.
-
-Returns
--------
-labels : ndarray
-    Cluster labels assigned by Louvain clustering algorithm.
-"""
     
 def reclustering_data(adata,resu=0.01,normalization=False,target_sum=1e6,n_neighbor=15,method_='umap', metric_t = 'cosine',mode='distances',origine_scr_rna=False,dimension_rect=False,n_component=25):
+    """
+    Recluster data using Louvain clustering algorithm.
+
+    Parameters
+    ----------
+    adata : AnnData or ndarray
+        Annotated data matrix or ndarray containing gene expression data.
+    resu : float, optional
+        Resolution parameter for Louvain clustering, by default 0.01.
+    normalization : bool, optional
+        Whether to perform data normalization, by default False.
+    target_sum : float, optional
+        Target sum for data normalization, by default 1e6.
+    n_neighbor : int, optional
+        Number of neighbors for neighborhood graph construction, by default 15.
+    method_ : str, optional
+        Method for constructing the neighborhood graph ('umap' or other), by default 'umap'.
+    metric_t : str, optional
+        Metric for calculating distances between cells, by default 'cosine'.
+    mode : str, optional
+        Mode for clustering ('distances' or 'connectivities'), by default 'distances'.
+    origine_scr_rna : bool, optional
+        Whether the data comes from original single-cell RNA-seq data, by default False.
+    dimension_rect : bool, optional
+        Whether to use dimensionality reduction (PCA), by default False.
+    n_component : int, optional
+        Number of components for PCA if dimension_rect is True, by default 25.
+
+    Returns
+    -------
+    labels : ndarray
+        Cluster labels assigned by Louvain clustering algorithm.
+    """
     
     if origine_scr_rna:
         #Normalization
@@ -1211,24 +1238,25 @@ def reclustering_data(adata,resu=0.01,normalization=False,target_sum=1e6,n_neigh
 
 
             
-"""
-Compute the proportion of sparsity for genes in the given data.
 
-Parameters
-----------
-data : DataFrame
-    DataFrame containing gene expression data.
-
-Returns
--------
-pro : DataFrame
-    DataFrame with columns 'Gene ID', 'proportion', and 'mean'.
-    'Gene ID': Gene IDs from the data.
-    'proportion': Proportion of sparsity (genes with value 0) for each gene.
-    'mean': Mean expression value for each gene.
-"""
 
 def cal_proportions(data):
+    """
+    Compute the proportion of sparsity for genes in the given data.
+
+    Parameters
+    ----------
+    data : DataFrame
+        DataFrame containing gene expression data.
+
+    Returns
+    -------
+    pro : DataFrame
+        DataFrame with columns 'Gene ID', 'proportion', and 'mean'.
+        'Gene ID': Gene IDs from the data.
+        'proportion': Proportion of sparsity (genes with value 0) for each gene.
+        'mean': Mean expression value for each gene.
+    """
     pro=pd.DataFrame()
     pro['Gene ID']=list(data.columns)
     pro['proportion']=0
@@ -1241,23 +1269,24 @@ def cal_proportions(data):
             pro.loc[pro['Gene ID'] == name_genes, 'mean'] = means
     return pro            
             
-"""
-Extract clusters along with their features and pseudotime.
 
-Parameters
-----------
-adata : AnnData
-    Annotated data matrix containing features and pseudotime information.
-path : str, optional
-    Path to the directory where the extracted data will be saved, by default 'Results_PILOT/'.
-
-Returns
--------
-None.
-Saves the extracted data, including features and pseudotime, to the specified path.
-"""
 
 def extract_cells_from_pathomics(adata,path=None):
+    """
+    Extract clusters along with their features and pseudotime.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data matrix containing features and pseudotime information.
+    path : str, optional
+        Path to the directory where the extracted data will be saved, by default 'Results_PILOT/'.
+
+    Returns
+    -------
+    None.
+    Saves the extracted data, including features and pseudotime, to the specified path.
+    """
     
     if path==None:
         path='Results_PILOT/'
@@ -1270,31 +1299,33 @@ def extract_cells_from_pathomics(adata,path=None):
                     os.makedirs(path+'/cells/')
     joint.to_csv(path+'/cells/'+'All.csv')
  
-"""
-Perform gene cluster differentiation analysis.
 
-Parameters
-----------
-cellnames : list, optional
-    List of cell names for which you want to perform gene cluster differentiation analysis, by default [].
-sort : list, optional
-    List of criteria for sorting gene expressions, by default ['Expression pattern', 'adjusted P-value', 'R-squared'].
-number_genes : int, optional
-    Number of top genes to consider for each expression pattern, by default 10.
-cluster_names : list, optional
-    List of cluster names to consider for gene cluster differentiation, by default [].
-font_size : int, optional
-    Font size for plots, by default 12.
-    gene_list=list, optional
-    Your interested genes. If you have any intereted genes!
-
-Returns
--------
-None.
-Performs gene cluster differentiation analysis based on specified parameters and saves the results.
-"""
 
 def gene_cluster_differentiation(adata,cellnames=[],sort=['Expression pattern', 'adjusted P-value', 'R-squared'],number_genes=10,cluster_names=[],font_size=14,gene_list=[]):
+    
+    """
+    Perform gene cluster differentiation analysis.
+
+    Parameters
+    ----------
+    cellnames : list, optional
+        List of cell names for which you want to perform gene cluster differentiation analysis, by default [].
+    sort : list, optional
+        List of criteria for sorting gene expressions, by default ['Expression pattern', 'adjusted P-value', 'R-squared'].
+    number_genes : int, optional
+        Number of top genes to consider for each expression pattern, by default 10.
+    cluster_names : list, optional
+        List of cluster names to consider for gene cluster differentiation, by default [].
+    font_size : int, optional
+        Font size for plots, by default 12.
+        gene_list=list, optional
+        Your interested genes. If you have any intereted genes!
+
+    Returns
+    -------
+    None.
+    Performs gene cluster differentiation analysis based on specified parameters and saves the results.
+    """
     path='Results_PILOT/'
     start=min(adata.uns['orders']['Time_score'])
     end=max(adata.uns['orders']['Time_score'])
@@ -1314,63 +1345,66 @@ def gene_cluster_differentiation(adata,cellnames=[],sort=['Expression pattern', 
         infer_gene_cluster_differentiation(gene_list,path_to_results = path,font_size=font_size,start=start,
                                        end=end)
 
-"""
-Perform importance analysis for morphological features.
 
-Parameters
-----------
-data : pandas DataFrame
-    Data containing morphological features and time information.
-name_cell : str, optional
-    Name of the cell or cluster for which to perform the analysis, by default 'All'.
-col : str, optional
-    Name of the column representing time information, by default 'Time_score'.
-genes_index : list, optional
-    List of indices of features to include in the analysis, by default [].
-p_value : float, optional
-    P-value threshold for significance, by default 0.05.
-max_iter_huber : int, optional
-    Maximum number of iterations for the HuberRegressor model, by default 100.
-epsilon_huber : float, optional
-    Epsilon parameter for the HuberRegressor model, by default 1.35.
-x_lim : int, optional
-    Limit for the x-axis in the plots, by default 135.
-width : int, optional
-    Width of the plots, by default 20.
-height : int, optional
-    Height of the plots, by default 8.
-store_data : bool, optional
-    Whether to store the analysis results, by default True.
-genes_interesting : list, optional
-    List of interesting genes to include in the plots, by default [].
-modify_r2 : bool, optional
-    Whether to use modified R squared, by default False.
-model_type : str, optional
-    Type of regression model, by default 'HuberRegressor'.
-fontsize : int, optional
-    Font size for the plots, by default 10.
-alpha : float, optional
-    Transparency for the plots, by default 0.5.
-cmap : str, optional
-    Color map for the plots, by default 'viridis'.
-color_back : str, optional
-    Background color for the plots, by default None.
-save_as_pdf : bool, optional
-    Whether to save the plots in PDF format, by default False.
-plot_genes : bool, optional
-    Whether to plot the gene importance analysis, by default True.
-path : str, optional
-    Path to store the analysis results and plots, by default None.
-
-Returns
--------
-None.
-Performs gene importance analysis for morphological features based on specified parameters and saves the results.
-"""
     
     
 def morphological_features_importance(data,name_cell='All',col='Time_score',genes_index=[],p_value=0.05,max_iter_huber=100,epsilon_huber=1.35,x_lim=135,width=20,height=8,store_data=True,genes_interesting=[],modify_r2 = False,model_type = 
 'HuberRegressor',fontsize=10,alpha=0.5,cmap='viridis',color_back=None,save_as_pdf=False,plot_genes=True,path=None):
+    
+    
+    """
+    Perform importance analysis for morphological features.
+
+    Parameters
+    ----------
+    data : pandas DataFrame
+        Data containing morphological features and time information.
+    name_cell : str, optional
+        Name of the cell or cluster for which to perform the analysis, by default 'All'.
+    col : str, optional
+        Name of the column representing time information, by default 'Time_score'.
+    genes_index : list, optional
+        List of indices of features to include in the analysis, by default [].
+    p_value : float, optional
+        P-value threshold for significance, by default 0.05.
+    max_iter_huber : int, optional
+        Maximum number of iterations for the HuberRegressor model, by default 100.
+    epsilon_huber : float, optional
+        Epsilon parameter for the HuberRegressor model, by default 1.35.
+    x_lim : int, optional
+        Limit for the x-axis in the plots, by default 135.
+    width : int, optional
+        Width of the plots, by default 20.
+    height : int, optional
+        Height of the plots, by default 8.
+    store_data : bool, optional
+        Whether to store the analysis results, by default True.
+    genes_interesting : list, optional
+        List of interesting genes to include in the plots, by default [].
+    modify_r2 : bool, optional
+        Whether to use modified R squared, by default False.
+    model_type : str, optional
+        Type of regression model, by default 'HuberRegressor'.
+    fontsize : int, optional
+        Font size for the plots, by default 10.
+    alpha : float, optional
+        Transparency for the plots, by default 0.5.
+    cmap : str, optional
+        Color map for the plots, by default 'viridis'.
+    color_back : str, optional
+        Background color for the plots, by default None.
+    save_as_pdf : bool, optional
+        Whether to save the plots in PDF format, by default False.
+    plot_genes : bool, optional
+        Whether to plot the gene importance analysis, by default True.
+    path : str, optional
+        Path to store the analysis results and plots, by default None.
+
+    Returns
+    -------
+    None.
+    Performs gene importance analysis for morphological features based on specified parameters and saves the results.
+    """
     
    
    
@@ -1438,25 +1472,26 @@ def morphological_features_importance(data,name_cell='All',col='Time_score',gene
                 
 
                 
-"""
-Normalize morphological features.
 
-Parameters
-----------
-path : str, optional
-    Path to the directory containing the cell data, by default None.
-column_names : list, optional
-    List of column names representing morphological features, by default [].
-name_cell : str, optional
-    Name of the cell or cluster for which to normalize features, by default None.
-
-Returns
--------
-data : pandas DataFrame
-    Data with normalized morphological features.
-"""
 
 def norm_morphological_features(path=None,column_names=[],name_cell=None):
+    """
+    Normalize morphological features.
+
+    Parameters
+    ----------
+    path : str, optional
+        Path to the directory containing the cell data, by default None.
+    column_names : list, optional
+        List of column names representing morphological features, by default [].
+    name_cell : str, optional
+        Name of the cell or cluster for which to normalize features, by default None.
+
+    Returns
+    -------
+    data : pandas DataFrame
+        Data with normalized morphological features.
+    """
     if path==None:
         path='Results_PILOT/'
     data =loadTarget(path+'/cells/', name_cell)

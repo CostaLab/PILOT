@@ -15,42 +15,46 @@ from gprofiler import GProfiler
 from .Trajectory import *
 
 
-'''
-Plot horizontal and vertical bar charts using Seaborn.
 
-Parameters:
-    data : pandas.DataFrame
-        The input DataFrame containing the data to be plotted.
-    subplot : int
-        The subplot number (1 or 2) for the placement of the chart.
-    x : str
-        The name of the column to be plotted on the x-axis.
-    y : str
-        The name of the column to be plotted on the y-axis.
-    c : str
-        The color column used to determine the color of bars.
-    xlabel : str
-        The label for the x-axis.
-    ylabel : str
-        The label for the y-axis.
-    rotation : float
-        The rotation angle for x-axis labels in degrees.
-    tick_bottom : bool
-        If True, display ticks on the bottom of the plot.
-    tick_left : bool
-        If True, display ticks on the left side of the plot.
-    title : str
-        The title of the plot.
-    fontsize : int, optional
-        The font size for title, labels, and ticks (default is 24).
-
-Returns:
-    None
-'''
 
     
 def plot_hor_vs_vert(data, subplot, x, y, c, xlabel, ylabel, rotation,
                      tick_bottom, tick_left, title,fontsize=24):
+    
+    
+    
+    '''
+    Plot horizontal and vertical bar charts using Seaborn.
+
+    Parameters:
+        data : pandas.DataFrame
+            The input DataFrame containing the data to be plotted.
+        subplot : int
+            The subplot number (1 or 2) for the placement of the chart.
+        x : str
+            The name of the column to be plotted on the x-axis.
+        y : str
+            The name of the column to be plotted on the y-axis.
+        c : str
+            The color column used to determine the color of bars.
+        xlabel : str
+            The label for the x-axis.
+        ylabel : str
+            The label for the y-axis.
+        rotation : float
+            The rotation angle for x-axis labels in degrees.
+        tick_bottom : bool
+            If True, display ticks on the bottom of the plot.
+        tick_left : bool
+            If True, display ticks on the left side of the plot.
+        title : str
+            The title of the plot.
+        fontsize : int, optional
+            The font size for title, labels, and ticks (default is 24).
+
+    Returns:
+        None
+    '''
     ax=plt.subplot(1,2,subplot)
     cols = ['tab:red' if x >= 0 else 'tab:blue' for x in data[x]]
 
@@ -67,23 +71,24 @@ def plot_hor_vs_vert(data, subplot, x, y, c, xlabel, ylabel, rotation,
 
 
 
-'''
-Map colors based on specified thresholds for Fold Change and p-value.
 
-Parameters:
-    a : tuple
-        A tuple containing log2FoldChange, symbol, and negative log10 of p-value.
-    fc_thrr : float
-        The threshold for log2FoldChange to determine different color mappings.
-    pv_thrr : float
-        The threshold for negative log10 of p-value to determine different color mappings.
-
-Returns:
-    str
-        A string indicating the color mapping based on the provided thresholds and input values.
-'''
     
 def map_color(a, fc_thrr, pv_thrr):
+    """
+    Map colors based on specified thresholds for Fold Change and p-value.
+
+    Parameters:
+        a : tuple
+            A tuple containing log2FoldChange, symbol, and negative log10 of p-value.
+        fc_thrr : float
+            The threshold for log2FoldChange to determine different color mappings.
+        pv_thrr : float
+            The threshold for negative log10 of p-value to determine different color mappings.
+
+    Returns:
+        str
+            A string indicating the color mapping based on the provided thresholds and input values.
+    """
     log2FoldChange, symbol, nlog10 = a
     if log2FoldChange >= fc_thrr and nlog10 >= pv_thrr:
         return 'very higher'
@@ -99,37 +104,42 @@ def map_color(a, fc_thrr, pv_thrr):
         return 'no'
 
     
-'''
-Generate a volcano plot to visualize gene expression significance.
 
-Parameters:
-    scores : pandas Series
-        A pandas Series containing the expression scores for genes.
-    foldchanges : array-like
-        An array-like containing the fold changes for genes.
-    p_values : pandas Series
-        A pandas Series containing the p-values for genes.
-    cell_type : str
-        The name of the cell type being analyzed.
-    feature1 : str
-        The name of the first feature being compared.
-    feature2 : str
-        The name of the second feature being compared.
-    fc_thr : float, optional (default=1)
-        The threshold for log2FoldChange to determine significance.
-    pv_thr : float, optional (default=1)
-        The threshold for negative log10 of p-value to determine significance.
-    figsize : tuple, optional (default=(20,20))
-        The size of the plot figure.
-    output_path : str, optional (default=None)
-        The path to save the output plot. If None, the plot will be displayed.
-
-Returns:
-    None
-'''
 
 def volcano_plot(scores, foldchanges, p_values, cell_type, feature1, feature2, fc_thr = 1, pv_thr = 1,
                  figsize = (20,20), output_path = None):
+    
+    
+    """
+    Generate a volcano plot to visualize gene expression significance.
+
+    Parameters:
+        scores : pandas Series
+            A pandas Series containing the expression scores for genes.
+        foldchanges : array-like
+            An array-like containing the fold changes for genes.
+        p_values : pandas Series
+            A pandas Series containing the p-values for genes.
+        cell_type : str
+            The name of the cell type being analyzed.
+        feature1 : str
+            The name of the first feature being compared.
+        feature2 : str
+            The name of the second feature being compared.
+        fc_thr : float, optional (default=1)
+            The threshold for log2FoldChange to determine significance.
+        pv_thr : float, optional (default=1)
+            The threshold for negative log10 of p-value to determine significance.
+        figsize : tuple, optional (default=(20,20))
+            The size of the plot figure.
+        output_path : str, optional (default=None)
+            The path to save the output plot. If None, the plot will be displayed.
+
+    Returns:
+        None
+    """
+    
+    
     df = pd.DataFrame(columns=['log2FoldChange', 'nlog10', 'symbol'])
     df['log2FoldChange'] = foldchanges
     df['nlog10'] = -np.log10(p_values.values)
@@ -210,33 +220,36 @@ def volcano_plot(scores, foldchanges, p_values, cell_type, feature1, feature2, f
     plt.show()
 
  
-'''
-Extract and save gene expression data for specific cells for clustering analysis.
 
-Parameters:
-    adata : AnnData object
-        An Annotated Data (AnnData) object containing gene expression data.
-    sample_col : str
-        The column name in the adata.obs DataFrame containing sample IDs.
-    col_cell : str
-        The column name in the adata.obs DataFrame containing cell type labels.
-    cell_list : list
-        A list of cell types for which gene expression data will be extracted and saved.
-    path_results : str or None, optional (default=None)
-        The path to the directory where the extracted data will be saved as CSV files.
-        If None, the default path 'Results_PILOT/cells/' will be used.
-    normalization : bool, optional (default=True)
-        Whether to normalize the gene expression data by total count and apply log1p transformation.
-    n_top_genes : int, optional (default=2000)
-        The number of top highly variable genes to select. Only applicable if highly_variable_genes_ is True.
-    highly_variable_genes_ : bool, optional (default=False)
-        Whether to select highly variable genes for analysis.
-
-Returns:
-    None
-'''
 
 def extract_cells_from_gene_expression_for_clustering(adata,sample_col,col_cell,cell_list,path_results=None,normalization=True,n_top_genes=2000,highly_variable_genes_=False):
+    
+    
+    """
+    Extract and save gene expression data for specific cells for clustering analysis.
+
+    Parameters:
+        adata : AnnData object
+            An Annotated Data (AnnData) object containing gene expression data.
+        sample_col : str
+            The column name in the adata.obs DataFrame containing sample IDs.
+        col_cell : str
+            The column name in the adata.obs DataFrame containing cell type labels.
+        cell_list : list
+            A list of cell types for which gene expression data will be extracted and saved.
+        path_results : str or None, optional (default=None)
+            The path to the directory where the extracted data will be saved as CSV files.
+            If None, the default path 'Results_PILOT/cells/' will be used.
+        normalization : bool, optional (default=True)
+            Whether to normalize the gene expression data by total count and apply log1p transformation.
+        n_top_genes : int, optional (default=2000)
+            The number of top highly variable genes to select. Only applicable if highly_variable_genes_ is True.
+        highly_variable_genes_ : bool, optional (default=False)
+            Whether to select highly variable genes for analysis.
+
+    Returns:
+        None
+    """
     for cell in cell_list:
         adata_new = adata[adata.obs[col_cell].isin([cell]),:]
         if normalization:
@@ -386,19 +399,20 @@ def compute_diff_expressions(adata,cell_type: str = None,
                  figsize = (15,15), output_path = path_to_result)
     
 
-'''
-Install R packages using rpy2.
 
-This function installs the "limma" R package using the "BiocManager" package manager.
-
-Parameters:
-    None
-
-Returns:
-    None
-'''
     
 def install_r_packages():
+    """
+    Install R packages using rpy2.
+
+    This function installs the "limma" R package using the "BiocManager" package manager.
+
+    Parameters:
+        None
+
+    Returns:
+        None
+    """
     # Install R packages using rpy2
     import rpy2.robjects as robjects
 

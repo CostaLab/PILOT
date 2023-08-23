@@ -19,7 +19,7 @@ import scanpy as sc
 
 
 ```python
-adata=sc.read_h5ad('Datasets/myocardial_infarction.h5ad')
+adata=sc.read_h5ad('myocardial_infarction.h5ad')
 ```
 
 ###### Loading the required information and computing the Wasserstein distance:
@@ -85,7 +85,7 @@ pl.pl.trajectory(adata,colors=['Blue','red'])
 
 #####  Fit a principal graph:
 <div class="alert alert-block alert-info"> 
-The difussion map creates an embeding that potentially reveals a trajectory in the data. Next, PILOT explores EIPLGraph to find the structure of the trajectory. An important parameter is the source_node, which indicate the start of the trajectory. Here, we selected a control sample. This method returns a rank samples, which we define as a disease progression score (t = t1, ..., tn), where tl represents the ranking of the nth sample.
+The difussion map creates an embedding that potentially reveals a trajectory in the data. Next, PILOT explores EIPLGraph to find the structure of the trajectory. An important parameter is the source_node, which indicates the start of the trajectory. Here, we selected a control sample (node by id 7). This method returns rank samples, which we define as a disease progression score (t = t1, ..., tn), where tl represents the ranking of the nth sample.
 </div>
 
 
@@ -102,7 +102,7 @@ pl.pl.fit_pricipla_graph(adata,source_node=7)
 
 #####  Cell-type importance:
 <div class="alert alert-block alert-info"> 
-Next, we can use the robust regression model to find cells whose proportions change linearly or non-linearly with disease progression. As indicated in the paper, major halmarks of MI progression are detected, i.e., a decrease of cardiomyocyte cells (CM) and an increase of fibroblasts and myeloid cells.
+Next, we can use the robust regression model to find cells whose proportions change linearly or non-linearly with disease progression. As indicated in the paper, major hallmark of MI progression are detected, i.e., a decrease of cardiomyocyte cells (CM) and an increase of fibroblasts and myeloid cells.
 </div>
 
 
@@ -122,13 +122,13 @@ pl.tl.cell_importance(adata,height=45,width=38,fontsize=28)
     
 
 
-##### Applyin PILOT for finding Markers
+##### Applying PILOT for finding Markers
 
 ##### Gene selection:
 <div class="alert alert-block alert-info"> 
-Given that we found interesting cell types, we would like next to investigate genes associated with these trajectories, i.e. genes, which expression changes linear or quadratically with the disease progression. After running the command, you can find a folder named ‘Markers’. There, we will have a folder for each cell type. The file ‘Whole_expressions.csv’ contains all statistics associated with genes for that cell type. Here, we run the genes_importance function for whole cell types.
+Given that we found interesting cell types, we would like to investigate genes associated with these trajectories, i.e. genes, whose expression changes linearly or quadratically with the disease progression. After running the command, you can find a folder named ‘Markers’. There, we will have a folder for each cell type. The file ‘Whole_expressions.csv’ contains all statistics associated with genes for that cell type. Here, we run the genes_importance function for whole cell types.
     
-* You need to set names of columns that show cell_types/clusters and Samples/Patinets in your object.
+* You need to set names of columns that show cell_types/clusters and Samples/Patients in your object.
 </div>
 
 
@@ -142,7 +142,7 @@ for cell in adata.uns['cellnames']:
 
 ##### Cluster Specific Marker Changes:
 <div class="alert alert-block alert-info"> 
-The previous test, only finds genes with significant changes over time for a given cell type. However, it does not consider if a similar pattern and expression values are found in other clusters. To further select genes, we use a Wald test that compares the fit of the gene in the cluster vs. the fit of the gene in other clusters.
+The previous test only finds genes with significant changes over time for a given cell type. However, it does not consider if a similar pattern and expression values are found in other clusters. To further select genes, we use a Wald test that compares the fit of the gene in the cluster vs. the fit of the gene in other clusters.
 In the code below, we consider top genes (regarding the regression fit) for two interesting cell types discussed in the manuscript (‘healthy CM’ and ‘Myofib’).
 </div>
 
@@ -384,7 +384,7 @@ pl.pl.go_enrichment(df,cell_type='Myofib')
 
 
 <div class="alert alert-block alert-info"> 
-Plots of genes are saved at 'plot_genes_for_Myofib' folder. We can also vizualise specfici genes, for example the ones discussed in PILOT manuscript (COL1A2, DCN and EXT1). In the plot, the orange line indicates the fit in the target cell type (shown as orange lines) compared to other cell types (represented by grey lines).
+Plots of genes are saved at 'plot_genes_for_Myofib' folder. We can visualize specific genes, for example the ones discussed in PILOT manuscript (COL1A2, DCN and EXT1). In the plot, the orange line indicates the fit in the target cell type (shown as orange lines) compared to other cell types (represented by grey lines).
 </div>
 
 
@@ -393,7 +393,6 @@ pl.pl.exploring_specific_genes(cluster_name='Myofib',gene_list=['COL1A2','DCN','
 ```
 
 
-    <Figure size 8000x8000 with 0 Axes>
 
 
 
@@ -403,7 +402,7 @@ pl.pl.exploring_specific_genes(cluster_name='Myofib',gene_list=['COL1A2','DCN','
 
 
 <div class="alert alert-block alert-info"> 
-We can repeate the same analysis for healthy_CM cell type by using the following commands.
+We can repeat the same analysis for healthy_CM cell type by using the following commands.
 </div>
 
 
@@ -630,9 +629,6 @@ pl.pl.go_enrichment(df,cell_type='healthy_CM')
 ```python
 pl.pl.exploring_specific_genes(cluster_name='healthy_CM',gene_list=['MYBPC3','MYOM1','FHOD3'])
 ```
-
-
-    <Figure size 8000x8000 with 0 Axes>
 
 
 

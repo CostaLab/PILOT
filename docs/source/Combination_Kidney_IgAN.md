@@ -5,7 +5,7 @@
 
 Welcome to the PILOT Package Tutorial for pathomics Data!
  
-You can find them [here](https://github.com/CostaLab/PILOT/tree/main/Tutorial/Datasets).
+You can find the pathomics data [here](https://github.com/CostaLab/PILOT/tree/main/Tutorial/Datasets).
 
 </div>
 
@@ -50,9 +50,9 @@ pl.tl.wasserstein_distance(adata_T,clusters_col='Cell_type',sample_col='sampleID
                            ,data_type='Pathomics')
 ```
 
-##### Ploting the Cost matrix and the Wasserstein distance:
+##### plotting the Cost matrix and the Wasserstein distance:
 <div class="alert alert-block alert-info"> 
- Here we show the heatmaps of Cost matrix (cells) and Wasserstein distance (samples).      
+ Here we show the heatmaps of the Cost matrix (cells) and Wasserstein distance (samples).      
 </div>
 
 
@@ -74,7 +74,7 @@ pl.pl.heatmaps(adata_T)
 
 ##### Trajectory:
 <div class="alert alert-block alert-info"> 
- Here we show the Diffusion map of Wasserstein distance. In the upcoming trajectory analysis, the labels ">30" signify an eGFR level below 30 (considered as Low), "30-60" denotes a reduced eGFR range (marked as Reduced), and ">60" indicates a normal eGFR level
+ Here we show the Diffusion map of Wasserstein distance. In the upcoming trajectory analysis, the labels "<30" signify an eGFR level below 30 (considered as Low), "30-60" denotes a reduced eGFR range (marked as Reduced), and ">60" indicates a normal eGFR level
 </div>
 
 
@@ -158,7 +158,7 @@ pl.pl.trajectory(adata_Com,colors=['red','blue','orange'])
 
 ####  Fit a principal graph:
 <div class="alert alert-block alert-info"> 
-The difussion map creates an embeding that potentially reveals a trajectory in the data. Next, PILOT explores EIPLGraph to find the structure of the trajectory. An important parameter is the source_node, which indicate the start of the trajectory. Here, we selected a normal sample. This method returns a rank samples, which we define as a disease progression score (t = t1, ..., tn), where tl represents the ranking of the nth sample.
+The difussion map creates an embedding that potentially reveals a trajectory in the data. Next, PILOT explores EIPLGraph to find the structure of the trajectory. An important parameter is the source_node, which indicates the start of the trajectory. Here, we selected a normal sample (node by id 2). This method returns a rank samples, which we define as a disease progression score (t = t1, ..., tn), where tl represents the ranking of the nth sample.
 </div>
 
 
@@ -193,13 +193,13 @@ pl.tl.cell_importance(adata_Com,xlim=125)
 
 #### Feature selection for Glomeruli based on Combination:
 
-##### Saving morphological features and map them with the obtained order by PILOT  (for Glomeruli):
+##### Saving morphological features and maps them with the obtained order by PILOT  (for Glomeruli):
 
 <div class="alert alert-block alert-info"> 
 This step extracts features associated with all clusters and map them with the obtained time by PILOT (based on the Trjaectory order of Samples).
     
     
-* The function "extract_cells_from_pathomics"  automatically creates a cells folder and put the extracted features associate with cells and obtained time by PILOT(orders).
+* The function "extract_cells_from_pathomics"  automatically creates a cells folder and puts the extracted features associated with cells and obtained time by PILOT(orders).
 </div>
 
 

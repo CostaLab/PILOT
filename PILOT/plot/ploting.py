@@ -28,61 +28,66 @@ from ..tools.patients_sub_clustering import *
 from ..tools.Gene_cluster_specific import *
 
 
-"""
-Find trajectories using Diffusion Maps and visualize the trajectory plot.
 
-Parameters
-----------
-adata : AnnData
-    Annotated data matrix containing EMD, annotations, and other necessary data.
-n_evecs : int, optional
-    Number of embedding vectors, by default 2.
-epsilon : float or str, optional
-    Method for choosing the epsilon in diffusion maps, by default 1.
-alpha : float, optional
-    Normalization parameter in the bandwidth function, by default 0.5.
-knn : int, optional
-    Number of nearest neighbors for constructing the kernel, by default 64.
-sample_col : int, optional
-    Index of the column representing sample IDs in annotation data, by default 1.
-clusters : str, optional
-    Name of the column representing clusters/categories in annotation data, by default 'status'.
-label_act : bool, optional
-    Whether to label data points with sample IDs, by default False.
-colors : list, optional
-    List of colors for different categories, by default ['#377eb8', '#ff7f00', '#e41a1c'].
-location_labels : str, optional
-    Location of the legend labels, by default 'center'.
-fig_h : int, optional
-    Height of the figure, by default 12.
-fig_w : int, optional
-    Width of the figure, by default 12.
-font_size : int, optional
-    Font size for labels and annotations, by default 24.
-axes_line_width : float, optional
-    Line width of the axes, by default 1.
-axes_color : str, optional
-    Color of the axes lines, by default 'black'.
-facecolor : str, optional
-    Background color of the figure, by default 'white'.
-point_size : int, optional
-    Size of the data points in the plot, by default 100.
-cmap : str, optional
-    Colormap for scatter plot, by default 'viridis'.
-fontsize_legend : int, optional
-    Font size of the legend, by default 24.
-alpha_trans : float, optional
-    Transparency level for data points, by default 1.
-plot_title : str, optional
-    Title of the plot, by default "Trajectory of the disease progression".
-
-Returns
--------
-None
-    Visualizes and saves the trajectory plot.
-"""
 
 def trajectory(adata,n_evecs = 2, epsilon =1, alpha = 0.5,knn= 64, sample_col=1, clusters = 'status',label_act = False,colors=['#377eb8','#ff7f00','#e41a1c'],location_labels='center', fig_h=12,fig_w=12,font_size=24,axes_line_width=1,axes_color='black',facecolor='white',point_size=100,cmap='viridis',fontsize_legend=24,alpha_trans=1,plot_titel = "Trajectory of the disease progression"):
+    
+    
+    
+    
+    """
+    Find trajectories using Diffusion Maps and visualize the trajectory plot.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data matrix containing EMD, annotations, and other necessary data.
+    n_evecs : int, optional
+        Number of embedding vectors, by default 2.
+    epsilon : float or str, optional
+        Method for choosing the epsilon in diffusion maps, by default 1.
+    alpha : float, optional
+        Normalization parameter in the bandwidth function, by default 0.5.
+    knn : int, optional
+        Number of nearest neighbors for constructing the kernel, by default 64.
+    sample_col : int, optional
+        Index of the column representing sample IDs in annotation data, by default 1.
+    clusters : str, optional
+        Name of the column representing clusters/categories in annotation data, by default 'status'.
+    label_act : bool, optional
+        Whether to label data points with sample IDs, by default False.
+    colors : list, optional
+        List of colors for different categories, by default ['#377eb8', '#ff7f00', '#e41a1c'].
+    location_labels : str, optional
+        Location of the legend labels, by default 'center'.
+    fig_h : int, optional
+        Height of the figure, by default 12.
+    fig_w : int, optional
+        Width of the figure, by default 12.
+    font_size : int, optional
+        Font size for labels and annotations, by default 24.
+    axes_line_width : float, optional
+        Line width of the axes, by default 1.
+    axes_color : str, optional
+        Color of the axes lines, by default 'black'.
+    facecolor : str, optional
+        Background color of the figure, by default 'white'.
+    point_size : int, optional
+        Size of the data points in the plot, by default 100.
+    cmap : str, optional
+        Colormap for scatter plot, by default 'viridis'.
+    fontsize_legend : int, optional
+        Font size of the legend, by default 24.
+    alpha_trans : float, optional
+        Transparency level for data points, by default 1.
+    plot_title : str, optional
+        Title of the plot, by default "Trajectory of the disease progression".
+
+    Returns
+    -------
+    None
+        Visualizes and saves the trajectory plot.
+    """
     
     EMD=adata.uns['EMD']/adata.uns['EMD'].max()
     df=adata.uns['annot']
@@ -135,34 +140,36 @@ def trajectory(adata,n_evecs = 2, epsilon =1, alpha = 0.5,knn= 64, sample_col=1,
     
     adata.uns['embedding']=embedding
     
-"""
-Plot heatmaps of cost matrix and Wasserstein distances.
-
-Parameters
-----------
-adata : AnnData
-    Annotated data matrix containing annotations, cost matrix, and Wasserstein distances.
-figsize_h : int, optional
-    Height of the heatmap figure, by default 12.
-figsize_w : int, optional
-    Width of the heatmap figure, by default 12.
-col_cluster : bool, optional
-    Whether to cluster the columns, by default True.
-row_cluster : bool, optional
-    Whether to cluster the rows, by default True.
-cmap : str, optional
-    Colormap for the heatmaps, by default 'Blues_r'.
-font_scale : int, optional
-    Font scale for labels and annotations, by default 2.
-
-Returns
--------
-None
-    Plots and saves heatmaps of the cost matrix and Wasserstein distances.
-"""
 
     
 def heatmaps(adata,figsize_h=12,figsize_w=12,col_cluster=True,row_cluster=True,cmap='Blues_r',font_scale=2):
+    
+    """
+    Plot heatmaps of cost matrix and Wasserstein distances.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data matrix containing annotations, cost matrix, and Wasserstein distances.
+    figsize_h : int, optional
+        Height of the heatmap figure, by default 12.
+    figsize_w : int, optional
+        Width of the heatmap figure, by default 12.
+    col_cluster : bool, optional
+        Whether to cluster the columns, by default True.
+    row_cluster : bool, optional
+        Whether to cluster the rows, by default True.
+    cmap : str, optional
+        Colormap for the heatmaps, by default 'Blues_r'.
+    font_scale : int, optional
+        Font scale for labels and annotations, by default 2.
+
+    Returns
+    -------
+    None
+        Plots and saves heatmaps of the cost matrix and Wasserstein distances.
+    """
+
     annot=adata.uns['annot']
     cost=adata.uns['cost']
     path='Results_PILOT/plots'
@@ -189,43 +196,45 @@ def heatmaps(adata,figsize_h=12,figsize_w=12,col_cluster=True,row_cluster=True,c
     
     
 
-"""
-Fit an Elastic Principal Graph to the data and extract pseudotime information.
 
-Parameters
-----------
-adata : AnnData
-    Annotated data matrix containing embeddings and other necessary data.
-NumNodes : int, optional
-    Number of nodes for building the backbone, by default 20.
-source_node : int, optional
-    Index of the source node to start pseudotime estimation, by default 0.
-show_text : bool, optional
-    Whether to show numbers in the backbone plot, by default True.
-Do_PCA : bool, optional
-    Whether to perform PCA on the nodes, by default False.
-fig_x_size : int, optional
-    Width of the figure, by default 12.
-fig_y_size : int, optional
-    Height of the figure, by default 12.
-X_color : str, optional
-    Color of the X-axis in the plot, by default 'r'.
-Node_color : str, optional
-    Color of the backbone's nodes, by default 'k'.
-DimToPlot : list, optional
-    List of integers specifying the PCs or dimensions to plot, by default [0, 1].
-facecolor : str, optional
-    Background color of the figure, by default 'white'.
-title : str, optional
-    Title of the plot, by default 'Principal graph'.
-
-Returns
--------
-None
-    Fits an Elastic Principal Graph, plots it, and extracts pseudotime information.
-"""
 
 def fit_pricipla_graph(adata,NumNodes=20,source_node=0,show_text=True,Do_PCA=False,fig_x_size=12,fig_y_size=12,X_color='r', Node_color='k', DimToPlot=[0, 1],facecolor='white',title='Principal graph'):
+    
+    """
+    Fit an Elastic Principal Graph to the data and extract pseudotime information.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data matrix containing embeddings and other necessary data.
+    NumNodes : int, optional
+        Number of nodes for building the backbone, by default 20.
+    source_node : int, optional
+        Index of the source node to start pseudotime estimation, by default 0.
+    show_text : bool, optional
+        Whether to show numbers in the backbone plot, by default True.
+    Do_PCA : bool, optional
+        Whether to perform PCA on the nodes, by default False.
+    fig_x_size : int, optional
+        Width of the figure, by default 12.
+    fig_y_size : int, optional
+        Height of the figure, by default 12.
+    X_color : str, optional
+        Color of the X-axis in the plot, by default 'r'.
+    Node_color : str, optional
+        Color of the backbone's nodes, by default 'k'.
+    DimToPlot : list, optional
+        List of integers specifying the PCs or dimensions to plot, by default [0, 1].
+    facecolor : str, optional
+        Background color of the figure, by default 'white'.
+    title : str, optional
+        Title of the plot, by default 'Principal graph'.
+
+    Returns
+    -------
+    None
+        Fits an Elastic Principal Graph, plots it, and extracts pseudotime information.
+    """
     
     path='Results_PILOT/plots'
     
@@ -250,6 +259,11 @@ def fit_pricipla_graph(adata,NumNodes=20,source_node=0,show_text=True,Do_PCA=Fal
 
 
  
+    
+
+    
+    
+def clustering_emd(adata,res=0.3,metric='cosine',groupby_col='Leiden',swap_axes=False,cmap="Blues_r",dendrogram=True,show_gene_labels=True,var_group_rotation=45,figsize=[12,12],save=False):
     """
 
     Parameters
@@ -273,10 +287,6 @@ def fit_pricipla_graph(adata,NumNodes=20,source_node=0,show_text=True,Do_PCA=Fal
     Proportion matrix with predicted lables for each sample based on leiden clustering over EMD data.
     """
 
-
-    
-    
-def clustering_emd(adata,res=0.3,metric='cosine',groupby_col='Leiden',swap_axes=False,cmap="Blues_r",dendrogram=True,show_gene_labels=True,var_group_rotation=45,figsize=[12,12],save=False):
     
     
     EMD=adata.uns['EMD']
@@ -323,9 +333,14 @@ def clustering_emd(adata,res=0.3,metric='cosine',groupby_col='Leiden',swap_axes=
     return proportion_df
 
 
+
+
+
+def select_best_sil(adata,resolutions=[],metric='cosine',path=None,start=0.2,step=0.1,end=2):
     """
     Parameters
     ----------
+    adata : adata,
     EMD : W distance,
     path_to_results:str, path to save the plot
     resolutions: list,a list of your desire resulotions
@@ -336,10 +351,8 @@ def clustering_emd(adata,res=0.3,metric='cosine',groupby_col='Leiden',swap_axes=
     -------
     None,
     plot Silhouette Score vs. Resolution to figure out the best sil.
+    plot Silhouette Score vs. Number of clusters.
     """
-
-
-def select_best_sil(adata,resolutions=[],metric='cosine',path=None,start=0.2,step=0.1,end=2):
     
     resolutions = [start + step * i for i in range(int((end - start) / step) + 1)]
     # Create a list to store the Silhouette Scores
@@ -616,33 +629,34 @@ def gene_annotation_cell_type_subgroup(cell_type: str = None,
     plt.savefig(path_to_results+ group + ".pdf", bbox_inches = 'tight', facecolor='white', transparent=False)
     
 
-"""
-Explore specific genes within a cluster to analyze their patterns in comparison to other cell types.
 
-Parameters:
-    cluster_name : str
-        The name of the cluster you're interested in exploring.
-    sort : list
-        List of column names for sorting the results.
-    number_genes : int
-        Number of top genes to display for each pattern (linear, quadratic, etc.).
-    cluster_names : list
-        List of cluster names for exploration (if empty, all clusters will be considered).
-    font_size : int
-        Font size for text and labels in plots.
-    gene_list : list
-        List of specific genes to explore within the cluster.
-    fig_size: tuple,optional
-          Size of the plot.
-          
-    fc_ther: float, optional
-        threshold for FC.
-
-Returns:
-    Show the genes for the interested cell types
-"""
 
 def exploring_specific_genes(cluster_name='cell_type',font_size=24,gene_list=[],fig_size=(64, 56),p_value=0.01,create_new_plot_folder=True,fc_ther=0.5):
+    """
+    Explore specific genes within a cluster to analyze their patterns in comparison to other cell types.
+
+    Parameters:
+        cluster_name : str
+            The name of the cluster you're interested in exploring.
+        sort : list
+            List of column names for sorting the results.
+        number_genes : int
+            Number of top genes to display for each pattern (linear, quadratic, etc.).
+        cluster_names : list
+            List of cluster names for exploration (if empty, all clusters will be considered).
+        font_size : int
+            Font size for text and labels in plots.
+        gene_list : list
+            List of specific genes to explore within the cluster.
+        fig_size: tuple,optional
+              Size of the plot.
+
+        fc_ther: float, optional
+            threshold for FC.
+
+    Returns:
+        Show the genes for the interested cell types
+    """
     path='Results_PILOT/'
     file_name = "/Whole_expressions.csv"
     cluster_names = [os.path.splitext(f)[0] for f in listdir(path + '/cells/') \
