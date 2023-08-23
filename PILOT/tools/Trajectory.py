@@ -1034,7 +1034,7 @@ def extract_cells_from_gene_expression(adata,sample_col,col_cell,cell_list=[],no
 
 
             
-def genes_importance(adata,name_cell,col='Time_score',genes_index=[],p_value=0.05,max_iter_huber=100,epsilon_huber=1.35,x_lim=4,width=20,height=30,store_data=True,genes_interesting=[],modify_r2 = False,model_type = 'HuberRegressor',fontsize=8,alpha=0.5,cmap='viridis',color_back=None,save_as_pdf=False,plot_genes=True,colnames=[],sample_col='sampleID',col_cell='cell_types'):
+def genes_importance(adata,name_cell,col='Time_score',genes_index=[],p_value=0.05,max_iter_huber=100,epsilon_huber=1.35,x_lim=4,width=20,height=30,store_data=True,genes_interesting=[],modify_r2 = False,model_type = 'HuberRegressor',fontsize=8,alpha=0.5,cmap='viridis',color_back=None,save_as_pdf=False,plot_genes=True,colnames=[],sample_col='sampleID',col_cell='cell_types',normalize=True):
     
     """
     Order genes based on estimated time and visualize gene importance.
@@ -1087,6 +1087,8 @@ def genes_importance(adata,name_cell,col='Time_score',genes_index=[],p_value=0.0
         Name of the sample ID column, by default 'sampleID'.
     col_cell : str, optional
         Name of the cell type column, by default 'cell_types'.
+    normalize: bool, optional
+        Whether to normalize gene exp, by default True.
 
     Returns
     -------
@@ -1097,7 +1099,7 @@ def genes_importance(adata,name_cell,col='Time_score',genes_index=[],p_value=0.0
     
     path='Results_PILOT'
     if not os.path.exists(path+'/cells/'+name_cell+'.csv'):
-        data=extract_cells_from_gene_expression(adata,sample_col=sample_col,col_cell=col_cell,cell_list=[name_cell])
+        data=extract_cells_from_gene_expression(adata,sample_col=sample_col,col_cell=col_cell,cell_list=[name_cell],normalize=normalize)
     
     elif os.path.exists(path+'/cells/'+name_cell+'.csv'):
         
