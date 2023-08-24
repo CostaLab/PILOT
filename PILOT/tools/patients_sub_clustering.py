@@ -107,7 +107,7 @@ def map_color(a, fc_thrr, pv_thrr):
 
 
 def volcano_plot(scores, foldchanges, p_values, cell_type, feature1, feature2, fc_thr = 1, pv_thr = 1,
-                 figsize = (20,20), output_path = None):
+                 figsize = (20,20), output_path = None,n_p=5,n_n=5):
     
     
     """
@@ -134,6 +134,11 @@ def volcano_plot(scores, foldchanges, p_values, cell_type, feature1, feature2, f
             The size of the plot figure.
         output_path : str, optional (default=None)
             The path to save the output plot. If None, the plot will be displayed.
+            
+        n_p: int, optional 5,
+        The number of lables that user wants to show over the plot for positive thresh.
+        n_n: int, optional 5,
+        The number of lables that user wants to show over the plot for negative thresh.
 
     Returns:
         None
@@ -185,14 +190,34 @@ def volcano_plot(scores, foldchanges, p_values, cell_type, feature1, feature2, f
     ax.axvline(-fc_thr, zorder = 0, c = 'k', lw = 2, ls = '--')
 
     texts = []
+    filtered_df = df.loc[df['nlog10'] >= pv_thr]
+    subset_labels_fold_change_pos = filtered_df.loc[filtered_df['log2FoldChange'] >= fc_thr]
+    subset_labels_fold_change_pos = subset_labels_fold_change_pos.sort_values(by='nlog10', ascending=False)
+    subset_labels_fold_change_pos = subset_labels_fold_change_pos.head(n_p)['symbol'].values
+
+    subset_labels_fold_change_neg = filtered_df.loc[filtered_df['log2FoldChange'] <= -fc_thr]
+    subset_labels_fold_change_neg = subset_labels_fold_change_neg.sort_values(by='nlog10', ascending=False)
+    subset_labels_fold_change_neg = subset_labels_fold_change_neg.head(n_n)['symbol'].values
+    # Combine the subsets of genes
+    subset_labels = np.concatenate([subset_labels_fold_change_pos, subset_labels_fold_change_neg])
     for i in range(len(df)):
-        if df.iloc[i].nlog10 >= pv_thr and (df.iloc[i].log2FoldChange >= fc_thr):
-            texts.append(plt.text(x = df.iloc[i].log2FoldChange, y = df.iloc[i].nlog10, s = df.iloc[i].symbol,
-                                 fontsize = 16, weight = 'bold', family = 'sans-serif'))
-        if df.iloc[i].nlog10 >= pv_thr and ( df.iloc[i].log2FoldChange <= -fc_thr):
-            texts.append(plt.text(x = df.iloc[i].log2FoldChange, y = df.iloc[i].nlog10, s = df.iloc[i].symbol,
-                                 fontsize = 16, weight = 'bold', family = 'sans-serif'))
+        if df.iloc[i].symbol in subset_labels:
+            if df.iloc[i].nlog10 >= pv_thr and (df.iloc[i].log2FoldChange >= fc_thr):
+                texts.append(plt.text(x = df.iloc[i].log2FoldChange, y = df.iloc[i].nlog10, s = df.iloc[i].symbol,
+                                     fontsize = 16, weight = 'bold', family = 'sans-serif'))
+            if df.iloc[i].nlog10 >= pv_thr and ( df.iloc[i].log2FoldChange <= -fc_thr):
+                texts.append(plt.text(x = df.iloc[i].log2FoldChange, y = df.iloc[i].nlog10, s = df.iloc[i].symbol,
+                                     fontsize = 16, weight = 'bold', family = 'sans-serif'))
     adjust_text(texts)
+   # for i in range(len(df)):
+    #    if df.iloc[i].symbol in subset_labels:
+     #       if df.iloc[i].nlog10 >= pv_thr and (df.iloc[i].log2FoldChange >= fc_thr):
+      #          texts.append(plt.text(x = df.iloc[i].log2FoldChange, y = df.iloc[i].nlog10, s = df.iloc[i].symbol,
+          #                           fontsize = 16, weight = 'bold', family = 'sans-serif'))
+       #     if df.iloc[i].nlog10 >= pv_thr and ( df.iloc[i].log2FoldChange <= -fc_thr):
+        #        texts.append(plt.text(x = df.iloc[i].log2FoldChange, y = df.iloc[i].nlog10, s = df.iloc[i].symbol,
+         #                            fontsize = 16, weight = 'bold', family = 'sans-serif'))
+    #adjust_text(texts)
 
     custom_lines = [Line2D([0], [0], marker='o', color='w', markerfacecolor='#d62a2b', markersize=8),
                    Line2D([0], [0], marker='o', color='w', markerfacecolor='#1f77b4', markersize=8)]
@@ -295,9 +320,9 @@ def compute_diff_expressions(adata,cell_type: str = None,
                              sample_col:str='sampleID',
                              col_cell:str ='cell_types',
                              path=None,
-                             normalization=True,
+                             normalization=False,
                              n_top_genes=2000,
-                             highly_variable_genes_=False
+                             highly_variable_genes_=True,number_n=5,number_p=5
 
                              ):
     """
@@ -324,7 +349,10 @@ def compute_diff_expressions(adata,cell_type: str = None,
         Specify the fold change threshold. The default is 0.5.
     pval_thr : float, optional
         Specify the asj. p-value thrshold. The default is 0.01.
-    
+    number_n:int, optional.The default is 5.
+        The number of lables that user wants to show over the plot for negative thresh.
+    number_p:int, optional.The default is 5. 
+        The number of lables that user wants to show over the plot for positive thresh.
     Returns
     -------
     Plot volcano plot of fold changes between two intrested patients sub-groups.
@@ -396,7 +424,7 @@ def compute_diff_expressions(adata,cell_type: str = None,
     pv_thr = -np.log10(pval_thr)
     volcano_plot(cells[selected_genes].transpose(), res['logFC'], res['adj.P.Val'],
                  cell_type, group1, group2, fc_thr, pv_thr,
-                 figsize = (15,15), output_path = path_to_result)
+                 figsize = (15,15), output_path = path_to_result,n_p=number_p,n_n=number_n)
     
 
 

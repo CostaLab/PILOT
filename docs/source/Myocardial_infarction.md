@@ -396,6 +396,7 @@ pl.pl.exploring_specific_genes(cluster_name='Myofib',gene_list=['COL1A2','DCN','
 
 
 
+
     
 ![png](Myocardial_infarction_files/Myocardial_infarction_25_1.png)
     
@@ -629,6 +630,9 @@ pl.pl.go_enrichment(df,cell_type='healthy_CM')
 ```python
 pl.pl.exploring_specific_genes(cluster_name='healthy_CM',gene_list=['MYBPC3','MYOM1','FHOD3'])
 ```
+
+
+ 
 
 
 

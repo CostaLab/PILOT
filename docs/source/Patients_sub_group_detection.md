@@ -23,9 +23,6 @@ import scanpy as sc
 adata=sc.read_h5ad('PDAC.h5ad')
 ```
 
-    
-
-
 ##### Loading the required information and computing the Wasserstein distance:
 <div class="alert alert-block alert-info"> In order to work with PILOT, ensure that your Anndata object is loaded and contains the required information.
     
@@ -121,6 +118,7 @@ proportion_df=pl.pl.clustering_emd(adata,res=adata.uns['best_res'])
 ```
 
 
+
     
 ![png](Patients_sub_group_detection_files/Patients_sub_group_detection_14_1.png)
     
@@ -213,7 +211,7 @@ This step needs the 'limma' package in R, You need to run this function to insta
 In the next step, for specific cell types, we find the Differential genes between two interested patient sub-groups
 Based on the fold change threshold, you can determine how much difference you want to see between two interested patients sub-groups. For the tutorial, we already saved the needed input for this function (2000 highly variable genes for each cell type). 
     
-You can run this function for your own data, and it automatically extracts the gene expressions for each cell type. In case you want highly variable genes, please make the "highly_variable_genes_" parameter True.
+You can run this function for your own data, and it automatically extracts the gene expressions for each cell type ("2000 highly variable genes). In case you want all/more genes, please change the "highly_variable_genes_" or "n_top_genes" parameters.
 </div>
 
 
@@ -222,7 +220,7 @@ cell_type = "Ductal cell type 1" #look at the Cells folder
 pl.tl.compute_diff_expressions(adata,cell_type, proportion_df,
                          fc_thr =  0.5, pval_thr = 0.05,
                          group1 = 'Tumor 1', group2 = 'Tumor 2',sample_col='sampleID',
-                               col_cell='cell_types'
+                               col_cell='cell_types',
                             )
 ```
 
@@ -359,3 +357,8 @@ pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 2
 ![png](Patients_sub_group_detection_files/Patients_sub_group_detection_43_0.png)
     
 
+
+
+```python
+
+```
