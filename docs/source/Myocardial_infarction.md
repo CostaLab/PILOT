@@ -5,7 +5,7 @@
 
 Welcome to the PILOT Package Tutorial for scRNA Data!
 
-Here we show the whole process for applying PILOT to scRNA data using Myocardial Infarction scRNA Data, you can download the Anndata (h5ad) file from [here](https://costalab.ukaachen.de/open_data/PILOT/myocardial_infarction.h5ad).
+Here we show the whole process for applying PILOT to scRNA data using Myocardial Infarction scRNA Data, you can download the Anndata (h5ad) file from [here](https://costalab.ukaachen.de/open_data/PILOT/myocardial_infarction.h5ad), and place it in the _Datasets_ folder.
 
 </div>
 
@@ -19,7 +19,7 @@ import scanpy as sc
 
 
 ```python
-adata=sc.read_h5ad('myocardial_infarction.h5ad')
+adata = sc.read_h5ad('Datasets/myocardial_infarction.h5ad')
 ```
 
 ###### Loading the required information and computing the Wasserstein distance:
@@ -27,22 +27,27 @@ adata=sc.read_h5ad('myocardial_infarction.h5ad')
     
 Use the following parameters to configure PILOT for your analysis (Setting Parameters):
     
-adata: Pass your loaded Anndata object to PILOT.
+ - adata: Pass your loaded Anndata object to PILOT.
     
-emb_matrix: Provide the name of the variable in the obsm level that holds the dimension reduction (PCA representation).
+ - emb_matrix: Provide the name of the variable in the obsm level that holds the dimension reduction (PCA representation).
     
-clusters_col: Specify the name of the column in the observation level of your Anndata that corresponds to cell types or clusters.
+ - clusters_col: Specify the name of the column in the observation level of your Anndata that corresponds to cell types or clusters.
     
-sample_col: Indicate the column name in the observation level of your Anndata that contains information about samples or patients.
+ - sample_col: Indicate the column name in the observation level of your Anndata that contains information about samples or patients.
     
-status: Provide the column name that represents the status or disease (e.g., "control" or "case").
+ - status: Provide the column name that represents the status or disease (e.g., "control" or "case").
        
 </div>
 
 
 ```python
-pl.tl.wasserstein_distance(adata,emb_matrix='PCA',
-clusters_col='cell_subtype',sample_col='sampleID',status='Status')
+pl.tl.wasserstein_distance(
+  adata,
+  emb_matrix = 'PCA',
+  clusters_col = 'cell_subtype',
+  sample_col = 'sampleID',
+  status = 'Status'
+)
 ```
 
 ##### Ploting the Cost matrix and the Wasserstein distance:
@@ -85,13 +90,13 @@ pl.pl.trajectory(adata,colors=['Blue','red'])
 
 #####  Fit a principal graph:
 <div class="alert alert-block alert-info"> 
-The difussion map creates an embedding that potentially reveals a trajectory in the data. Next, PILOT explores EIPLGraph to find the structure of the trajectory. An important parameter is the source_node, which indicates the start of the trajectory. Here, we selected a control sample (node by id 7). This method returns rank samples, which we define as a disease progression score (t = t1, ..., tn), where tl represents the ranking of the nth sample.
+The difussion map creates an embedding that potentially reveals a trajectory in the data. Next, PILOT explores EIPLGraph to find the structure of the trajectory. An important parameter is the source_node, which indicates the start of the trajectory. Here, we selected a control sample (node with id = 7). This method returns ranked samples, which we define as a disease progression score (t = t1, ..., tn), where tl represents the ranking of the nth sample.
 </div>
 
 
 
 ```python
-pl.pl.fit_pricipla_graph(adata,source_node=7)
+pl.pl.fit_pricipla_graph(adata, source_node = 7)
 ```
 
 
@@ -107,7 +112,7 @@ Next, we can use the robust regression model to find cells whose proportions cha
 
 
 ```python
-pl.tl.cell_importance(adata,height=45,width=38,fontsize=28)
+pl.tl.cell_importance(adata, height = 45, width = 38, fontsize = 28)
 ```
 
 
@@ -126,15 +131,24 @@ pl.tl.cell_importance(adata,height=45,width=38,fontsize=28)
 
 ##### Gene selection:
 <div class="alert alert-block alert-info"> 
-Given that we found interesting cell types, we would like to investigate genes associated with these trajectories, i.e. genes, whose expression changes linearly or quadratically with the disease progression. After running the command, you can find a folder named ‘Markers’. There, we will have a folder for each cell type. The file ‘Whole_expressions.csv’ contains all statistics associated with genes for that cell type. Here, we run the genes_importance function for whole cell types.
+Given that we found interesting cell types, we would like to investigate genes associated with these trajectories, i.e. genes, whose expression changes linearly or quadratically with the disease progression. At this point you should have a 'Results_PILOT' folder inside the folder where you are running your analysis.
+In this results folder, and after running the command below, you will find a folder named ‘Markers’. There, we will have a folder for each cell type. The file ‘Whole_expressions.csv’ contains all statistics associated with genes for that cell type. Here, we run the genes_importance function for whole cell types.
     
 * You need to set names of columns that show cell_types/clusters and Samples/Patients in your object.
+
+Note that if you are running this step on a personal computer, this step might take a long time to execute (~5 to 8 hours).
 </div>
 
 
 ```python
 for cell in adata.uns['cellnames']:
-    pl.tl.genes_importance(adata,name_cell=cell,sample_col='sampleID',col_cell='cell_subtype',plot_genes=False)
+    pl.tl.genes_importance(
+      adata,
+      name_cell=cell,
+      sample_col = 'sampleID',
+      col_cell = 'cell_subtype',
+      plot_genes = False
+    )
 ```
 
     
@@ -148,7 +162,7 @@ In the code below, we consider top genes (regarding the regression fit) for two 
 
 
 ```python
-pl.tl.gene_cluster_differentiation(adata,cellnames=['healthy_CM','Myofib'],number_genes=70)
+pl.tl.gene_cluster_differentiation(adata, cellnames = ['healthy_CM','Myofib'], number_genes = 70)
 ```
 
     
@@ -161,7 +175,7 @@ Test results are saved in ‘gene_clusters_stats_extend.csv’. To find a final 
 
 
 ```python
-df=pl.tl.results_gene_cluster_differentiation(cluster_name='Myofib').head(50)
+df = pl.tl.results_gene_cluster_differentiation(cluster_name = 'Myofib').head(50)
 df.head(15)
 ```
 
@@ -369,12 +383,12 @@ df.head(15)
 
 
 <div class="alert alert-block alert-info"> 
-Here is the GO enrichment for  the 50 first top genes of Myofib (FC >= 0.5 and p-value < 0.01).
+Here is the GO enrichment for the 50 first top genes of Myofib (FC >= 0.5 and p-value < 0.01).
 </div>
 
 
 ```python
-pl.pl.go_enrichment(df,cell_type='Myofib')
+pl.pl.go_enrichment(df, cell_type='Myofib')
 ```
 
 
@@ -389,7 +403,7 @@ Plots of genes are saved at 'plot_genes_for_Myofib' folder. We can visualize spe
 
 
 ```python
-pl.pl.exploring_specific_genes(cluster_name='Myofib',gene_list=['COL1A2','DCN','EXT1'],)
+pl.pl.exploring_specific_genes(cluster_name = 'Myofib', gene_list = ['COL1A2','DCN','EXT1'],)
 ```
 
 
@@ -407,7 +421,7 @@ We can repeat the same analysis for healthy_CM cell type by using the following 
 
 
 ```python
-df=pl.tl.results_gene_cluster_differentiation(cluster_name='healthy_CM').head(50)
+df = pl.tl.results_gene_cluster_differentiation(cluster_name = 'healthy_CM').head(50)
 df.head(15)
 ```
 
@@ -616,7 +630,7 @@ df.head(15)
 
 
 ```python
-pl.pl.go_enrichment(df,cell_type='healthy_CM')
+pl.pl.go_enrichment(df, cell_type = 'healthy_CM')
 ```
 
 
@@ -627,7 +641,7 @@ pl.pl.go_enrichment(df,cell_type='healthy_CM')
 
 
 ```python
-pl.pl.exploring_specific_genes(cluster_name='healthy_CM',gene_list=['MYBPC3','MYOM1','FHOD3'])
+pl.pl.exploring_specific_genes(cluster_name = 'healthy_CM', gene_list = ['MYBPC3','MYOM1','FHOD3'])
 ```
 
 
