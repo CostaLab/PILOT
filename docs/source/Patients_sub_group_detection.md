@@ -224,8 +224,7 @@ pl.tl.compute_diff_expressions(adata,cell_type, proportion_df,
                             )
 ```
 
-    run limma lmFit
-    run limma eBayes
+    
 
 
 
@@ -275,8 +274,7 @@ pl.tl.compute_diff_expressions(adata,cell_type, proportion_df,
                                col_cell='cell_types')
 ```
 
-    run limma lmFit
-    run limma eBayes
+
 
 
 
@@ -322,8 +320,7 @@ pl.tl.compute_diff_expressions(adata,cell_type, proportion_df,
                                col_cell='cell_types')
 ```
 
-    run limma lmFit
-    run limma eBayes
+   
 
 
 
