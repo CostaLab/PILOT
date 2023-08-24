@@ -20,7 +20,7 @@ import scanpy as sc
 
 
 ```python
-adata=sc.read_h5ad('PDAC.h5ad')
+adata = sc.read_h5ad('PDAC.h5ad')
 ```
 
     
@@ -126,7 +126,7 @@ proportion_df=pl.pl.clustering_emd(adata,res=adata.uns['best_res'])
     
 
 
-Here we can see that all of the Normal samples are in cluster 1, so we can rename the name of clusters for future analysis. This step is optional!
+Here we can see that all of the Normal samples are in cluster 1, so we can rename the name of clusters for future analysis. Although this step is optional, we chose to do it in this tutorial.
 
 
 ```python
@@ -145,9 +145,12 @@ Based on the adjusted p-value threshold you consider, you can choose how statist
 
 
 ```python
-pl.pl.cell_type_diff_two_sub_patient_groups(proportion_df, proportion_df.columns[0:-2],
-                                      group1 = 'Tumor 2', group2 = 'Tumor 1',
-                                      pval_thr = 0.05, figsize = (15, 4))
+pl.pl.cell_type_diff_two_sub_patient_groups(
+    proportions = proportion_df,
+    cell_types = proportion_df.columns[0:-2],
+    group1 = 'Tumor 2', group2 = 'Tumor 1',
+    pval_thr = 0.05, figsize = (15, 4)
+)
 ```
 
 
@@ -162,8 +165,12 @@ Next, we can check the distribution of each patient sub-group in each cell type 
 
 
 ```python
-pl.pl.plot_cell_types_distributions(proportion_df, cell_types=['Stellate cell','Ductal cell type 2','Ductal cell type 1'],
-                              figsize = (17,8),label_order=['Normal', 'Tumor 1', 'Tumor 2'],label_colors=['#FF7F00','#BCD2EE','#1874CD'])
+pl.pl.plot_cell_types_distributions(
+    proportion_df,
+    cell_types = ['Stellate cell', 'Ductal cell type 2', 'Ductal cell type 1'],
+    figsize = (17,8), label_order = ['Normal', 'Tumor 1', 'Tumor 2'],
+    label_colors = ['#FF7F00', '#BCD2EE', '#1874CD']
+)
 ```
 
 
