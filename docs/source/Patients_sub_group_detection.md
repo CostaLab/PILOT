@@ -244,7 +244,7 @@ Based on the fold change threshold, you can determine how much difference you wa
 
 
 ```python
-cell_type = "Ductal cell type 1" #look at the Cells folder
+cell_type = "Ductal cell type 1"
 pl.tl.compute_diff_expressions(
     adata,
     cell_type,
