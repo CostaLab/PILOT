@@ -24,10 +24,7 @@ Once you've completed these steps, you can proceed to run the tutorials and expl
 When doing so, remember to move to the tutorial folder, as all the work will be performed there:
 
 ```terminal
-
 cd Tutorial
-
-
 ```
 
 ## [Tutorial](https://pilot.readthedocs.io/en/latest/index.html)
