@@ -408,7 +408,7 @@ pl.pl.exploring_specific_genes(cluster_name = 'Myofib', gene_list = ['COL1A2','D
 ```
 
 
-    <Figure size 8000x8000 with 0 Axes>
+
 
 
 
@@ -655,7 +655,7 @@ pl.pl.exploring_specific_genes(cluster_name = 'healthy_CM', gene_list = ['MYBPC3
 ```
 
 
-    <Figure size 8000x8000 with 0 Axes>
+
 
 
 
