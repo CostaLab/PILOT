@@ -568,7 +568,11 @@ def plot_cell_types_distributions(proportions: pd.DataFrame = None,
 
 def gene_annotation_cell_type_subgroup(cell_type: str = None,
                                        group: str = None,
-                                      source:str=None,num_gos:int=5,fig_h:int=15,fig_w:int=12,font_size:int=24):
+                                       source: str = None,
+                                       num_gos: int = 10,
+                                       fig_h: int = 15,
+                                       fig_w: int = 12,
+                                       font_size: int = 24):
     """
     
 
@@ -577,31 +581,39 @@ def gene_annotation_cell_type_subgroup(cell_type: str = None,
     cell_type : str, optional
         Specify cell type name to check its differential expression genes. The default is None.
     group : str, optional
-        Name of patients sub-group of interest . The default is None.
+        Name of patients sub-group of interest. The default is None.
     path_to_results : str, optional
         Path to store the results. The default is None.
     num_gos: float, number of GO for ploting.
-    fig_h:int, height of figure,
-    fig_w:int, width of figure
-    font_size:int, size of labels
+    fig_h: int, height of figure,
+    fig_w: int, width of figure
+    font_size: int, size of labels
+    
     Returns
     -------
     None.
     Plot to show the most relative GO terms for specifc cell-type of determind patient sub-group
     """
 
-    path_to_results='Results_PILOT'
-    group_genes = pd.read_csv(path_to_results +'/Diff_Expressions_Results/'+cell_type+"/significant_genes_"+cell_type+"_"+group+".csv",
-                               index_col=0)
-    gp = GProfiler(return_dataframe=True)
-    gprofiler_results = gp.profile(organism = 'hsapiens',
-                query = list(group_genes['0'].values))
-    num_gos = num_gos
-    if(gprofiler_results.shape[0] < num_gos):
+    path_to_results = 'Results_PILOT'
+
+    group_genes = pd.read_csv(path_to_results + '/Diff_Expressions_Results/' + cell_type + \
+                              "/significant_genes_" + cell_type + "_" + group + ".csv",
+                               index_col = 0)
+    gp = GProfiler(return_dataframe = True)
+    if list(group_genes['0'].values):
+        gprofiler_results = gp.profile(organism = 'hsapiens',
+                                       query = list(group_genes['0'].values))
+    else:
+        return "Genes list is empty!"
+    
+    if(gprofiler_results.shape[0] == 0):
+        return "Not enough information!"
+    elif(gprofiler_results.shape[0] < num_gos):
         num_gos = gprofiler_results.shape[0]
     
     if source: 
-        gprofiler_results = gprofiler_results[gprofiler_results['source']==source]
+        gprofiler_results = gprofiler_results[gprofiler_results['source'] == source]
        
     
     #selected_gps = gprofiler_results.loc[0:num_gos,['name', 'p_value']]
@@ -609,11 +621,11 @@ def gene_annotation_cell_type_subgroup(cell_type: str = None,
     
     selected_gps['nlog10'] = -np.log10(selected_gps['p_value'].values)
 
-    figsize = (fig_h,fig_w)
+    figsize = (fig_h, fig_w)
 
     plt.figure(figsize = figsize, dpi = 100)
     plt.style.use('default')
-    sns.scatterplot(data = selected_gps, x="nlog10", y="name", s = 200, color = 'tab:blue')
+    sns.scatterplot(data = selected_gps, x = "nlog10", y = "name", s = 200, color = 'tab:blue')
 
     plt.title('GO enrichment in ' + cell_type + ' associated with ' + group, fontsize = 32)
 
@@ -623,11 +635,11 @@ def gene_annotation_cell_type_subgroup(cell_type: str = None,
     plt.ylabel("GO Terms", size = 24)
     plt.xlabel("-$log_{10}$ (P-value)", size = 24)
     
-    if not os.path.exists(path_to_results+'/Diff_Expressions_Results/'+cell_type+'/GO_analysis/'):
-            os.makedirs(path_to_results+'/Diff_Expressions_Results/'+cell_type+'/GO_analysis/')
-    path_to_results=path_to_results+'/Diff_Expressions_Results/'+cell_type+'/GO_analysis/'
-    plt.savefig(path_to_results+ group + ".pdf", bbox_inches = 'tight', facecolor='white', transparent=False)
-    
+    save_path = path_to_results + '/Diff_Expressions_Results/' + cell_type + '/GO_analysis/'
+    if not os.path.exists(save_path):
+            os.makedirs(save_path)
+    plt.savefig(save_path + group + ".pdf", bbox_inches = 'tight',
+                facecolor = 'white', transparent = False)
 
 
 
