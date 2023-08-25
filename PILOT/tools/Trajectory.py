@@ -1511,11 +1511,13 @@ def results_gene_cluster_differentiation(cluster_name=None,sort_columns=['pvalue
         cluster_name : str, optional
             The name of the gene cluster to retrieve statistics for. Default is None.
         sort_columns : list of str, optional
-            List of column names to sort the data by. Default is ['FC', 'fit-pvalue'].
+            List of column names to sort the data by. Default is ['pvalue'].
         ascending : list of bool, optional
-            List indicating sorting order for each corresponding column. Default is [False, True].
-        threshold: float, optional.
-             filtering the genes that their FCs are highter that threshold.
+            List indicating sorting order for each corresponding column. Default is [True].
+        threshold: float, optional
+             Select genes with fold changes higher than the defined threshold. Default is 0.5.
+        p_value: float, optional
+               Select genes with the Wald test p-value less than the defined one. Default is 0.01.
 
     Returns:
         pandas.DataFrame

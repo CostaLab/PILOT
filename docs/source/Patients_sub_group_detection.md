@@ -7,7 +7,8 @@
 
 In this tutorial, we are using single-cell data from pancreatic ductal adenocarcinomas to find sub-groups of patients using clustering of W distances. And then we rank the cells/genes based on clustering results.
 
-* You can download the Anndata (h5ad) file for this tutorial from [here](https://costalab.ukaachen.de/open_data/PILOT/PDAC.h5ad).
+* You can download the Anndata (h5ad) file for this tutorial from [here](https://costalab.ukaachen.de/open_data/PILOT/PDAC.h5ad) and place it in the _Datasets_ folder.
+
 </div>
 
 
@@ -20,7 +21,7 @@ import scanpy as sc
 
 
 ```python
-adata=sc.read_h5ad('PDAC.h5ad')
+adata = sc.read_h5ad('Datasets/PDAC.h5ad')
 ```
 
 ##### Loading the required information and computing the Wasserstein distance:
@@ -28,27 +29,32 @@ adata=sc.read_h5ad('PDAC.h5ad')
     
 Use the following parameters to configure PILOT for your analysis (Setting Parameters):
     
-adata: Pass your loaded Anndata object to PILOT.
+- adata: Pass your loaded Anndata object to PILOT.
     
-emb_matrix: Provide the name of the variable in the obsm level that holds the dimension reduction (PCA representation).
+- emb_matrix: Provide the name of the variable in the obsm level that holds the dimension reduction (PCA representation).
     
-clusters_col: Specify the name of the column in the observation level of your Anndata that corresponds to cell types or clusters.
+- clusters_col: Specify the name of the column in the observation level of your Anndata that corresponds to cell types or clusters.
     
-sample_col: Indicate the column name in the observation level of your Anndata that contains information about samples or patients.
+- sample_col: Indicate the column name in the observation level of your Anndata that contains information about samples or patients.
     
-status: Provide the column name that represents the status or disease (e.g., "control" or "case").
+- status: Provide the column name that represents the status or disease (e.g., "control" or "case").
        
 </div>
 
 
 ```python
-pl.tl.wasserstein_distance(adata,emb_matrix='X_pca',
-clusters_col='cell_types',sample_col='sampleID',status='status')
+pl.tl.wasserstein_distance(
+    adata,
+    emb_matrix='X_pca',
+    clusters_col='cell_types',
+    sample_col='sampleID',
+    status='status'
+    )
 ```
 
 ##### Ploting the Cost matrix and the Wasserstein distance:
 <div class="alert alert-block alert-info"> 
- Here we show the heatmaps of the Cost matrix (cells) and Wasserstein distance (samples).      
+ Here we show the heatmaps of the Cost matrix (cells) and Wasserstein distance (samples). At this point, you should have a 'Results_PILOT' folder inside the folder where you are running your analysis, which includes all the plots created by PILOT.
 </div>
 
 
@@ -70,12 +76,12 @@ pl.pl.heatmaps(adata)
 
 ##### Trajectory:
 <div class="alert alert-block alert-info"> 
- Here we show the Diffusion map of Wasserstein distance. In the upcoming trajectory analysis, the labels "T" signify Tumor and "N" indicates the Normal.
+ Here we show the Diffusion map of Wasserstein distance. In the upcoming trajectory analysis, the labels "T" stands for Tumor and "N" stands for the Normal.
 </div>
 
 
 ```python
-pl.pl.trajectory(adata,colors=['red','Blue'])
+pl.pl.trajectory(adata, colors = ['red','Blue'])
 ```
 
 
@@ -114,8 +120,10 @@ Using the Silhouette scores of the previous step, we can find the optimal number
 
 
 ```python
-proportion_df=pl.pl.clustering_emd(adata,res=adata.uns['best_res'])
+proportion_df=pl.pl.clustering_emd(adata, res = adata.uns['best_res'])
 ```
+
+    WARNING: dendrogram data not found (using key=dendrogram_Leiden). Running `sc.tl.dendrogram` with default parameters. For fine tuning it is recommended to run `sc.tl.dendrogram` independently.
 
 
 
@@ -124,13 +132,15 @@ proportion_df=pl.pl.clustering_emd(adata,res=adata.uns['best_res'])
     
 
 
-Here we can see that all of the Normal samples are in cluster 1, so we can rename the name of clusters for future analysis. This step is optional!
+<div class="alert alert-block alert-info"> 
+Here we can see that all of the Normal samples are in cluster 1, so we can rename the name of clusters for future analysis. Although this step is optional, we chose to do it in this tutorial.
+ </div>
 
 
 ```python
-proportion_df.loc[proportion_df['Predicted_Labels']=='0', 'Predicted_Labels'] = 'Tumor 1'
-proportion_df.loc[proportion_df['Predicted_Labels']=='1', 'Predicted_Labels'] = 'Normal'
-proportion_df.loc[proportion_df['Predicted_Labels']=='2', 'Predicted_Labels'] = 'Tumor 2'
+proportion_df.loc[proportion_df['Predicted_Labels'] == '0', 'Predicted_Labels'] = 'Tumor 1'
+proportion_df.loc[proportion_df['Predicted_Labels'] == '1', 'Predicted_Labels'] = 'Normal'
+proportion_df.loc[proportion_df['Predicted_Labels'] == '2', 'Predicted_Labels'] = 'Tumor 2'
 ```
 
 ##### Cell-type selection. 
@@ -143,9 +153,14 @@ Based on the adjusted p-value threshold you consider, you can choose how statist
 
 
 ```python
-pl.pl.cell_type_diff_two_sub_patient_groups(proportion_df, proportion_df.columns[0:-2],
-                                      group1 = 'Tumor 2', group2 = 'Tumor 1',
-                                      pval_thr = 0.05, figsize = (15, 4))
+pl.pl.cell_type_diff_two_sub_patient_groups(
+    proportion_df,
+    proportion_df.columns[0:-2],
+    group1 = 'Tumor 2', 
+    group2 = 'Tumor 1',
+    pval_thr = 0.05, 
+    figsize = (15, 4)
+    )
 ```
 
 
@@ -160,8 +175,13 @@ Next, we can check the distribution of each patient sub-group in each cell type 
 
 
 ```python
-pl.pl.plot_cell_types_distributions(proportion_df, cell_types=['Stellate cell','Ductal cell type 2','Ductal cell type 1'],
-                              figsize = (17,8),label_order=['Normal', 'Tumor 1', 'Tumor 2'],label_colors=['#FF7F00','#BCD2EE','#1874CD'])
+pl.pl.plot_cell_types_distributions(
+    proportion_df,
+    cell_types = ['Stellate cell','Ductal cell type 2','Ductal cell type 1'],
+    figsize = (17,8),
+    label_order = ['Normal', 'Tumor 1', 'Tumor 2'],
+    label_colors = ['#FF7F00','#BCD2EE','#1874CD']
+    )
 ```
 
 
@@ -176,8 +196,13 @@ pl.pl.plot_cell_types_distributions(proportion_df, cell_types=['Stellate cell','
 
 
 ```python
-pl.pl.plot_cell_types_distributions(proportion_df, cell_types=list(proportion_df.columns[0:-2]),
-                              figsize = (17,8),label_order=['Normal', 'Tumor 1', 'Tumor 2'],label_colors=['#FF7F00','#BCD2EE','#1874CD'])
+pl.pl.plot_cell_types_distributions(
+    proportion_df,
+    cell_types = list(proportion_df.columns[0:-2]),
+    figsize = (17,8),
+    label_order = ['Normal', 'Tumor 1', 'Tumor 2'],
+    label_colors = ['#FF7F00','#BCD2EE','#1874CD']
+    )
 ```
 
 
@@ -193,6 +218,9 @@ You can the results in 'Results_PILOT/Diff_Expressions_Results' folder.
 </div>
 
 #### Differential expression analysis
+<div class="alert alert-block alert-info"> 
+At this point for each cell type the plots and results are saved at 'Results_PILOT/Diff_Expressions_Results' folder.
+</div>
 
 ##### Note:
 
@@ -211,20 +239,27 @@ This step needs the 'limma' package in R, You need to run this function to insta
 In the next step, for specific cell types, we find the Differential genes between two interested patient sub-groups
 Based on the fold change threshold, you can determine how much difference you want to see between two interested patients sub-groups. For the tutorial, we already saved the needed input for this function (2000 highly variable genes for each cell type). 
     
-You can run this function for your own data, and it automatically extracts the gene expressions for each cell type ("2000 highly variable genes). In case you want all/more genes, please change the "highly_variable_genes_" or "n_top_genes" parameters.
+- You can run this function for your own data, and it automatically extracts the gene expressions for each cell type ("2000 highly variable genes). In case you want all/more genes, please change the "highly_variable_genes_" or "n_top_genes" parameters.
 </div>
 
 
 ```python
 cell_type = "Ductal cell type 1" #look at the Cells folder
-pl.tl.compute_diff_expressions(adata,cell_type, proportion_df,
-                         fc_thr =  0.5, pval_thr = 0.05,
-                         group1 = 'Tumor 1', group2 = 'Tumor 2',sample_col='sampleID',
-                               col_cell='cell_types',
-                            )
+pl.tl.compute_diff_expressions(
+    adata,
+    cell_type,
+    proportion_df,
+    fc_thr =  0.5,
+    pval_thr = 0.05,
+    group1 = 'Tumor 1', 
+    group2 = 'Tumor 2',
+    sample_col = 'sampleID',
+    col_cell = 'cell_types',
+    )
 ```
 
-    
+    run limma lmFit
+    run limma eBayes
 
 
 
@@ -241,8 +276,11 @@ pl.tl.compute_diff_expressions(adata,cell_type, proportion_df,
 
 
 ```python
-pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 1'
-                                   ,num_gos=10)
+pl.pl.gene_annotation_cell_type_subgroup(
+    cell_type = cell_type, 
+    group = 'Tumor 1',
+    num_gos = 10
+    )
 ```
 
 
@@ -253,8 +291,11 @@ pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 1
 
 
 ```python
-pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 2',
-                                   num_gos=10)
+pl.pl.gene_annotation_cell_type_subgroup(
+    cell_type = cell_type,
+    group = 'Tumor 2',
+    num_gos = 10
+    )
 ```
 
 
@@ -267,14 +308,22 @@ pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 2
 
 
 ```python
-cell_type = "Stellate cell" #look at the Cells folder
-pl.tl.compute_diff_expressions(adata,cell_type, proportion_df,
-                         fc_thr = 0.1, pval_thr = 0.05,
-                         group1 = 'Tumor 1', group2 = 'Tumor 2',sample_col='sampleID',
-                               col_cell='cell_types')
+cell_type = "Stellate cell" 
+pl.tl.compute_diff_expressions(
+    adata,
+    cell_type,
+    proportion_df,
+    fc_thr = 0.1,
+    pval_thr = 0.05,
+    group1 = 'Tumor 1',
+    group2 = 'Tumor 2',
+    sample_col = 'sampleID',
+   col_cell = 'cell_types'
+    )
 ```
 
-
+    run limma lmFit
+    run limma eBayes
 
 
 
@@ -287,8 +336,11 @@ pl.tl.compute_diff_expressions(adata,cell_type, proportion_df,
 
 
 ```python
-pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 1',
-                                   num_gos=10)
+pl.pl.gene_annotation_cell_type_subgroup(
+    cell_type = cell_type, 
+    group = 'Tumor 1',
+    num_gos = 10
+    )
 ```
 
 
@@ -299,8 +351,11 @@ pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 1
 
 
 ```python
-pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 2',
-                                  num_gos=10)
+pl.pl.gene_annotation_cell_type_subgroup(
+    cell_type = cell_type,
+    group = 'Tumor 2',
+    num_gos = 10
+    )
 ```
 
 
@@ -313,14 +368,22 @@ pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 2
 
 
 ```python
-cell_type = "Ductal cell type 2" #look at the Cells folder
-pl.tl.compute_diff_expressions(adata,cell_type, proportion_df,
-                         fc_thr = 0.020, pval_thr = 0.05,
-                         group1 = 'Tumor 1', group2 = 'Tumor 2',sample_col='sampleID',
-                               col_cell='cell_types')
+cell_type = "Ductal cell type 2" 
+pl.tl.compute_diff_expressions(
+    adata,
+    cell_type, 
+    proportion_df,
+    fc_thr = 0.020,
+    pval_thr = 0.05,
+    group1 = 'Tumor 1',
+    group2 = 'Tumor 2',
+    sample_col = 'sampleID',
+    col_cell = 'cell_types',
+    )
 ```
 
-   
+    run limma lmFit
+    run limma eBayes
 
 
 
@@ -333,8 +396,11 @@ pl.tl.compute_diff_expressions(adata,cell_type, proportion_df,
 
 
 ```python
-pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 1',
-                                   num_gos=10)
+pl.pl.gene_annotation_cell_type_subgroup(
+    cell_type = cell_type,
+    group = 'Tumor 1',
+    num_gos = 10
+    )
 ```
 
 
@@ -345,8 +411,11 @@ pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 1
 
 
 ```python
-pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 2',
-                                   num_gos=10)
+pl.pl.gene_annotation_cell_type_subgroup(
+    cell_type = cell_type, 
+    group = 'Tumor 2',
+    num_gos = 10
+    )
 ```
 
 
@@ -354,8 +423,3 @@ pl.pl.gene_annotation_cell_type_subgroup(cell_type = cell_type, group = 'Tumor 2
 ![png](Patients_sub_group_detection_files/Patients_sub_group_detection_43_0.png)
     
 
-
-
-```python
-
-```
