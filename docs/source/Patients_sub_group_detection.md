@@ -123,7 +123,7 @@ Using the Silhouette scores of the previous step, we can find the optimal number
 proportion_df=pl.pl.clustering_emd(adata, res = adata.uns['best_res'])
 ```
 
-    WARNING: dendrogram data not found (using key=dendrogram_Leiden). Running `sc.tl.dendrogram` with default parameters. For fine tuning it is recommended to run `sc.tl.dendrogram` independently.
+
 
 
 
@@ -258,8 +258,7 @@ pl.tl.compute_diff_expressions(
     )
 ```
 
-    run limma lmFit
-    run limma eBayes
+ 
 
 
 
@@ -322,9 +321,7 @@ pl.tl.compute_diff_expressions(
     )
 ```
 
-    run limma lmFit
-    run limma eBayes
-
+  
 
 
     
@@ -382,8 +379,7 @@ pl.tl.compute_diff_expressions(
     )
 ```
 
-    run limma lmFit
-    run limma eBayes
+
 
 
 
