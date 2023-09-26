@@ -11,7 +11,6 @@
 Follow these steps to install and set up PILOT:
 
 ```bash
-
 git clone https://github.com/CostaLab/PILOT
 cd PILOT
 conda create --name PILOT r-base
@@ -19,9 +18,15 @@ conda activate PILOT
 conda install -c conda-forge rpy2
 conda install jupyter
 pip install .
+```
+Once you've completed these steps, you can proceed to run the tutorials and explore the features of PILOT. 
+When doing so, remember to move to the tutorial folder, as all the work will be performed there:
+```bash
+
+cd Tutorial
+
 
 ```
-Once you've completed these steps, you can proceed to run the tutorials and explore the features of PILOT.
 
 
 

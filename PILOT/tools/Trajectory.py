@@ -16,19 +16,16 @@ from sklearn.preprocessing import label_binarize
 import time
 import sys 
 from genericpath import isfile
+from ..plot.ploting import *
 from .Cell_gene_selection import *
 from .Gene_cluster_specific import *
+from .Gene_cluster_specific_functions import *
 import warnings
 import ot
 from logging import info, warn
 from cycler import cycler
 from matplotlib.image import imread
 warnings.filterwarnings('ignore')
-
-
-
-
-
 
 
 def wasserstein_distance(adata,emb_matrix='X_PCA',
@@ -587,7 +584,6 @@ def Clustering(EMD, df, category = 'status', sample_col=1,res = 0.01,metric ='co
 
 
 
-
 def Sil_computing(EMD, real_labels, metric='cosine'):
     """
     Compute the Silhouette score based on Wasserstein distances.
@@ -611,116 +607,6 @@ def Sil_computing(EMD, real_labels, metric='cosine'):
     return Silhouette
 
 
-
-
-
-
-def plt_trajectory(adata,n_evecs = 2, epsilon =1, alpha = 0.5,knn= 64, sample_col=1, clusters = 'status',label_act = False,colors=['#377eb8','#ff7f00','#e41a1c'],location_labels='center', fig_h=12,fig_w=12,font_size=24,axes_line_width=1,axes_color='black',facecolor='white',point_size=100,cmap='viridis',fontsize_legend=24,alpha_trans=1,plot_titel = "Trajectory of the disease progression"):
-    """
-    Find trajectories using Diffusion Maps and visualize the trajectory plot.
-
-    Parameters
-    ----------
-    adata : AnnData
-        Annotated data matrix containing EMD, annotations, and other necessary data.
-    n_evecs : int, optional
-        Number of embedding vectors, by default 2.
-    epsilon : float or str, optional
-        Method for choosing the epsilon in diffusion maps, by default 1.
-    alpha : float, optional
-        Normalization parameter in the bandwidth function, by default 0.5.
-    knn : int, optional
-        Number of nearest neighbors for constructing the kernel, by default 64.
-    sample_col : int, optional
-        Index of the column representing sample IDs in annotation data, by default 1.
-    clusters : str, optional
-        Name of the column representing clusters/categories in annotation data, by default 'status'.
-    label_act : bool, optional
-        Whether to label data points with sample IDs, by default False.
-    colors : list, optional
-        List of colors for different categories, by default ['#377eb8', '#ff7f00', '#e41a1c'].
-    location_labels : str, optional
-        Location of the legend labels, by default 'center'.
-    fig_h : int, optional
-        Height of the figure, by default 12.
-    fig_w : int, optional
-        Width of the figure, by default 12.
-    font_size : int, optional
-        Font size for labels and annotations, by default 24.
-    axes_line_width : float, optional
-        Line width of the axes, by default 1.
-    axes_color : str, optional
-        Color of the axes lines, by default 'black'.
-    facecolor : str, optional
-        Background color of the figure, by default 'white'.
-    point_size : int, optional
-        Size of the data points in the plot, by default 100.
-    cmap : str, optional
-        Colormap for scatter plot, by default 'viridis'.
-    fontsize_legend : int, optional
-        Font size of the legend, by default 24.
-    alpha_trans : float, optional
-        Transparency level for data points, by default 1.
-    plot_title : str, optional
-        Title of the plot, by default "Trajectory of the disease progression".
-
-    Returns
-    -------
-    None
-        Visualizes and saves the trajectory plot.
-    """
-
-    
-    EMD=adata.uns['EMD']/adata.uns['EMD'].max()
-    df=adata.uns['annot']
-    path=path_to_results
-    
-    custom_cycler = (cycler(color=colors))
-    
-    plot_titel = plot_titel
-
-   
-    mydmap = diffusion_map.DiffusionMap.from_sklearn(n_evecs = n_evecs, epsilon =epsilon, alpha = alpha, k=knn)
-    embedding = mydmap.fit_transform(EMD)
-        
-    plt.rcParams.update({'font.size': font_size})
-    plt.rcParams["axes.edgecolor"] = axes_color
-    plt.rcParams["axes.linewidth"] = axes_line_width
-
-    df = df.drop_duplicates(subset =[df.columns[sample_col]])
-    fig = plt.figure()
-    fig.set_size_inches(fig_h, fig_w)
-    
-    ax = plt.gca()
-    
-    ax.set(facecolor = facecolor)
-    ax.set_prop_cycle(custom_cycler)
-   
-    for category in df[clusters].unique():
-        aux = np.array(df[clusters] == category)
-        group_data = embedding[aux]
-        scatter = ax.scatter(group_data[:,0],group_data[:,1], alpha=alpha_trans,label=category, cmap=cmap,s=point_size) 
-        
-        if label_act == True:
-            names = np.array(df[df[clusters] == category].sampleID)
-            k = 0
-            for txt in names:
-                ax.annotate(txt, (group_data[k,0], group_data[k,1]),fontsize=font_size)
-                k=k+1
-
-    ax.legend(loc=location_labels, fontsize=fontsize_legend)
-    plt.title(plot_titel)
-    plt.savefig(path+"/"+plot_titel+'.pdf')
-    plt.show()         
-    plt.close(fig)
-    
-    
-    adata.uns['embedding']=embedding
-
-    
-    
-    
-    
       
         
 def return_real_labels(df, category = 'status', sample_col=1):
@@ -752,117 +638,9 @@ def return_real_labels(df, category = 'status', sample_col=1):
         
 
 
-    
-def plt_heatmaps(adata,figsize_h=12,figsize_w=12,col_cluster=True,row_cluster=True,cmap='Blues_r',font_scale=2):
-    """
-    Plot heatmaps of cost matrix and Wasserstein distances.
-
-    Parameters
-    ----------
-    adata : AnnData
-        Annotated data matrix containing annotations, cost matrix, and Wasserstein distances.
-    figsize_h : int, optional
-        Height of the heatmap figure, by default 12.
-    figsize_w : int, optional
-        Width of the heatmap figure, by default 12.
-    col_cluster : bool, optional
-        Whether to cluster the columns, by default True.
-    row_cluster : bool, optional
-        Whether to cluster the rows, by default True.
-    cmap : str, optional
-        Colormap for the heatmaps, by default 'Blues_r'.
-    font_scale : int, optional
-        Font scale for labels and annotations, by default 2.
-
-    Returns
-    -------
-    None
-        Plots and saves heatmaps of the cost matrix and Wasserstein distances.
-    """
-    annot=adata.uns['annot']
-    cost=adata.uns['cost']
-    path=path_to_results
-    fig = plt.figure()
-   # sns.set(font_scale=font_scale)
-    sns.clustermap(cost[annot.cell_type.unique()],cmap=cmap,figsize=(figsize_h,figsize_w),col_cluster=col_cluster,row_cluster=row_cluster);
-    plt.title('Cost Matrix',loc='center')
-    plt.savefig(path+'/Cost_matrix.pdf') 
-    plt.close(fig)
-    
-    fig = plt.figure()
-    #sns.set(font_scale=font_scale)
-    emd=adata.uns['EMD_df']
-    sns.clustermap(emd,cmap='Blues_r',figsize=(figsize_h,figsize_w),col_cluster=True,row_cluster=True)
-    plt.title('Wasserstein distance',loc='center')
-    plt.savefig(path+'/Wasserstein distance.pdf') 
-    plt.close(fig)
-    
-    
-    
-    
-
-
-
-
-def fit_pricipla_graph(adata,NumNodes=20,source_node=0,show_text=True,Do_PCA=False,fig_x_size=12,fig_y_size=12,X_color='r', Node_color='k', DimToPlot=[0, 1],facecolor='white',title='Principal graph'):
-    """
-    Fit an Elastic Principal Graph to the data and extract pseudotime information.
-
-    Parameters
-    ----------
-    adata : AnnData
-        Annotated data matrix containing embeddings and other necessary data.
-    NumNodes : int, optional
-        Number of nodes for building the backbone, by default 20.
-    source_node : int, optional
-        Index of the source node to start pseudotime estimation, by default 0.
-    show_text : bool, optional
-        Whether to show numbers in the backbone plot, by default True.
-    Do_PCA : bool, optional
-        Whether to perform PCA on the nodes, by default False.
-    fig_x_size : int, optional
-        Width of the figure, by default 12.
-    fig_y_size : int, optional
-        Height of the figure, by default 12.
-    X_color : str, optional
-        Color of the X-axis in the plot, by default 'r'.
-    Node_color : str, optional
-        Color of the backbone's nodes, by default 'k'.
-    DimToPlot : list, optional
-        List of integers specifying the PCs or dimensions to plot, by default [0, 1].
-    facecolor : str, optional
-        Background color of the figure, by default 'white'.
-    title : str, optional
-        Title of the plot, by default 'Principal graph'.
-
-    Returns
-    -------
-    None
-        Fits an Elastic Principal Graph, plots it, and extracts pseudotime information.
-    """
-    path=path_to_results
-    emb=adata.uns['embedding']
-    pg_curve = elpigraph.computeElasticPrincipalTree(emb,NumNodes=NumNodes)[0]
-    fig = plt.figure()
-    fig.set_size_inches(fig_x_size, fig_y_size)
-    ax = plt.gca()
-    ax.set(facecolor = facecolor)
-    elpigraph.plot.PlotPG(emb,pg_curve,Do_PCA=Do_PCA,show_text=show_text,DimToPlot=DimToPlot,Node_color=Node_color,X_color=X_color)
-    plt.title(title)
-    plt.savefig(path+"/"+'Principal graph'+'.pdf')
-    plt.show()         
-    plt.close(fig)
-    elpigraph.utils.getPseudotime(emb,pg_curve,source=source_node,target=None)
-    pseudotime = pg_curve['pseudotime']
-    
-    adata.uns['pseudotime']=pseudotime
-    
-
-
-
-
-
-def cell_importance(adata,heatmap_h=20,heatmap_w=12,width=40,height=35,xlim=5,p_val=1,plot_cell=True,point_size=100,color_back='white',fontsize=20,alpha=1,cmap='viridis',save_as_pdf=True):
+def cell_importance(adata, width=40, height=35, xlim=5, p_val=1, plot_cell=True, point_size=100, color_back='white',
+                   fontsize=20, alpha=1, cmap_proportions='viridis', cmap_heatmap='Blues', save_as_pdf=True,
+                   figsize=(12, 12), col_cluster=True, row_cluster=False):
     """
     Order cells based on estimated time and visualize cell type importance.
 
@@ -870,10 +648,6 @@ def cell_importance(adata,heatmap_h=20,heatmap_w=12,width=40,height=35,xlim=5,p_
     ----------
     adata : AnnData
         Annotated data matrix containing necessary data.
-    heatmap_h : int, optional
-        Height of the heatmap figure, by default 20.
-    heatmap_w : int, optional
-        Width of the heatmap figure, by default 12.
     width : int, optional
         Width of the plot, by default 40.
     height : int, optional
@@ -881,7 +655,7 @@ def cell_importance(adata,heatmap_h=20,heatmap_w=12,width=40,height=35,xlim=5,p_
     xlim : int, optional
         Limit for x-axis in the plot, by default 5.
     p_val : float, optional
-        P-value for filtering the fitting models, by default 1.
+        P-value for filtering the fitting models, by default 0.05.
     plot_cell : bool, optional
         Whether to plot the cell type importance, by default True.
     point_size : int, optional
@@ -892,16 +666,25 @@ def cell_importance(adata,heatmap_h=20,heatmap_w=12,width=40,height=35,xlim=5,p_
         Font size for labels and annotations, by default 20.
     alpha : float, optional
         Transparency level for plotting, by default 1.
-    cmap : str, optional
-        Colormap for plotting, by default 'viridis'.
+    cmap_proportions : str, optional
+        Colormap for plotting proportions over time, by default 'viridis'.
+    cmap_heatmap : str, optional
+        Colormap for plotting heatmap, by default 'Blues_r'.
     save_as_pdf : bool, optional
         Whether to save the plot as PDF, by default False.
+    figsize : tuple, optional
+        Figure size of the heatmap (width, height) in inches, by default (12, 12).
+    col_cluster : bool, optional
+        Whether to cluster columns in the heatmap, by default True.
+    row_cluster : bool, optional
+        Whether to cluster rows in the heatmap, by default False.
 
     Returns
     -------
     None
         Visualizes and saves the cell type importance plot.
     """
+
 
     
     path=path_to_results
@@ -928,9 +711,7 @@ def cell_importance(adata,heatmap_h=20,heatmap_w=12,width=40,height=35,xlim=5,p_
  
     #Saving Heat map based on sorte pseuduscores of the Trajectory 
     
-    sns.clustermap(normalized_df[cell_types],row_cluster=False,annot=False,cmap='Blues',figsize=(heatmap_h,heatmap_w),xticklabels=True);
-    plt.savefig(path+"/"+'Samples_over_trajectory.pdf')
-    
+    heatmaps_df(normalized_df[cell_types],row_cluster=row_cluster,col_cluster=col_cluster,cmap=cmap_heatmap,figsize=figsize) 
     #Building a model based on Regression and pseuduscores 
     pathies_cell_proportions['Time_score']=list(emd_dataframe['pseudotime'])
     pathies_cell_proportions = pathies_cell_proportions.sort_values('Time_score', ascending=True)
@@ -955,7 +736,7 @@ def cell_importance(adata,heatmap_h=20,heatmap_w=12,width=40,height=35,xlim=5,p_
     
         with plt.rc_context():
                 plot_best_matches_cell_types(RNA_target, RNA_data,pathies_cell_proportions, sorted_best, "Cell Proportion",
-        min_target=min_target, max_target=max_target,num=len(sorted_best.keys()),width=width,height=height,xlim=xlim,point_size=point_size,color_back=color_back,fontsize=fontsize,alpha=alpha,cmap=cmap)
+        min_target=min_target, max_target=max_target,num=len(sorted_best.keys()),width=width,height=height,xlim=xlim,point_size=point_size,color_back=color_back,fontsize=fontsize,alpha=alpha,cmap=cmap_proportions)
                 plt.savefig(path+"/"+suffix)
     
     

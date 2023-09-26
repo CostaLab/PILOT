@@ -1,8 +1,3 @@
-
-"""
-@authors: Mina&Mehdi
-"""
-
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -13,240 +8,10 @@ from adjustText import adjust_text
 from matplotlib.lines import Line2D
 from gprofiler import GProfiler
 from .Trajectory import *
-
-
-
-
-    
-def plot_hor_vs_vert(data, subplot, x, y, c, xlabel, ylabel, rotation,
-                     tick_bottom, tick_left, title,fontsize=24):
-    
-    
-    
-    '''
-    Plot horizontal and vertical bar charts using Seaborn.
-
-    Parameters:
-        data : pandas.DataFrame
-            The input DataFrame containing the data to be plotted.
-        subplot : int
-            The subplot number (1 or 2) for the placement of the chart.
-        x : str
-            The name of the column to be plotted on the x-axis.
-        y : str
-            The name of the column to be plotted on the y-axis.
-        c : str
-            The color column used to determine the color of bars.
-        xlabel : str
-            The label for the x-axis.
-        ylabel : str
-            The label for the y-axis.
-        rotation : float
-            The rotation angle for x-axis labels in degrees.
-        tick_bottom : bool
-            If True, display ticks on the bottom of the plot.
-        tick_left : bool
-            If True, display ticks on the left side of the plot.
-        title : str
-            The title of the plot.
-        fontsize : int, optional
-            The font size for title, labels, and ticks (default is 24).
-
-    Returns:
-        None
-    '''
-    ax=plt.subplot(1,2,subplot)
-    cols = ['tab:red' if x >= 0 else 'tab:blue' for x in data[x]]
-
-    sns.barplot(x=x, y=y, data=data, ci=None, palette=cols)
-    plt.title(title, fontsize=fontsize, fontweight = 'bold')
-    plt.xlabel(xlabel, fontsize=fontsize)
-    plt.xticks(fontsize=fontsize, rotation=rotation)
-    plt.ylabel(ylabel, fontsize=fontsize)
-    plt.yticks(fontsize=fontsize)
-    sns.despine(bottom=False, left=True)
-    ax.grid(False)
-    ax.tick_params(bottom=tick_bottom, left=tick_left)
-    return None
-
-
+from ..plot.ploting import *
 
 
     
-def map_color(a, fc_thrr, pv_thrr):
-    """
-    Map colors based on specified thresholds for Fold Change and p-value.
-
-    Parameters:
-        a : tuple
-            A tuple containing log2FoldChange, symbol, and negative log10 of p-value.
-        fc_thrr : float
-            The threshold for log2FoldChange to determine different color mappings.
-        pv_thrr : float
-            The threshold for negative log10 of p-value to determine different color mappings.
-
-    Returns:
-        str
-            A string indicating the color mapping based on the provided thresholds and input values.
-    """
-    log2FoldChange, symbol, nlog10 = a
-    if log2FoldChange >= fc_thrr and nlog10 >= pv_thrr:
-        return 'very higher'
-    elif log2FoldChange <= -fc_thrr and nlog10 >= pv_thrr:
-        return 'very lower'
-    elif log2FoldChange >= fc_thrr and nlog10 < pv_thrr:
-        return 'higher'
-    elif log2FoldChange <= -fc_thrr and nlog10 < pv_thrr:
-        return 'lower'
-    elif abs(log2FoldChange) < fc_thrr and nlog10 >= pv_thrr:
-        return 'mix'
-    else:
-        return 'no'
-
-    
-
-
-def volcano_plot(scores, foldchanges, p_values, cell_type, feature1, feature2, fc_thr = 1, pv_thr = 1,
-                 figsize = (20,20), output_path = None,n_p=5,n_n=5):
-    
-    
-    """
-    Generate a volcano plot to visualize gene expression significance.
-
-    Parameters:
-        scores : pandas Series
-            A pandas Series containing the expression scores for genes.
-        foldchanges : array-like
-            An array-like containing the fold changes for genes.
-        p_values : pandas Series
-            A pandas Series containing the p-values for genes.
-        cell_type : str
-            The name of the cell type being analyzed.
-        feature1 : str
-            The name of the first feature being compared.
-        feature2 : str
-            The name of the second feature being compared.
-        fc_thr : float, optional (default=1)
-            The threshold for log2FoldChange to determine significance.
-        pv_thr : float, optional (default=1)
-            The threshold for negative log10 of p-value to determine significance.
-        figsize : tuple, optional (default=(20,20))
-            The size of the plot figure.
-        output_path : str, optional (default=None)
-            The path to save the output plot. If None, the plot will be displayed.
-            
-        n_p: int, optional 5,
-        The number of lables that user wants to show over the plot for positive thresh.
-        n_n: int, optional 5,
-        The number of lables that user wants to show over the plot for negative thresh.
-
-    Returns:
-        None
-    """
-    
-    
-    df = pd.DataFrame(columns=['log2FoldChange', 'nlog10', 'symbol'])
-    df['log2FoldChange'] = foldchanges
-    df['nlog10'] = -np.log10(p_values.values)
-    df['symbol'] = scores.index.values
-    
-    df.replace([np.inf, -np.inf], np.nan, inplace=True)
-    df.dropna(subset=["nlog10"], how="all", inplace=True)
-    
-
-    selected_labels = df.loc[ (np.abs(df.log2FoldChange) >= fc_thr) & (df['nlog10'] >= pv_thr)]['symbol'].values
-    group1_selected_labels = df.loc[ (df.log2FoldChange <= -fc_thr) & (df['nlog10'] >= pv_thr)]['symbol'].values
-    pd.DataFrame(group1_selected_labels).to_csv(output_path + "/significant_genes_" + str(cell_type) + "_" + str(feature1) + ".csv")
-    
-    group2_selected_labels = df.loc[ (df.log2FoldChange >= fc_thr) & (df['nlog10'] >= pv_thr)]['symbol'].values
-    pd.DataFrame(group2_selected_labels).to_csv(output_path + "/significant_genes_" + str(cell_type) + "_" + str(feature2) + ".csv")
-    
-    def map_shape(symbol):
-        if symbol in selected_labels:
-            return 'important'
-        return 'not'
-    
-    df['color'] = df[['log2FoldChange', 'symbol', 'nlog10']].apply(map_color, fc_thrr = fc_thr, pv_thrr = pv_thr, axis = 1)
-    df['shape'] = df.symbol.map(map_shape)
-    df['baseMean'] = df.nlog10*10
-
-    
-    plt.figure(figsize = figsize, frameon=False, dpi=100)
-    plt.style.use('default')
-    
-    
-    #plt.xlim(-xlim, xlim)
-    ax = sns.scatterplot(data = df, x = 'log2FoldChange', y = 'nlog10', 
-                         hue = 'color', hue_order = ['no', 'very higher','higher', 'mix', 'very lower', 'lower'],
-                         palette = ['lightgrey', '#d62a2b', '#D62A2B7A',
-                                    'lightgrey', '#1f77b4', '#1F77B47D'],
-                         style = 'shape', style_order = ['not', 'important'],
-                         markers = ['o', 'o'], 
-                         size = 'baseMean', sizes = (40, 800)
-                        )
-
-    ax.axhline(pv_thr, zorder = 0, c = 'k', lw = 2, ls = '--')
-    ax.axvline(fc_thr, zorder = 0, c = 'k', lw = 2, ls = '--')
-    ax.axvline(-fc_thr, zorder = 0, c = 'k', lw = 2, ls = '--')
-
-    texts = []
-    filtered_df = df.loc[df['nlog10'] >= pv_thr]
-    subset_labels_fold_change_pos = filtered_df.loc[filtered_df['log2FoldChange'] >= fc_thr]
-    subset_labels_fold_change_pos = subset_labels_fold_change_pos.sort_values(by='nlog10', ascending=False)
-    subset_labels_fold_change_pos = subset_labels_fold_change_pos.head(n_p)['symbol'].values
-
-    subset_labels_fold_change_neg = filtered_df.loc[filtered_df['log2FoldChange'] <= -fc_thr]
-    subset_labels_fold_change_neg = subset_labels_fold_change_neg.sort_values(by='nlog10', ascending=False)
-    subset_labels_fold_change_neg = subset_labels_fold_change_neg.head(n_n)['symbol'].values
-    # Combine the subsets of genes
-    subset_labels = np.concatenate([subset_labels_fold_change_pos, subset_labels_fold_change_neg])
-    for i in range(len(df)):
-        if df.iloc[i].symbol in subset_labels:
-            if df.iloc[i].nlog10 >= pv_thr and (df.iloc[i].log2FoldChange >= fc_thr):
-                texts.append(plt.text(x = df.iloc[i].log2FoldChange, y = df.iloc[i].nlog10, s = df.iloc[i].symbol,
-                                     fontsize = 16, weight = 'bold', family = 'sans-serif'))
-            if df.iloc[i].nlog10 >= pv_thr and ( df.iloc[i].log2FoldChange <= -fc_thr):
-                texts.append(plt.text(x = df.iloc[i].log2FoldChange, y = df.iloc[i].nlog10, s = df.iloc[i].symbol,
-                                     fontsize = 16, weight = 'bold', family = 'sans-serif'))
-    adjust_text(texts)
-   # for i in range(len(df)):
-    #    if df.iloc[i].symbol in subset_labels:
-     #       if df.iloc[i].nlog10 >= pv_thr and (df.iloc[i].log2FoldChange >= fc_thr):
-      #          texts.append(plt.text(x = df.iloc[i].log2FoldChange, y = df.iloc[i].nlog10, s = df.iloc[i].symbol,
-          #                           fontsize = 16, weight = 'bold', family = 'sans-serif'))
-       #     if df.iloc[i].nlog10 >= pv_thr and ( df.iloc[i].log2FoldChange <= -fc_thr):
-        #        texts.append(plt.text(x = df.iloc[i].log2FoldChange, y = df.iloc[i].nlog10, s = df.iloc[i].symbol,
-         #                            fontsize = 16, weight = 'bold', family = 'sans-serif'))
-    #adjust_text(texts)
-
-    custom_lines = [Line2D([0], [0], marker='o', color='w', markerfacecolor='#d62a2b', markersize=8),
-                   Line2D([0], [0], marker='o', color='w', markerfacecolor='#1f77b4', markersize=8)]
-
-    plt.legend(custom_lines, ['Higher expressions in ' + feature2, 'Higher expressions in ' + feature1],loc = 1,
-               bbox_to_anchor = (1,1.1), frameon = False, prop = {'weight': 'normal', 'size': 12})
-
-    for axis in ['bottom', 'left']:
-        ax.spines[axis].set_linewidth(2)
-
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-
-    ax.tick_params(width = 2)
-
-    plt.title("Expression Score \n "+feature1+" - "+feature2, fontsize = 24)
-    plt.xticks(size = 18, weight = 'bold')
-    plt.yticks(size = 18, weight = 'bold')
-    plt.xlabel("$log_{2}$ (Fold Change)", size = 18)
-    plt.ylabel("-$log_{10}$ (P-value)", size = 18)
-
-#     plt.savefig(filename, dpi = 100, bbox_inches = 'tight', facecolor = 'white')
-    plt.savefig(output_path + "/volcano_" + str(feature1) + "-" + str(feature2) + "_FC.pdf",
-                dpi = 100, bbox_inches = 'tight', facecolor = 'white')
-    plt.show()
-
- 
-
-
 def extract_cells_from_gene_expression_for_clustering(adata,sample_col,col_cell,cell_list,path_results=None,normalization=True,n_top_genes=2000,highly_variable_genes_=False):
     
     
@@ -273,7 +38,7 @@ def extract_cells_from_gene_expression_for_clustering(adata,sample_col,col_cell,
             Whether to select highly variable genes for analysis.
 
     Returns:
-        None
+        Gene exp. dataframe
     """
     for cell in cell_list:
         adata_new = adata[adata.obs[col_cell].isin([cell]),:]
@@ -308,10 +73,11 @@ def extract_cells_from_gene_expression_for_clustering(adata,sample_col,col_cell,
 
         
         df.to_csv(path_results+cell+'.csv')
-        
+        return df
 def compute_diff_expressions(adata,cell_type: str = None,
                              proportions: pd.DataFrame = None,
                              selected_genes: list = None,
+                             font_size:int=18,
                              group1: str = 'Tumor 1',
                              group2: str = 'Tumor 2',
                              label_name: str = 'Predicted_Labels',
@@ -322,44 +88,85 @@ def compute_diff_expressions(adata,cell_type: str = None,
                              path=None,
                              normalization=False,
                              n_top_genes=2000,
-                             highly_variable_genes_=True,number_n=5,number_p=5
-
+                             highly_variable_genes_=True,
+                             number_n=5,
+                             number_p=5,
+                             marker='o',
+                             color='w',
+                             markersize=8,
+                             font_weight_legend='normal',
+                             size_legend=12,
+                             figsize=(15,15),dpi=100
                              ):
+
     """
-    Using limma R package, lmFit fits a linear model using weighted least squares for each gene
-    Comparisons between groups (log fold-changes) are obtained as contrasts of these fitted linear models
-    Empirical Bayes smoothing of standard errors (shrinks standard errors 
-    that are much larger or smaller than those from other genes towards the average standard error)
+    Using limma R package, lmFit fits a linear model using weighted least squares for each gene.
+    Comparisons between groups (log fold-changes) are obtained as contrasts of these fitted linear models.
+    Empirical Bayes smoothing of standard errors (shrinks standard errors
+    that are much larger or smaller than those from other genes towards the average standard error).
 
     Parameters
     ----------
+    adata : AnnData
+        Annotated data matrix.
     cell_type : str, optional
         Specify cell type name to check its differential expression genes. The default is None.
     proportions : pd.DataFrame, optional
-        cell types proportion in each samples. The default is None.
+        Cell types proportions in each sample. The default is None.
     selected_genes : list, optional
-        Specify genes names to be considered to checking their differentiation
+        Specify gene names to be considered for checking their differentiation.
+    font_size : int, optional
+        Font size for plot labels and legends. The default is 18.
     group1 : str, optional
-        Name of first patients sub-group for comparison. The default is 'Tumor 1'.
+        Name of the first patient sub-group for comparison. The default is 'Tumor 1'.
     group2 : str, optional
-        Name of second patients sub-group for comparison. The default is 'Tumor 2'.
+        Name of the second patient sub-group for comparison. The default is 'Tumor 2'.
     label_name : str, optional
-        name of the column containing the labels of patient sub-groups. The default is 'Predicted_Labels'.
+        Name of the column containing the labels of patient sub-groups. The default is 'Predicted_Labels'.
     fc_thr : float, optional
         Specify the fold change threshold. The default is 0.5.
     pval_thr : float, optional
-        Specify the asj. p-value thrshold. The default is 0.01.
-    number_n:int, optional.The default is 5.
-        The number of lables that user wants to show over the plot for negative thresh.
-    number_p:int, optional.The default is 5. 
-        The number of lables that user wants to show over the plot for positive thresh.
+        Specify the adjusted p-value threshold. The default is 0.01.
+    sample_col : str, optional
+        Name of the column containing sample IDs. The default is 'sampleID'.
+    col_cell : str, optional
+        Name of the column containing cell type annotations. The default is 'cell_types'.
+    path : str, optional
+        Path to save the results. The default is None.
+    normalization : bool, optional
+        Perform gene expression normalization. The default is False.
+    n_top_genes : int, optional
+        Number of top variable genes to consider. The default is 2000.
+    highly_variable_genes_ : bool, optional
+        Determine highly variable genes. The default is True.
+    number_n : int, optional
+        The number of labels that the user wants to show over the plot for negative thresholds. The default is 5.
+    number_p : int, optional
+        The number of labels that the user wants to show over the plot for positive thresholds. The default is 5.
+    marker : str, optional
+        Marker style for the labels in the volcano plot. The default is 'o'.
+    color : str, optional
+        Marker color for the labels in the volcano plot. The default is 'w'.
+    markersize : int, optional
+        Marker size for the labels in the volcano plot. The default is 8.
+    font_weight_legend : str, optional
+        Font weight for legend labels. The default is 'normal'.
+    size_legend : int, optional
+        Font size for legend labels. The default is 12.
+    figsize: tuple, optional
+        Figure size. The default is (15,15).
+    dpi : int, optional
+        Dots per inch for the saved plot image. Default is 100.
+
     Returns
     -------
-    Plot volcano plot of fold changes between two intrested patients sub-groups.
-    Save statistical table of each gene
-    Save significantly differentiate genes in each group
+    None
 
+    Generates and displays a volcano plot of fold changes between two interested patient sub-groups.
+    Saves a statistical table of each gene.
+    Saves significantly differentiated genes in each group.
     """
+
     path_to_result='Results_PILOT'
     
     if os.path.exists(path_to_result + "/cells/" + cell_type + ".csv"):
@@ -367,8 +174,8 @@ def compute_diff_expressions(adata,cell_type: str = None,
         cells = pd.read_csv(path_to_result + "/cells/" + cell_type + ".csv", index_col = 0)  
    
     elif cell_type not in adata.uns:
-        extract_cells_from_gene_expression_for_clustering(adata,sample_col=sample_col,col_cell=col_cell,cell_list=[cell_type],path_results=path,normalization=normalization,n_top_genes=n_top_genes,highly_variable_genes_=highly_variable_genes_)
-        cells = pd.read_csv(path_to_result + "/cells/" + cell_type + ".csv", index_col = 0)
+        cells=extract_cells_from_gene_expression_for_clustering(adata,sample_col=sample_col,col_cell=col_cell,cell_list=[cell_type],path_results=path,normalization=normalization,n_top_genes=n_top_genes,highly_variable_genes_=highly_variable_genes_)
+        #cells = pd.read_csv(path_to_result + "/cells/" + cell_type + ".csv", index_col = 0)
     
     elif cell_type in adata.uns :
          cells=adata.uns[cell_type] 
@@ -424,7 +231,11 @@ def compute_diff_expressions(adata,cell_type: str = None,
     pv_thr = -np.log10(pval_thr)
     volcano_plot(cells[selected_genes].transpose(), res['logFC'], res['adj.P.Val'],
                  cell_type, group1, group2, fc_thr, pv_thr,
-                 figsize = (15,15), output_path = path_to_result,n_p=number_p,n_n=number_n)
+                 figsize = figsize, output_path = path_to_result,n_p=number_p,n_n=number_n,font_size=font_size, marker=marker,
+                             color=color,
+                             markersize=markersize,
+                             font_weight_legend=font_weight_legend,
+                             size_legend=size_legend,dpi=dpi)
     
 
 

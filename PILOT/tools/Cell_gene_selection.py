@@ -1,6 +1,4 @@
 
-
-#%%% load libraries
 import os
 from genericpath import isfile
 from logging import info, warn
@@ -25,10 +23,24 @@ import math
 import matplotlib as mpl
 import elpigraph
 from matplotlib.font_manager import FontProperties
+from ..plot.ploting import *
 
-
-#%%% load functions    
+   
 def compute_metrics(y_test, y_pred):
+    """
+    Calculate regression evaluation metrics.
+
+    Parameters:
+        y_test (array-like): Ground truth target values.
+        y_pred (array-like): Predicted target values.
+
+    Returns:
+        tuple: A tuple containing the following regression metrics:
+            - R-squared (R2) Score
+            - Root Mean Squared Error (RMSE)
+            - Mean Absolute Error (MAE)
+            - Pearson Correlation Coefficient
+    """
     r2 = r2_score(y_test, y_pred)
     rmse = mean_squared_error(y_test, y_pred, squared=False)
     mae = mean_absolute_error(y_test, y_pred)
@@ -38,8 +50,21 @@ def compute_metrics(y_test, y_pred):
 
 def loadTarget(path, name):
     """
-    loads the file count matrix
+    Load a target file from a specified path and name.
+
+    Parameters:
+        path (str): The directory path where the target file is located.
+        name (str): The name of the target file (without the file extension).
+
+    Returns:
+        pd.DataFrame: A Pandas DataFrame containing the loaded target data.
+
+    Note:
+        This function attempts to load the target data from different formats (currently supports ".csv"). 
+        It returns the loaded data as a Pandas DataFrame or None if loading fails.
     """
+
+    
     for format in [".csv"]:
         p = os.path.join(path, name + format)
         if isfile(p):
@@ -57,7 +82,14 @@ def loadTarget(path, name):
                 
 def loadData(path, name):
     """
-    loads the info
+    Load data from a file in the specified format.
+
+    Parameters:
+        path (str): The directory path where the data file is located.
+        name (str): The base name of the data file (without the file extension).
+
+    Returns:
+        pd.DataFrame or None: A Pandas DataFrame containing the loaded data if successful, or None if loading failed.
     """
     for format in [".csv"]:
         p = os.path.join(path, name + format)
@@ -72,6 +104,16 @@ def loadData(path, name):
                 warn("loading " + format + " failed")
                 
 def convert_nan(target, convert_type):
+    """
+    Convert NaN (missing) values in a DataFrame to a specified format.
+
+    Parameters:
+        target (pd.DataFrame): The DataFrame containing NaN values to be converted.
+        convert_type (str): The type of conversion to apply, either 'impute' or 'zero'.
+
+    Returns:
+        pd.DataFrame: A new DataFrame with NaN values converted based on the specified type.
+    """
     assert convert_type in ['impute', 'zero'], 'func type parameter must be impute, zero'
     
     if convert_type == 'impute':
@@ -86,7 +128,13 @@ def convert_nan(target, convert_type):
       
 def calculate_sparsity(data):
     """
-    calculate sparsity of the data
+    Calculate the sparsity of a given dataset.
+
+    Parameters:
+        data (numpy.ndarray or scipy.sparse matrix): The input data for which to calculate sparsity.
+
+    Returns:
+        float: The sparsity of the input data as a decimal value between 0 and 1, where 0 indicates no sparsity (dense) and 1 indicates full sparsity (completely empty).
     """
     non_zero = np.count_nonzero(data)
     total_val = np.product(data.shape)
@@ -95,7 +143,17 @@ def calculate_sparsity(data):
 
 def generate_feature_cell_types(func_type, X):
     """
-    construct the features matrix
+    Generate a feature matrix based on the specified functional type.
+
+    Parameters:
+        func_type (str): The type of feature construction to perform. 
+            - 'linear': Linear feature construction (constant, X).
+            - 'quadratic': Quadratic feature construction (constant, X^2).
+            - 'linear_quadratic': Linear and quadratic feature construction (constant, X, X^2).
+        X (numpy.ndarray): The input data or feature vector.
+
+    Returns:
+        numpy.ndarray: The feature matrix constructed based on the specified functional type.
     """
     assert func_type in ['linear', 'quadratic', 'linear_quadratic'], 'func type parameter must be linear, quadratic, cubic, sqrt, reciprocal'
     
@@ -113,7 +171,17 @@ def generate_feature_cell_types(func_type, X):
                 
 def generate_feature(func_type, X):
     """
-    construct the features matrix
+    Generate a feature matrix based on the specified functional type.
+
+    Parameters:
+        func_type (str): The type of feature construction to perform. 
+            - 'linear': Linear feature construction (X).
+            - 'quadratic': Quadratic feature construction (X^2).
+            - 'linear_quadratic': Linear and quadratic feature construction (X, X^2).
+        X (numpy.ndarray): The input data or feature vector.
+
+    Returns:
+        numpy.ndarray: The feature matrix constructed based on the specified functional type.
     """
     assert func_type in ['linear', 'quadratic', 'linear_quadratic'], 'func type parameter must be linear, quadratic, cubic, sqrt, reciprocal'
     
@@ -129,7 +197,27 @@ def generate_feature(func_type, X):
             
 def fit_model_activity(func_type, X, y,max_iter_huber,epsilon_huber,model_type):
     """
-    fit the linear model
+    Fit a linear regression or Huber regression model and calculate various model statistics.
+
+    Parameters:
+        func_type (str): The type of feature construction to perform. 
+            - 'linear': Linear feature construction (X).
+            - 'quadratic': Quadratic feature construction (X^2).
+            - 'linear_quadratic': Linear and quadratic feature construction (X, X^2).
+        X (numpy.ndarray): The input data or feature vector.
+        y (numpy.ndarray): The target variable.
+        max_iter_huber (int): The maximum number of iterations for HuberRegressor.
+        epsilon_huber (float): The value of epsilon for HuberRegressor.
+        model_type (str): The type of regression model to fit.
+            - 'LinearRegression': Ordinary Least Squares (OLS) linear regression.
+            - 'HuberRegressor': Huber regression with specified epsilon.
+
+    Returns:
+        dict: A dictionary containing various model statistics.
+            - 'pvalues' (list): The p-values for each feature.
+            - 'rsquared_adj' (float): The adjusted R-squared value.
+            - 'params' (numpy.ndarray): The model coefficients (intercept and coefficients).
+            - 'mod_rsquared_adj' (float): The modified adjusted R-squared value (Huber).
     """
     X = generate_feature(func_type, X)
     
@@ -189,30 +277,20 @@ def fit_model_activity(func_type, X, y,max_iter_huber,epsilon_huber,model_type):
     
     return results
 
-def qq_plot_gene(target, data, sorted_best, gene_name):
-    x = np.array(list(data['label']))
-
-    best_tf = list(target.loc[[gene_name]].values.ravel())
-
-    best_results = sorted_best[gene_name][1]
-    best_func = sorted_best[gene_name][0]
-    # pattern = sorted_best[gene_name][2]
-    data = pd.DataFrame({'x': x, 'y':best_tf})
-
-    X = generate_feature(best_func, x)
-    new_X = np.append(np.ones((len(X),1)), X, axis=1)
-    # print(X.shape)
-    # print(best_results['params'])
-    predictions = np.matmul(new_X, best_results['params'])
-    
-    plt.figure(figsize = (8,6))
-    stats.probplot( (best_tf - predictions), dist="norm", plot=pylab)
-    pylab.show()
 
 def fit_model_activity_cell_types(func_type, X, y ):
     """
-    fit the linear model
+    Fit a linear model for gene activity with cell types as features.
+
+    Parameters:
+        func_type (str): The type of function to construct features ('linear', 'quadratic', or 'linear_quadratic').
+        X (np.ndarray): The input feature matrix with cell types.
+        y (np.ndarray): The target gene activity values.
+
+    Returns:
+        statsmodels.regression.linear_model.RegressionResults: The results of the linear regression model.
     """
+
     X = generate_feature_cell_types(func_type, X)
     
     model = sm.OLS(y, X)
@@ -223,8 +301,19 @@ def fit_model_activity_cell_types(func_type, X, y ):
     
 def fit_best_model_cell_types(target, data, sort_type = 'rsquare', min_target=0, max_target=35):
     """
-    find best fitted model for each factor 
+    Find the best-fitted model for each factor based on cell types as features.
+
+    Parameters:
+        target (pd.DataFrame): The target data for gene activity.
+        data (pd.DataFrame): The data containing cell type labels.
+        sort_type (str, optional): The type of sorting ('pvalue' or 'rsquare'). Default is 'rsquare'.
+        min_target (float, optional): The minimum target value. Default is 0.
+        max_target (float, optional): The maximum target value. Default is 35.
+
+    Returns:
+        dict: A dictionary containing the best-fitted model results for each factor, sorted by the specified sort type.
     """
+
     assert sort_type in ['pvalue', 'rsquare'], 'sort type parameter must be pvalue, rsquare'
     
     
@@ -305,8 +394,21 @@ def fit_best_model_cell_types(target, data, sort_type = 'rsquare', min_target=0,
     
 def fit_best_model(target, data, model_type,max_iter_huber,epsilon_huber,pval_thr,modify_r2):
     """
-    find best fitted model for each factor 
+    Find the best-fitted model for each factor.
+
+    Parameters:
+        target (pd.DataFrame): The target data for gene activity.
+        data (pd.DataFrame): The data containing cell type labels.
+        model_type (str): The type of model to fit ('LinearRegression' or 'HuberRegressor').
+        max_iter_huber (int): Maximum number of iterations for HuberRegressor.
+        epsilon_huber (float): Epsilon parameter for HuberRegressor.
+        pval_thr (float): Threshold for p-values of model coefficients.
+        modify_r2 (bool): Whether to use modified R-squared. If True, uses modified R-squared; if False, uses regular R-squared.
+
+    Returns:
+        dict: A dictionary containing the best-fitted model results for each factor, sorted by R-squared or modified R-squared, depending on the `modify_r2` parameter.
     """
+
     
     assert model_type in ['LinearRegression', 'HuberRegressor'], 'model type must be LinearRegression, or HuberRegressor'
     
@@ -380,665 +482,20 @@ def fit_best_model(target, data, model_type,max_iter_huber,epsilon_huber,pval_th
     return sorted_best    
 
 
-def plot_best_matches_cell_types(target, data,df,sorted_best, scale_name, min_target=0, max_target=35,num=11,width=25,height=25,xlim=4,point_size=100,color_back=None,fontsize=28,alpha=1,cmap='viridis'):
-    """
-    plot 16 best fitted model
-    """
-    
-
-    x = np.array(list(data['label']))
-    min_x = min(x)
-    max_x = max(x)
-    start=df[df['Time_score']==min_x]['sampleID'].unique()
-    end=df[df['Time_score']==max_x]['sampleID'].unique()
-    xlabel='From  '+ start+'  to  '+end
-    
-    plt.figure(figsize=((width, height)))
-    plt.subplots_adjust(wspace = 0.5, hspace = 1 )
-   # plt.suptitle(xlabel, fontsize=20, y=0.95)
-    plt.tight_layout()
-    
-    j = 1
-    for i in range(num):
-        
-      
-        
-        
-        best_tf_name = list(sorted_best)[i]
-        best_tf = target.loc[[best_tf_name]].values
-        best_results = list(sorted_best.items())[i][1][1]
-        best_func = list(sorted_best.items())[i][1][0]
-        p_vals_best_model = sorted_best[best_tf_name][1]['pvalues']
-        polyline = np.linspace(min_target,max_target)
-        polyline = generate_feature(best_func, polyline)
-        
-        ax = plt.subplot(math.ceil(num/4), 4, j)
-        plt.xticks(np.arange(min_x,max_x,xlim))
-        if color_back!=None:
-            ax.set_facecolor(color_back)
-        ax.scatter(x, best_tf, c =best_tf ,cmap=cmap,alpha=alpha,s=point_size)
-        new_polyline = np.append(np.ones((len(polyline),1)), polyline, axis=1)
-        curve = np.matmul(new_polyline, best_results['params'])
-        ax.plot(np.linspace(min_target,max_target), curve)
-        
-        formatted_number= "{:.3e}".format(sorted_best[best_tf_name][-1])
-        
-        line1=str(best_tf_name)+"\n" +"P-val: "+ "\n"
-        bold_word=formatted_number                     
-
-        if float(sorted_best[best_tf_name][-1]) <= 0.05:
-            title =line1+"{}".format(bold_word)
-            font_props = FontProperties(weight='bold')
-            ax.set_title(title, fontproperties=font_props,fontsize=fontsize)
-        else:
-            combined_line = "{} {}".format(line1,bold_word)
-            ax.set_title(combined_line,fontsize=fontsize)
-            
-            
-      #  ax.set_title(str(best_tf_name)+ "\n" +"P-val: "+ "\n" +str("{:.3e}".format(sorted_best[best_tf_name][-1])),fontsize=fontsize)
-            
-       # best_tf_name=str(best_tf_name)+"\n Modified adj R2 = " + str("{:.2f}".format(best_results['mod_rsquared_adj']))
-       # ax.set_title(best_tf_name,fontsize=fontsize)
-       
-        ax.axis(xmin = min_target,xmax = max_target)
-    
-        if((j+4) % 4 == 1):
-            #ax.set(ylabel = scale_name)
-            ax.set_ylabel(scale_name, fontsize=fontsize)
-            
-       # if show_R:
-        #    if x_lab==None:
-         #       x_lab=np.mean(x)
-          #  if y_lab==None:
-           #     y_lab=np.mean(best_tf)
-            #ax.annotate("adj R2 = " + str("{:.2f}".format(best_results['rsquared_adj'])), 
-             #        (x_lab,y_lab),
-              #       color=color_label,
-               #      size=fontsize)
-     
-    
-        j += 1
-
-
-
-
-  
-def plot_best_matches(target, data,df, sorted_best, scale_name, plot_color='tab:orange',num=16,width=25,height=25,x_lim=4,fontsize=24,alpha=0.5,cmap='viridis',color_back=None):
-    """
-    plot 4 of each best fitted pattern
-    
-    """
-    
-    plt.rcParams.update({'font.size': fontsize})
-
-    
-    all_motifs = np.array(list(sorted_best.keys()))
-    all_motifs = all_motifs.reshape(all_motifs.shape[0],1)
-    all_patterns = np.array([i[2] for i in list(sorted_best.values())])
-    all_patterns = all_patterns.reshape(all_patterns.shape[0],1)
-    mat = np.append(all_motifs, all_patterns, axis = 1)
-    patterns=np.unique(mat[:,1])
-
-    x = np.array(list(data['label']))
-    min_x = min(x)
-    max_x = max(x)
-    start=df[df['Time_score']==min_x]['sampleID'].unique()
-    end=df[df['Time_score']==max_x]['sampleID'].unique()
-
-    plt_count=0
-    plt.figure(figsize=((width, height)))
-    xlabel='From  '+ start+'  to  '+end
-   # plt.suptitle(xlabel, fontsize=20, y=0.05)
-    #plt.tight_layout()
-    plt.subplots_adjust(
-
-
-                    wspace=0.5,
-                    hspace=1)
-
-    genes_expressions=patterns
-    pltt=0
-    for pattern in genes_expressions:
-        counter=0
-        flag=False
-        j=0
-
-        if (pltt+4)%4==3:
-            pltt=pltt+1
-        elif (pltt+4)%4==2:
-            pltt=pltt+2
-        elif (pltt+4)%4==1:
-            pltt=pltt+3
-
-        for key,values in sorted_best.items():
-
-            if list(sorted_best.values())[counter][2]==pattern:
-                pltt+=1
-                ax = plt.subplot(len(patterns), 4, pltt)
-                if color_back!=None:
-                    ax.set_facecolor(color_back)
-                plt.xticks(np.arange(min_x,max_x,x_lim))
-                #flag=True
-                best_tf_name = list(sorted_best)[counter]
-                best_tf = target.loc[[best_tf_name]].values
-                best_results = list(sorted_best.items())[counter][1][1]
-                best_func = list(sorted_best.items())[counter][1][0]
-
-                data = pd.DataFrame({'x': x.tolist(), 'y':best_tf.T.tolist()})
-
-                pline = np.linspace(min_x, max_x)
-                polyline = generate_feature(best_func, pline)
-                new_polyline = np.append(np.ones((len(polyline),1)), polyline, axis=1)
-                curve = np.matmul(new_polyline, best_results['params'])
-
-
-               
-                    
-                ax.scatter(x, best_tf, c = best_tf,cmap=cmap, alpha = alpha)
-                 
-                
-                    
-                formatted_number= "{:.3e}".format(sorted_best[best_tf_name][-1])
-
-                ax.plot(pline, curve, c = plot_color)
-                
-                line1=str(best_tf_name)+"\n" +"P-val: "+ "\n"
-                bold_word=formatted_number 
-                
-          
-                
-                
-                
-                
-                if float(sorted_best[best_tf_name][-1]) <= 0.05:
-                    
-                    title =line1+"{}".format(bold_word)
-                    font_props = FontProperties(weight='bold')
-                    ax.set_title(title, fontproperties=font_props,fontsize=fontsize)
-                    
-                   
-                else:
-                    combined_line = "{} {}".format(line1,bold_word)
-                    ax.set_title(combined_line,fontsize=fontsize)
-                    
-                
-                
-               # best_tf_name=best_tf_name+"\n Modified adj R2 = " + str("{:.2f}".format(best_results['mod_rsquared_adj']))
-               # ax.set_title(best_tf_name,fontsize=fontsize)
-
-               
-
-                ax.axis(xmin = min(x)-0.01,xmax = max(x)+0.01)
-
-                if((j+4) % 4 == 0):
-                    ax.set_ylabel(pattern, fontsize=fontsize)
-                    #ax[plt_count,j].set(ylabel = pattern,fontsize=8)
-                    #ax[plt_count,j].set_xlabel(str(xlabel),fontsize=12)
-            #    if show_R:
-             #       if x_lab==None:
-              #          x_lab=np.mean(x)
-               #     if y_lab==None:
-                #        y_lab=np.mean(best_tf)
-                       
-                 #   ax.annotate("Modified adj R2 = " + str("{:.2f}".format(best_results['mod_rsquared_adj'])),
-                              
-                  #           (x_lab,y_lab),
-                   #          color=color_label,
-                    #         size=fontsize)
-
-                j += 1
-                if j%4==0:
-                    break
-
-
-
-
-            counter=counter+1  
-
-    
-  
-
-def plot_two_genes(adata, sorted_best_WT, sorted_best_KO, gene_name, scale_name, plot_color1 = 'tab:blue', plot_color2 = 'tab:red'):
-    WT_ATAC_data = pd.DataFrame()
-    WT_ATAC_target = adata[adata.obs.group == 'WT'].to_df().transpose()
-    WT_ATAC_data['label'] = list(adata[adata.obs.group == 'WT'].obs['label'].values)
-    
-    WT_x = WT_ATAC_data['label']
-    WT_tf = list(WT_ATAC_target.loc[[gene_name]].values.ravel())
-    WT_results = sorted_best_WT[gene_name][1]
-    WT_func = sorted_best_WT[gene_name][0]
-    # WT_pattern = sorted_best_WT[gene_name][2]
-    
-    KO_ATAC_data = pd.DataFrame()
-    KO_ATAC_target = adata[adata.obs.group == 'KO'].to_df().transpose()
-    KO_ATAC_data['label'] = list(adata[adata.obs.group == 'KO'].obs['label'].values)
-    
-    KO_x = KO_ATAC_data['label']
-    KO_tf = list(KO_ATAC_target.loc[[gene_name]].values.ravel())
-    KO_results = sorted_best_KO[gene_name][1]
-    KO_func = sorted_best_KO[gene_name][0]
-    # KO_pattern = sorted_best_KO[gene_name][2]
-    
-    pline = np.linspace(min(KO_x), max(KO_x))
-    
-    polyline = generate_feature(WT_func, pline)
-    new_polyline = np.append(np.ones((len(polyline),1)), polyline, axis=1)
-    WT_curve = np.matmul(new_polyline, WT_results['params'])
-    
-    polyline = generate_feature(KO_func, pline)
-    new_polyline = np.append(np.ones((len(polyline),1)), polyline, axis=1)
-    KO_curve = np.matmul(new_polyline, KO_results['params'])
-    
-    ax = plt.subplot(1, 1, 1)
-    ax.scatter(WT_x, WT_tf, c = WT_tf, alpha = 0.5, cmap='Blues', norm=colors.CenteredNorm(-1),)
-    ax.scatter(KO_x, KO_tf, c = KO_tf, alpha = 0.5, cmap='Reds', norm=colors.CenteredNorm(-1),)
-    
-    
-    
-    ax.axis(xmin=min(WT_x),xmax=max(WT_x))
-
-    ax.plot(np.linspace(min(WT_x),max(WT_x)), WT_curve, c = plot_color1)
-    ax.plot(np.linspace(min(WT_x),max(WT_x)), KO_curve, c = plot_color2)
-    ax.set_title(re.sub('.*?:', '', gene_name))
-    ax.set_ylabel(scale_name)
-    
-
-def plot_one_gene(target, data, sorted_best, gene_name, scale_name, plot_color):
-    x = data['label']
-    min_x = min(x)
-    max_x = max(x)
-    
-    best_tf = list(target.loc[[gene_name]].values.ravel())
-
-    best_results = sorted_best[gene_name][1]
-    best_func = sorted_best[gene_name][0]
-    pattern = sorted_best[gene_name][2]
-    # data = pd.DataFrame({'x': x, 'y':best_tf})
-
-
-    
-    pline = np.linspace(min_x, max_x)
-    polyline = generate_feature(best_func, pline)
-    new_polyline = np.append(np.ones((len(polyline),1)), polyline, axis=1)
-    curve = np.matmul(new_polyline, best_results['params'])
-
-    ax = plt.subplot(1, 1, 1)
-    ax.scatter(x, best_tf, c = best_tf, alpha = 0.5, cmap='plasma')
-    ax.axis(xmin=min(x),xmax=max(x))
-
-    ax.plot(np.linspace(min(x),max(x)), curve, c = plot_color)
-    ax.set_title(re.sub('.*?:', '', gene_name))
-    ax.set_ylabel(scale_name)
-    
-    
-    ax.annotate("adj R2 = " + str("{:.2f}".format(best_results['rsquared_adj'])), 
-                  (0.2,np.max(best_tf)-0.1),
-                  color='black',
-                  size=14)
-    ax.set_xlabel(pattern)
-
-def plot_gene(target, data, sorted_best, gene_name, scale_name, plot_color):
-    x = data['label']
-    min_x = min(x)
-    max_x = max(x)
-    
-    best_tf = list(target.loc[[gene_name]].values.ravel())
-
-    best_results = sorted_best[gene_name][1]
-    best_func = sorted_best[gene_name][0]
-    pattern = sorted_best[gene_name][2]
-    data = pd.DataFrame({'x': x, 'y':best_tf})
-
-    pline = np.linspace(min_x, max_x)
-    polyline = generate_feature(best_func, pline)
-    new_polyline = np.append(np.ones((len(polyline),1)), polyline, axis=1)
-    curve = np.matmul(new_polyline, best_results['params'])
-    
-    p = ggplot(aes(x='x', y='y'), data,)
-    p = p + geom_pointdensity(size = 3, show_legend=False)
-    
-    dt = pd.DataFrame({'x': pline, 'y': curve})
-    p = p + geom_line(aes(x='x', y='y'), dt, colour = plot_color, size = 1)
-    
-    p = p + theme(panel_background=element_rect(fill='white'),              
-          axis_line_x=element_line(color='black'),
-          axis_line_y=element_line(color='black'),
-          panel_grid=element_blank(),
-          panel_border=element_blank())
-    p = p + labs(title = gene_name + "\n\n" + \
-                 "adj $R^{2}$ = " + str("{:.2f}".format(best_results['rsquared_adj'])) \
-                            + "\n p-value = " + str("{:.2f}".format(sorted_best[gene_name][4]))
-                 , y = scale_name, x = pattern)
-    # p = p + annotate(geom = "text", 
-    #                   label = "adj R2 = " + str("{:.2f}".format(best_results['rsquared_adj'])) \
-    #                         + "\n p-value = " + str("{:.2f}".format(sorted_best[gene_name][4])),
-    #                   x = 0, 
-    #                   y = np.max(best_tf))
-    if(best_func == 'linear'):
-        p = p + annotate(geom = "text", 
-                          label = "ge = " +
-                              str(round(best_results['params'][0],2)) \
-                              + ["", "+"][best_results['params'][1] > 0]+ \
-                                  str(round(best_results['params'][1],2)) + "t" ,
-                          x = pline[10], 
-                          y = curve[10])
-    elif(best_func == 'quadratic'):
-        p = p + annotate(geom = "text", 
-                          label = "ge = " +
-                              str(round(best_results['params'][0],2)) \
-                               + ["", "+"][best_results['params'][1] > 0]+ \
-                                   str(round(best_results['params'][1],2)) + "$t^2$" ,
-                          x = pline[10], 
-                          y = curve[10])
-    elif(best_func == 'linear_quadratic'):
-        p = p + annotate(geom = "text", 
-                          label = "ge = " + 
-                              str(round(best_results['params'][0],2)) \
-                               + ["", "+"][best_results['params'][1] > 0]+ \
-                                   str(round(best_results['params'][1],2)) + "t" \
-                                   + ["", "+"][best_results['params'][2] > 0]+\
-                                       str(round(best_results['params'][2],2)) + "$t^2$" ,
-                          x = pline[10], 
-                          y = curve[10])
-    p.draw()
-    
-
-def plot_gene_specific(target, data, sorted_best, gene_name, scale_name, plot_color):
-    x = data['label']
-    min_x = min(x)
-    max_x = max(x)
-    
-    best_tf = list(target.loc[[gene_name]].values.ravel())
-    best_results = sorted_best[gene_name][1]
-    best_func = sorted_best[gene_name][0]
-    pattern = sorted_best[gene_name][2]
-    
-    new_x = generate_feature(best_func, np.array(list(data['label'])))
-    all_main_polyline = np.append(np.ones((len(new_x),1)), new_x, axis=1)
-    new_curve = np.matmul(all_main_polyline, best_results['params'])
-    
-    my_data = pd.DataFrame({'x': x, 'y':best_tf})
-    pline = np.linspace(min_x, max_x)
-    polyline = generate_feature(best_func, pline)
-    new_polyline = np.append(np.ones((len(polyline),1)), polyline, axis=1)
-    curve = np.matmul(new_polyline, best_results['params'])
-    
-    
-    # stdev = np.sqrt(sum((best_tf - target.loc[gene_name])**2) / (len(target.loc[gene_name]) - 2))
-    
-    
-    print("mean value: " + str(np.mean(target.loc[gene_name])))
-    ss_res = np.sum( (target.loc[gene_name] - new_curve )**2)
-    print("SSres: " + str(ss_res) )
-    
-    delata = 1.35
-    modified_ss_res = 0
-    res_e = target.loc[gene_name] - new_curve
-    for e in res_e:
-        if abs(e) < delata:
-            modified_ss_res += 1/2*np.sum(e**2)
-        else:
-            modified_ss_res += delata *(abs(e) - (1/2)*delata)
-    print("Modified SSres: " + str(modified_ss_res))
-    
-    ss_tot = np.sum( (target.loc[gene_name] - np.mean(target.loc[gene_name]))**2)
-    print("SStot: " + str(ss_tot) )
-    r2 = 1 - ( ss_res / ss_tot )
-    print("R2: " + str(r2) )
-    
-    r2 = 1 - ( modified_ss_res / ss_tot )
-    r2 = 1 - (1-r2)*(len(best_tf)-1)/(len(best_tf)-new_x.shape[1]-1)
-    print("Modified R2: " + str(r2) )
-    
-    mse = mean_absolute_error(new_curve, target.loc[gene_name])
-    print("MAE: " + str(mse))
-    
-    p = ggplot(aes(x='x', y='y'), my_data,)
-    p = p + geom_pointdensity(size = 3, show_legend=False)
-    
-    dt = pd.DataFrame({'x': pline, 'y': curve})
-    p = p + geom_line(aes(x='x', y='y'), dt, colour=plot_color, size = 1)
-    
-    mean_dt = pd.DataFrame({'x': pline, 'y': np.mean(target.loc[gene_name])*np.ones(len(pline))})
-    p = p + geom_line(aes(x='x', y='y'), mean_dt, colour='tab:red', size = 1)
-    
-    p = p + theme(panel_background=element_rect(fill='white'),              
-          axis_line_x=element_line(color='black'),
-          axis_line_y=element_line(color='black'),
-          panel_grid=element_blank(),
-          panel_border=element_blank())
-    p = p + labs(title = gene_name, y = scale_name, x = pattern)
-    p = p + annotate(geom = "text", 
-                      label = "\n\n adj $R^2$ = " + str("{:.2f}".format(best_results['rsquared_adj'])) \
-                            + "\n Modified adj $R^2$ = " + str("{:.2f}".format(r2))\
-                            + "\n p-value = " + str("{:.2f}".format(sorted_best[gene_name][4])),
-                      x = np.mean(pline), 
-                      y = np.max(best_tf)+0.15)
-    if(best_func == 'linear'):
-        p = p + annotate(geom = "text", 
-                          label = "ge = " + str(round(best_results['params'][0],2)) \
-                              + ["", "+"][best_results['params'][1] > 0]+ \
-                                  str(round(best_results['params'][1],2)) + "t" ,
-                          color = "tab:orange",
-                          size = 16,
-                          x = np.max(pline)-15, 
-                          y = np.max(curve)+0.01)
-    elif(best_func == 'quadratic'):
-        p = p + annotate(geom = "text", 
-                          label = "ge = " + str(round(best_results['params'][0],2)) \
-                               + ["", "+"][best_results['params'][1] > 0]+ \
-                                   str(round(best_results['params'][1],2)) + "$t^2$" ,
-                          x = pline[10], 
-                          y = curve[10])
-    elif(best_func == 'linear_quadratic'):
-        p = p + annotate(geom = "text", 
-                          label = "ge = " + str(round(best_results['params'][0],2)) \
-                               + ["", "+"][best_results['params'][1] > 0]+ \
-                                   str(round(best_results['params'][1],2)) + "t" \
-                                   + ["", "+"][best_results['params'][2] > 0]+\
-                                       str(round(best_results['params'][2],2)) + "$t^2$" ,
-                          x = pline[10], 
-                          y = curve[10])
-    p = p + annotate(geom = "text", 
-                    label = "Mean Model" ,
-                        x = np.max(mean_dt['x'])-8, 
-                        y = np.max(mean_dt['y'])-0.03,
-                    color = 'tab:red',
-                     size = 16
-                        )
-    p.draw()
-   
-  
-def plot_gene_distribtion(target, gene_name):
-    data = pd.DataFrame({'gene': target.loc[gene_name]})
-    plt.figure(figsize = (8,6))
-    sns.histplot(data=data, x='gene', edgecolor='k')
-    plt.title(gene_name + " expression distribtion")
-    plt.xlabel('gene expression', size = 16)
-    plt.ylabel('Frequency', size = 16)
-    plt.yticks(size = 12, weight = 'bold')
-    plt.xticks(size = 12, weight = 'bold')
-    plt.show()
-   
-def plot_gene_density(target, data, sorted_best, gene_name, scale_name, plot_color):
-    x = data['label']
-
-    best_tf = list(target.loc[[gene_name]].values.ravel())
-    data = pd.DataFrame({'x': x, 'y':best_tf})
-    
-    labels=np.sort([y for y in list(data.x.unique())])
-    fig, axes = joypy.joyplot(data, by="x", column="y", labels=labels, 
-                          grid="y", linewidth=1, legend=False, overlap=0.5, figsize=(6,5),kind="kde", bins=80,
-                          title=gene_name, ylabels=False,
-                          colormap=cm.autumn_r)
-
-def plot_pval_rsq_correlation(table, feature1, feature2, show_fit = True, log_transform = False):
-    
-    x = [float(x) for x in table[feature1].values]
-    
-    if(log_transform):
-        y = [float(x) for x in table[feature2].values]
-        y = -np.log10(y)
-        data = {"x": x, "y": y}
-    
-    plt.figure(figsize=(6,6))
-    sns.scatterplot(x, y, color='tab:blue')
-    
-    if(show_fit):
-        results = ols("y ~ x", data=data).fit()
-        print('ratio: ' + str(results.params[1]))
-        pline = np.linspace(min(x),max(x))
-        curve = np.matmul(np.array(results.params), [np.ones(len(pline)),pline])
-        # y_pred = np.matmul(np.array(results.params), [np.ones(len(x)),x])
-    
-        sns.lineplot(pline, curve, color = 'tab:red')
-    
-        # textstr = '\n'.join((
-        #         r'RMSE=%.2f' % (compute_metrics(y, y_pred)[1], ),
-        #         r'MAE=%.2f' % (compute_metrics(y, y_pred)[2], ),
-        #         r'r2=%.2f' % (compute_metrics(y, y_pred)[0], ),
-        #         r'Cor=%.2f' % (compute_metrics(y, y_pred)[3], )))
-        # plt.text(min(pline), max(y), textstr, fontsize=16,
-        #         verticalalignment='top')
-        
-    plt.xlabel(feature1, fontsize=16)
-    if(log_transform):
-        plt.ylabel("$-log_{10}($" + str(feature2) + ")", fontsize=16)
-    else:
-        plt.ylabel(feature2, fontsize=16)
-    plt.xticks(size = 14)
-    plt.yticks(size = 14)
-    plt.show()
-
-def plot_condition(target, data, sorted_best, condition_type, scale_name, plot_color):
-    """
-    plot 9 best fitted model based on up or down regulation pattern
-    """
-    assert condition_type in ['increasing', 'decreasing'], 'condition type parameter must be increasing, decreasing'
-    
-    x = np.array(list(data['label']))
-    j = 1
-    i = 0
-    
-    if(condition_type == 'increasing'):
-        plt.figure(figsize=(15, 12))
-        plt.subplots_adjust(hspace=0.5, wspace=0.3)
-        plt.suptitle("Increasing Expression", fontsize=18, y=0.95)
-        plt.tight_layout()
-   
-        while(j<=9):
-            
-            best_tf_name = list(sorted_best)[i]
-            best_tf = target.loc[[best_tf_name]].values
-            best_results = list(sorted_best.items())[i][1][1]
-            best_func = list(sorted_best.items())[i][1][0]
-            
-            pline = np.linspace(min(x), max(x))
-            polyline = generate_feature(best_func, pline)
-            new_polyline = np.append(np.ones((len(polyline),1)), polyline, axis=1)
-            curve = np.matmul(new_polyline, best_results['params'])
-            mit = list(sorted_best.items())[i][1][3]
-            if(mit > 0):
-                
-                
-                ax = plt.subplot(3, 3, j)
-
-                ax.scatter(x, best_tf, c = best_tf, alpha = 0.5, cmap='RdBu', norm=colors.CenteredNorm(), )
-                ax.axis(xmin = min(x),xmax = max(x))
-                ax.set(ylabel = scale_name)
-                ax.plot(pline, curve, c = plot_color)
-                ax.set_title(best_tf_name)
-                
-                ax.annotate("adj R2 = " + str("{:.2f}".format(best_results['rsquared_adj'])), 
-                      (0,np.max(best_tf)-0.2),
-                      color='black',
-                      size=14)
-        
-                j += 1
-            i += 1
-    else:
-        plt.figure(figsize=(15, 12))
-        plt.subplots_adjust(hspace=0.5, wspace=0.3)
-        plt.suptitle("Decreasing Expression", fontsize=18, y=0.95)
-        plt.tight_layout()
-        
-        while(j<=9):
-            
-            best_tf_name = list(sorted_best)[i]
-            best_tf = target.loc[[best_tf_name]].values
-            best_results = list(sorted_best.items())[i][1][1]
-            best_func = list(sorted_best.items())[i][1][0]
-            
-            pline = np.linspace(min(x), max(x))
-            polyline = generate_feature(best_func, pline)
-            new_polyline = np.append(np.ones((len(polyline),1)), polyline, axis=1)
-            curve = np.matmul(new_polyline, best_results['params'])
-            mit = list(sorted_best.items())[i][1][3]
-            if(mit < 0):
-                
-                
-                ax = plt.subplot(3, 3, j)
-                ax.scatter(x, best_tf, c = best_tf, alpha = 0.5, cmap='RdBu', norm=colors.CenteredNorm(), )
-                ax.axis(xmin = min(x),xmax = max(x))
-                ax.set(ylabel = scale_name)
-                ax.plot(pline, curve, c = plot_color)
-                ax.set_title(best_tf_name)
-                
-                ax.annotate("adj R2 = " + str("{:.2f}".format(best_results['rsquared_adj'])), 
-                      (1.8,np.max(best_tf)-0.1),
-                      color='black',
-                      size=14)
-        
-                j += 1
-            i += 1
-            
-def plot_6_best(target, data, sorted_best, scale_name, plot_color):
-    """
-    plot 6 best fitted model for each pattern
-    """
-    x = np.array(list(data['label']))
-    
-    plt.figure(figsize=(15, 12))
-    plt.subplots_adjust(hspace=0.5)
-    
-    pattern_types = ['linear', 'quadratic', 'linear_quadratic']
-    mit_types = ['up', 'down']
-    
-    k = 1
-    for mit in mit_types:
-        for pattern in pattern_types:
-            motifs = data_interst(sorted_best, pattern, mit)
-            tf_name = list(motifs.keys())[0]
-            tf = target.loc[[tf_name]].values
-            results = list(motifs.items())[0][1][1]
-            func = list(motifs.items())[0][1][0]
-            patt = list(motifs.items())[0][1][2]
-            pline = np.linspace(min(x), max(x))
-            polyline = generate_feature(func, pline)
-            new_polyline = np.append(np.ones((len(polyline),1)), polyline, axis=1)
-            curve = np.matmul(new_polyline, results['params'])
-            
-            ax = plt.subplot(3, 3, k)
-            ax.scatter(x, tf, c = tf, alpha = 0.5, cmap='RdBu', norm=colors.CenteredNorm(), )
-            ax.axis(xmin=min(x),xmax=max(x))
-
-            ax.plot(np.linspace(min(x),max(x)), curve, c = plot_color)
-            ax.set_title(re.sub('.*?:', '', tf_name))
-            if(k % 3 == 1):
-                ax.set(ylabel = scale_name)
-            
-            ax.annotate("adj R2 = " + str("{:.2f}".format(results['rsquared_adj'])), 
-                          (0.2,np.max(tf)-0.1),
-                          color='black',
-                          size=14)
-            ax.set_xlabel(patt)
-            k += 1
-            
    
 def data_interst(data, func_type, slope):
     """
-    filter data based on the pattern
+    Filter a dictionary of data based on pattern type and slope direction.
+
+    Parameters:
+        data (dict): A dictionary containing data entries with associated patterns and slopes.
+        func_type (str): The desired pattern type ('linear', 'quadratic', 'linear_quadratic', or 'none').
+        slope (str): The desired slope direction ('up', 'down', or 'none').
+
+    Returns:
+        dict: A filtered dictionary containing data entries that match the specified pattern type and slope direction.
     """
+
     dictionary = {}
     if func_type == 'linear' and slope == 'up':
         for key, value in list(data.items()):
@@ -1080,6 +537,17 @@ def data_interst(data, func_type, slope):
     return(dictionary)
 
 def display_count_patterns(data, name):
+    """
+    Display the count of statistically significant genes and their expression patterns for a given cell type.
+
+    Parameters:
+        data (dict): A dictionary containing gene data for a specific cell type.
+        name (str): The name or identifier of the cell type.
+
+    Returns:
+        None: This function prints the information but does not return a value.
+    """
+
     print("For cell_type " + str(name) + ", " + str(len(data.keys())) + " genes are statistically significant.")
     df = pd.DataFrame({'Expression pattern': [item[2] for item in data.values()]})
     df2 = df.groupby(['Expression pattern'])['Expression pattern'].count().reset_index(name='counts')
@@ -1087,8 +555,16 @@ def display_count_patterns(data, name):
 
 def data_interst_pattern(data, pattern):
     """
-    filter data based on the more specific pattern
+    Filter data based on a more specific expression pattern.
+
+    Parameters:
+        data (dict): A dictionary containing gene data.
+        pattern (str): The specific expression pattern to filter for.
+
+    Returns:
+        dict: A dictionary containing genes that match the specified expression pattern.
     """
+
     dictionary = {}
     
     for key, value in list(data.items()):
@@ -1099,8 +575,16 @@ def data_interst_pattern(data, pattern):
 
 def make_table(dictionary, column_names):
     """
-    make table of the data
-    """
+    Create a table from a dictionary containing gene data.
+
+    Parameters:
+        dictionary (dict): A dictionary containing gene data.
+        column_names (list): A list of column names for the table.
+
+    Returns:
+        pd.DataFrame: A Pandas DataFrame representing the table.
+        """
+
     
     all_motifs = np.array(list(dictionary.keys()))
     all_motifs = all_motifs.reshape(all_motifs.shape[0],1)
@@ -1195,9 +679,20 @@ def statistics(mat_df):
 
 def save_data(dictionary, column_names,save_path,name,p_val,pro,gprofil=False):
     """
-    make table and save the data
+    Generate a table from a dictionary of gene data and save it along with associated files.
+
+    Parameters:
+        dictionary (dict): A dictionary containing gene data.
+        column_names (list): A list of column names for the table.
+        save_path (str): The path where the data and associated files will be saved.
+        name (str): The name for the saved files and folder.
+        p_val (float): The threshold for the adjusted p-value for significance.
+        pro (pd.DataFrame): A Pandas DataFrame containing additional protein-related data.
+        gprofil (bool): If True, perform GProfiler analysis and save the results.
+
+    Returns:
+        None
     """
-    
     all_motifs = np.array(list(dictionary.keys()))
     all_motifs = all_motifs.reshape(all_motifs.shape[0],1)
     

@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='PILOT',
-    version='1.1.0',
+    version='2.0.1',
     author='Mehdi Joodaki',
     author_email='judakimehdi@gmail.com',
     url='https://github.com/CostaLab/PILOT',
