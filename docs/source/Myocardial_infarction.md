@@ -112,7 +112,7 @@ Next, we can use the robust regression model to find cells whose proportions cha
 
 
 ```python
-pl.tl.cell_importance(adata, height = 45, width = 38, fontsize = 28)
+pl.tl.cell_importance(adata)
 ```
 
 
@@ -406,7 +406,6 @@ We can visualize specific genes, for example the ones discussed in PILOT manuscr
 ```python
 pl.pl.exploring_specific_genes(cluster_name = 'Myofib', gene_list = ['COL1A2','DCN','EXT1'])
 ```
-
 
 
 
