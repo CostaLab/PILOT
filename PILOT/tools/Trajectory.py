@@ -25,6 +25,9 @@ import ot
 from logging import info, warn
 from cycler import cycler
 from matplotlib.image import imread
+from scipy.stats import mannwhitneyu, f_oneway, kruskal,spearmanr,kendalltau, chi2_contingency
+import anndata
+from matplotlib.patches import Patch
 warnings.filterwarnings('ignore')
 
 
@@ -1316,5 +1319,214 @@ def results_gene_cluster_differentiation(cluster_name=None,sort_columns=['pvalue
     return df_sorted[['gene','cluster','waldStat','pvalue','FC','Expression pattern','fit-pvalue','fit-mod-rsquared']]  
 
 
+def detect_numeric_values(series):
+    numeric_values = []
+
+    for value in series:
+        try:
+            # Try to convert the value to numeric
+            float_value = float(value)
+            # If conversion succeeds, it's numeric, so add it to the list
+            numeric_values.append(float_value)
+        except ValueError:
+            # If conversion fails, it's not numeric, so continue to the next value
+            pass
+
+    return numeric_values
+
+
+def correlation_categorical_with_trajectory(adata, sample_col='sampleID', features=[],sort_column='ANOVA_PValue'):
+    results_list = []
+    orders=adata.uns['orders']
+    for feature in features:
+        clinical_data = adata.obs[[sample_col, feature]].rename(columns={sample_col: 'sampleID'})
+        merged_data = orders.merge(clinical_data, on='sampleID', how='left')
+        unique_merged_data = merged_data.drop_duplicates(subset='sampleID')
+
+        # Detect and remove non-numeric values
+        numeric_values = detect_numeric_values(unique_merged_data[feature])
+        unique_merged_data = unique_merged_data[~unique_merged_data[feature].isin(numeric_values)]
+        unique_merged_data = unique_merged_data.dropna(subset=['Time_score', feature])
+        
+        # Perform ANOVA
+        anova_stat, anova_p_value = f_oneway(*[group['Time_score'] for name, group in unique_merged_data.groupby(feature)])
+
+        # Perform Kruskal-Wallis H-test
+        kruskal_stat, kruskal_p_value = kruskal(*[group['Time_score'] for name, group in unique_merged_data.groupby(feature)])
+        
+        results_list.append({
+            'Feature': feature,
+            'ANOVA_FStatistic': anova_stat,
+            'ANOVA_PValue': float(anova_p_value),
+           # 'KruskalWallisH_Statistic': kruskal_stat,
+           # 'KruskalWallisH_PValue': kruskal_p_value
+        })
+
+    df_results = pd.DataFrame(results_list)
+    df_results = df_results[df_results['ANOVA_PValue'].astype(float)< 0.05]
+    df_results_sorted = df_results.sort_values(by=sort_column)
+    return df_results_sorted
+
+
+
+def detect_values_to_remove(series):
+    values_to_remove = []
+
+    for value in series:
+        try:
+            # Try to convert the value to numeric
+            float(value)
+        except ValueError:
+            # If conversion fails, add the value to the list
+            values_to_remove.append(value)
+
+    return values_to_remove
+
+def correlation_numeric_with_trajectory(adata, sample_col='sampleID', features=[],sort_column='Spearman_PValue'):
+    results_list = []
+    orders=adata.uns['orders']
+    for feature in features:
+        clinical_data = adata.obs[[sample_col, feature]].rename(columns={sample_col: 'sampleID'})
+        merged_data = orders.merge(clinical_data, on='sampleID', how='left')
+        unique_merged_data = merged_data.drop_duplicates(subset='sampleID')
+        values_to_remove = np.unique(detect_values_to_remove(unique_merged_data[feature]))
+        unique_merged_data=unique_merged_data[~unique_merged_data[feature].isin(values_to_remove)]
+        time_score = unique_merged_data['Time_score']
+        test_feature = unique_merged_data[feature]
+        spearman_corr, spearman_p_value = spearmanr(time_score, test_feature)
+
+        # Calculate Kendall's Tau
+        kendall_corr, kendall_p_value = kendalltau(time_score, test_feature)
+
+        # Append results to list
+        results_list.append({
+            'Feature': feature,
+            'Spearman_Correlation': spearman_corr,
+            'Spearman_PValue': float(spearman_p_value),
+           # 'Kendall_Correlation': kendall_corr,
+          #  'Kendall_PValue': kendall_p_value
+        })
+       
+    df_results = pd.DataFrame(results_list)
+    df_results = df_results[df_results['Spearman_PValue'].astype(float)< 0.05]
+    df_results_sorted = df_results.sort_values(by=sort_column)
+    return df_results_sorted
+
+
+
+
+def correlation_categorical_with_clustering(adata, proportion_df, sample_col='sampleID', features=[],sort_column='ChiSquared_PValue'):
+    results_list = []
+    proportion_df = proportion_df[['sampleID', 'Predicted_Labels']]
+    for feature in features:
+        clinical_data = adata.obs[[sample_col, feature]].rename(columns={sample_col: 'sampleID'})
+        merged_data = proportion_df.merge(clinical_data, on='sampleID', how='left')
+        unique_merged_data = merged_data.drop_duplicates(subset='sampleID')
+
+        # Detect and remove non-numeric values
+        numeric_values = detect_numeric_values(unique_merged_data[feature])
+        unique_merged_data = unique_merged_data[~unique_merged_data[feature].isin(numeric_values)]
+
+        # Convert 'Lieden' column to string
+        unique_merged_data['Predicted_Labels'] = unique_merged_data['Predicted_Labels'].astype(str)
+
+        # Create a contingency table
+        contingency_table = pd.crosstab(unique_merged_data['Predicted_Labels'], unique_merged_data[feature])
+
+        # Chi-squared Test of Independence
+        chi2_stat, chi2_p_value, _, _ = chi2_contingency(contingency_table)
+
+        results_list.append({
+            'Feature': feature,
+            'ChiSquared_Statistic': chi2_stat,
+            'ChiSquared_PValue':float(chi2_p_value),
+        })
+
+    df_results = pd.DataFrame(results_list)
+    df_results = df_results[df_results['ChiSquared_PValue'].astype(float)< 0.05]
+    df_results_sorted = df_results.sort_values(by=sort_column)
+    return df_results_sorted
+
+def correlation_numeric_with_clustering(adata, proportion_df, sample_col='sampleID', features=[],sort_column='ANOVA_P_Value'):
+    results_list = []
+    proportion_df = proportion_df[['sampleID', 'Predicted_Labels']]
+
+    for feature in features:
+        clinical_data = adata.obs[[sample_col, feature]].rename(columns={sample_col: 'sampleID'})
+        merged_data = proportion_df.merge(clinical_data, on='sampleID', how='left')
+        unique_merged_data = merged_data.drop_duplicates(subset='sampleID')
+
+        # Detect and remove non-numeric values
+        values_to_remove = detect_values_to_remove(unique_merged_data[feature])
+        unique_merged_data = unique_merged_data[~unique_merged_data[feature].isin(list(np.unique(values_to_remove)))]
+
+        # Convert 'Lieden' column to string
+        unique_merged_data['Predicted_Labels'] = unique_merged_data['Predicted_Labels'].astype(str)
+
+        # Separate data into groups based on clusters
+        groups = [unique_merged_data[unique_merged_data['Predicted_Labels'] == group][feature].values for group in unique_merged_data['Predicted_Labels'].unique()]
+
+        # ANOVA test
+        anova_result = f_oneway(*groups)
+
+        # Kruskal-Wallis H-test
+        kruskal_result = kruskal(*groups)
+
+        results_list.append({
+            'Feature': feature,
+            'ANOVA_F_Statistic': anova_result.statistic,
+            'ANOVA_P_Value': float(anova_result.pvalue),
+           # 'Kruskal_Wallis_H_Statistic': kruskal_result.statistic,
+           # 'Kruskal_Wallis_P_Value': kruskal_result.pvalue,
+        })
+
+    df_results = pd.DataFrame(results_list)
+    df_results = df_results[df_results['ANOVA_P_Value'].astype(float)< 0.05]
+    df_results_sorted = df_results.sort_values(by=sort_column)
+    return df_results_sorted
+
+
+
+
+def clinical_variables_corr_sub_clusters(adata,sorter_order=None,size_fig=(12,12),col_cluster=False, row_cluster=False,cmap="Blues_r", yticklabels=False, xticklabels=False,sample_col='donor_id',feature='sex',proportion_df=None):
+        #EMD_df['Lieden_Label'] =EMD_df['Lieden'].astype(str)+'_'+EMD_df['group'].astype(str)
+    EMD_df=pd.DataFrame(adata.uns['EMD'],columns=adata.uns['proportions'].keys())
+    EMD_df['sampleID']=adata.uns['proportions'].keys()
+    # Convert the 'obs' slot into a DataFrame
+    obs_df = pd.DataFrame(adata.obs)
+    # Use drop_duplicates to get unique samples and their 'Sex' data
+    obs_df = pd.DataFrame(adata.obs)
+    unique_features =list( obs_df[[sample_col, feature]].drop_duplicates(subset=sample_col)[feature])
+    EMD_df['group']=unique_features
+    EMD_df['Lieden']=list(proportion_df['Predicted_Labels'])
+    sorter=sorter_order
+    EMD_df['Lieden'] = EMD_df.Lieden.astype("category")
+    EMD_df['Lieden'] = EMD_df['Lieden'].cat.set_categories(sorter)
+    EMD_df=EMD_df.sort_values(["Lieden"])
+    obs = pd.DataFrame()
+
+    obs['sampleID']=EMD_df.sampleID.astype(str)
+    obs['Lables']=EMD_df.group.astype(str)
+    obs['Lieden']=EMD_df.Lieden.astype(str)
+    df_genes = pd.DataFrame(index = EMD_df.columns[0:EMD_df.shape[0]])
+    adata_clustering = anndata.AnnData(X = EMD_df[ EMD_df.columns[0:EMD_df.shape[0]]].values, var =df_genes, obs = obs )
+    color_palette = sns.color_palette("husl", len(EMD_df['group'].unique()))
+    # Create a dictionary to map unique values to colors
+    lut = {value: color for value, color in zip(EMD_df['group'].unique(), color_palette)}
+    # Map colors to the 'group' column
+    row_colors = EMD_df['group'].map(lut)
+    
+
+    handles = [Patch(facecolor=lut[name]) for name in lut]
+    
+    plt.legend(handles, lut, title='Groups',
+             loc='best')
+        # To remove any other elements and just show the legend, you may want to hide the axes and clear the plot.
+    plt.axis('off')
+    plt.gca().xaxis.set_major_locator(plt.NullLocator())
+    plt.gca().yaxis.set_major_locator(plt.NullLocator())
+    sns.clustermap(EMD_df[adata_clustering.obs.sampleID],figsize=size_fig,col_cluster=col_cluster, row_cluster=row_cluster,cmap=cmap, yticklabels=yticklabels, xticklabels=xticklabels,tree_kws=dict(linewidths=2),row_colors=row_colors) 
+   
+   
 
 
