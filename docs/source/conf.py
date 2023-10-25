@@ -7,7 +7,7 @@ copyright = '2023, Costalab'
 author = 'Mehdi Joodaki'
 
 release = '2.0'
-version = '2.0.1'
+version = '2.0.2'
 
 # -- General configuration
 
