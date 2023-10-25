@@ -53,19 +53,3 @@ caption: Tutorial for Patients sub-group detection
 ---
 Patients_sub_group_detection
 ```
-
-```{toctree}
----
-maxdepth: 2
-caption: Tutorial for evaluation of the presence of batch effects(Trajectory)
----
-Kidney_trajectory
-```
-
-```{toctree}
----
-maxdepth: 2
-caption: Tutorial for evaluation of the presence of batch effects(Clusters)
----
-Kidney_clusters
-```
