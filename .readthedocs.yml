@@ -12,12 +12,12 @@ build:
   tools:
     python: "3.10"
 
-#python:
+python:
  # version: 3.10
- # install:
-  #  - requirements: docs/requirements.txt
-   # - method: pip
-    #  path: .
-     # extra_requirements:
-      #  - docs
+  install:
+    - requirements: docs/requirements.txt
+    - method: pip
+      path: .
+      extra_requirements:
+        - docs
 
