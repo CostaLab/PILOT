@@ -13,11 +13,12 @@ import seaborn as sns
 import pandas as pd
 ```
 
-##### Reading the original Anndata (without filteration, we consider the Kidney data without any filtering, we observe a high association with the tissue location: renal medulla, cortex of kidney, renal papilla or kidney)
+#### Reading the original Anndata (without filteration):
+We consider the Kidney data without any filtering, we observe a high association with the tissue location: renal medulla, cortex of kidney, renal papilla or kidney).You can download the Anndata (h5ad) file from [here](https://costalab.ukaachen.de/open_data/PILOT/Kidney_ori.h5ad), and place it in the _Datasets_ folder.
 
 
 ```python
-adata = sc.read_h5ad('/data/mu0611151/data/Datasets/Revised_V1_PILOT/Processingdata/adata_scRNA_cxg_pca.h5ad')
+adata = sc.read_h5ad('/Datasets/Kidney_ori.h5ad')
 ```
 
 ##### Loading the required information and computing the Wasserstein distance:
@@ -64,7 +65,7 @@ pl.pl.trajectory(adata, colors = ['red','orange','Blue'])
     
 
 
-#####  Fit a principal graph:
+##### Fit a principal graph:
 <div class="alert alert-block alert-info"> 
 The difussion map creates an embedding that potentially reveals a trajectory in the data. Next, PILOT explores EIPLGraph to find the structure of the trajectory. An important parameter is the source_node, which indicates the start of the trajectory. Here, we selected a control sample (node with id = 7). This method returns ranked samples, which we define as a disease progression score (t = t1, ..., tn), where tl represents the ranking of the nth sample.
 </div>
@@ -72,21 +73,20 @@ The difussion map creates an embedding that potentially reveals a trajectory in 
 
 
 ```python
-#pl.pl.fit_pricipla_graph(adata, source_node = 8)
+pl.pl.fit_pricipla_graph(adata, source_node = 8)
 ```
 
-#####  Cell-type importance:
+##### Cell-type importance:
 <div class="alert alert-block alert-info"> 
 Next, we can use the robust regression model to find cells whose proportions change linearly or non-linearly with disease progression. As indicated in the paper, major hallmark of MI progression are detected, i.e., a decrease of cardiomyocyte cells (CM) and an increase of fibroblasts and myeloid cells.
 </div>
 
 
 ```python
-#pl.tl.cell_importance(adata,heatmap_w = 20,height = 15,xlim = 30)
+pl.tl.cell_importance(adata,heatmap_w = 20,height = 15,xlim = 30)
 ```
 
-#### Statistical tests 
-
+##### Statistical tests:
 For categorical variables, this is based on ANOVA statistics on Trajectory analysis  while for numerical variables this is based on Spearman correlation. For these functions, provide the sample_col as the Sample/Patient column and your interested variables. Of note, these functions show just the significant variables (p-values) and ignore the insignificant ones.
 
 
@@ -197,11 +197,11 @@ pl.tl.correlation_numeric_with_trajectory(adata, sample_col = 'donor_id', featur
 
 
 
-#### Visualizing Feature Distribution Within Patients sub-group 
+##### Visualizing Feature Distribution Within Patients sub-group 
 
 Utilizing the 'trajectory' function, you can skillfully visualize the distribution of significant variables over the identified trajectory. Please configure the requisite columns as outlined at the outset of this tutorial.
 
-##### Tissue
+###### Tissue
 
 
 ```python
@@ -223,17 +223,17 @@ pl.pl.trajectory(adata, colors = colors)
 
 
     
-![png](Kidney_trajectory_files/Kidney_trajectory_25_0.png)
+![png](Kidney_trajectory_files/Kidney_trajectory_24_0.png)
     
 
 
-### Investigating after filtration
+#### Investigating after filtration
 
-Here, we use the all previous steps for the filtered data set (only samples associated with the kidney (or whole kidney) location).
+Here, we use the all previous steps for the filtered data set (only samples associated with the kidney (or whole kidney) location).You can download the Anndata (h5ad) file from [here](https://costalab.ukaachen.de/open_data/PILOT/Kidney_filtered.h5ad), and place it in the _Datasets_ folder.
 
 
 ```python
-adata_filtered=sc.read_h5ad('/data/mu0611151/data/Datasets/Revised_V1_PILOT/Zenodo/Kidney.h5ad')
+adata_filtered=sc.read_h5ad('/Datasets/Kidney_filtered.h5ad')
 ```
 
 
@@ -254,7 +254,7 @@ pl.pl.trajectory(adata_filtered, colors = ['red','orange','Blue'])
 
 
     
-![png](Kidney_trajectory_files/Kidney_trajectory_30_0.png)
+![png](Kidney_trajectory_files/Kidney_trajectory_29_0.png)
     
 
 
@@ -327,7 +327,7 @@ pl.tl.correlation_categorical_with_trajectory(adata_filtered, sample_col='donor_
 
 
 
-##### Diabetes_history
+###### Diabetes_history
 
 
 ```python
@@ -349,11 +349,11 @@ pl.pl.trajectory(adata_filtered, colors = colors)
 
 
     
-![png](Kidney_trajectory_files/Kidney_trajectory_37_0.png)
+![png](Kidney_trajectory_files/Kidney_trajectory_36_0.png)
     
 
 
-##### BMI
+###### BMI
 
 
 ```python
@@ -375,6 +375,6 @@ pl.pl.trajectory(adata_filtered, colors = colors)
 
 
     
-![png](Kidney_trajectory_files/Kidney_trajectory_40_0.png)
+![png](Kidney_trajectory_files/Kidney_trajectory_39_0.png)
     
 

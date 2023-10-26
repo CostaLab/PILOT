@@ -10,11 +10,12 @@ import PILOT as pl
 import scanpy as sc
 ```
 
-##### Reading the original Anndata (without filteration, we consider the Kidney data without any filtering, we observe a high association with the tissue location: renal medulla, cortex of kidney, renal papilla or kidney)
+#### Reading the original Anndata (without filteration):
+We consider the Kidney data without any filtering, we observe a high association with the tissue location: renal medulla, cortex of kidney, renal papilla or kidney).You can download the Anndata (h5ad) file from [here](https://costalab.ukaachen.de/open_data/PILOT/Kidney_ori.h5ad), and place it in the _Datasets_ folder.
 
 
 ```python
-adata = sc.read_h5ad('/data/mu0611151/data/Datasets/Revised_V1_PILOT/Processingdata/adata_scRNA_cxg_pca.h5ad')
+adata = sc.read_h5ad('/Datasets/Kidney_ori.h5ad')
 ```
 
 ##### Loading the required information and computing the Wasserstein distance:
@@ -54,48 +55,6 @@ The Silhouette Score Curve is used to find the optimal number of clusters by plo
 ```python
 pl.pl.select_best_sil(adata, start = 0.2)
 ```
-
-    WARNING: You’re trying to run this on 67 dimensions of `.X`, if you really want this, set `use_rep='X'`.
-             Falling back to preprocessing with `sc.pp.pca` and default params.
-    WARNING: You’re trying to run this on 67 dimensions of `.X`, if you really want this, set `use_rep='X'`.
-             Falling back to preprocessing with `sc.pp.pca` and default params.
-    WARNING: You’re trying to run this on 67 dimensions of `.X`, if you really want this, set `use_rep='X'`.
-             Falling back to preprocessing with `sc.pp.pca` and default params.
-    WARNING: You’re trying to run this on 67 dimensions of `.X`, if you really want this, set `use_rep='X'`.
-             Falling back to preprocessing with `sc.pp.pca` and default params.
-    WARNING: You’re trying to run this on 67 dimensions of `.X`, if you really want this, set `use_rep='X'`.
-             Falling back to preprocessing with `sc.pp.pca` and default params.
-    WARNING: You’re trying to run this on 67 dimensions of `.X`, if you really want this, set `use_rep='X'`.
-             Falling back to preprocessing with `sc.pp.pca` and default params.
-    WARNING: You’re trying to run this on 67 dimensions of `.X`, if you really want this, set `use_rep='X'`.
-             Falling back to preprocessing with `sc.pp.pca` and default params.
-    WARNING: You’re trying to run this on 67 dimensions of `.X`, if you really want this, set `use_rep='X'`.
-             Falling back to preprocessing with `sc.pp.pca` and default params.
-    WARNING: You’re trying to run this on 67 dimensions of `.X`, if you really want this, set `use_rep='X'`.
-             Falling back to preprocessing with `sc.pp.pca` and default params.
-    WARNING: You’re trying to run this on 67 dimensions of `.X`, if you really want this, set `use_rep='X'`.
-             Falling back to preprocessing with `sc.pp.pca` and default params.
-    WARNING: You’re trying to run this on 67 dimensions of `.X`, if you really want this, set `use_rep='X'`.
-             Falling back to preprocessing with `sc.pp.pca` and default params.
-    WARNING: You’re trying to run this on 67 dimensions of `.X`, if you really want this, set `use_rep='X'`.
-             Falling back to preprocessing with `sc.pp.pca` and default params.
-    WARNING: You’re trying to run this on 67 dimensions of `.X`, if you really want this, set `use_rep='X'`.
-             Falling back to preprocessing with `sc.pp.pca` and default params.
-    WARNING: You’re trying to run this on 67 dimensions of `.X`, if you really want this, set `use_rep='X'`.
-             Falling back to preprocessing with `sc.pp.pca` and default params.
-    WARNING: You’re trying to run this on 67 dimensions of `.X`, if you really want this, set `use_rep='X'`.
-             Falling back to preprocessing with `sc.pp.pca` and default params.
-    WARNING: You’re trying to run this on 67 dimensions of `.X`, if you really want this, set `use_rep='X'`.
-             Falling back to preprocessing with `sc.pp.pca` and default params.
-    WARNING: You’re trying to run this on 67 dimensions of `.X`, if you really want this, set `use_rep='X'`.
-             Falling back to preprocessing with `sc.pp.pca` and default params.
-    WARNING: You’re trying to run this on 67 dimensions of `.X`, if you really want this, set `use_rep='X'`.
-             Falling back to preprocessing with `sc.pp.pca` and default params.
-    WARNING: You’re trying to run this on 67 dimensions of `.X`, if you really want this, set `use_rep='X'`.
-             Falling back to preprocessing with `sc.pp.pca` and default params.
-
-
-
     
 ![png](Kidney_clusters_files/Kidney_clusters_8_1.png)
     
@@ -116,22 +75,12 @@ Using the Silhouette scores of the previous step, we can find the optimal number
 ```python
 proportion_df=pl.pl.clustering_emd(adata, res = adata.uns['best_res'],show_gene_labels=False,sorter_leiden=['1','0','2'],save=True)
 ```
-
-    WARNING: You’re trying to run this on 67 dimensions of `.X`, if you really want this, set `use_rep='X'`.
-             Falling back to preprocessing with `sc.pp.pca` and default params.
-    WARNING: dendrogram data not found (using key=dendrogram_Leiden). Running `sc.tl.dendrogram` with default parameters. For fine tuning it is recommended to run `sc.tl.dendrogram` independently.
-    WARNING: You’re trying to run this on 67 dimensions of `.X`, if you really want this, set `use_rep='X'`.
-             Falling back to preprocessing with `sc.pp.pca` and default params.
-    WARNING: saving figure to file figures/heatmap.pdf
-
-
-
     
 ![png](Kidney_clusters_files/Kidney_clusters_10_1.png)
     
 
 
-#### Statistical tests 
+##### Statistical tests 
 
 For categorical variables, this is based on Chi-Squared statistics on cluster analysis  while for numerical variables this is based on ANOVA for clustering analysis. For these functions, provide the sample_col as the Sample/Patient column and your interested variables. Of note, these functions show just the significant variables (p-values) and ignore the insignificant ones.
 
@@ -247,7 +196,7 @@ pl.tl.correlation_numeric_with_clustering(adata, proportion_df, sample_col = 'do
 
 Using the 'clinical_variables_corr_sub_clusters' function, you can effectively visualize the distribution of significant variables within the identified subgroups. Please specify 'sample_col' as the Sample/Patient column in your dataset, define the desired 'sorter_order' for the heatmap (in the previous section you can see the order), and select the variables of interest as feature.
 
-##### Disease
+###### Disease
 
 
 ```python
@@ -266,7 +215,7 @@ pl.tl.clinical_variables_corr_sub_clusters(adata,sorter_order=['1','0','2'],samp
     
 
 
-##### Tissue
+###### Tissue
 
 
 ```python
@@ -285,7 +234,7 @@ pl.tl.clinical_variables_corr_sub_clusters(adata,sorter_order=['1','0','2'],samp
     
 
 
-##### BMI
+###### BMI
 
 
 ```python
@@ -304,13 +253,13 @@ pl.tl.clinical_variables_corr_sub_clusters(adata,sorter_order=['1','0','2'],samp
     
 
 
-### Investigating after filtration
+#### Investigating after filtration
 
-Here, we use the all previous steps for the filtered data set (only samples associated with the kidney (or whole kidney) location).
+Here, we use the all previous steps for the filtered data set (only samples associated with the kidney (or whole kidney) location).You can download the Anndata (h5ad) file from [here](https://costalab.ukaachen.de/open_data/PILOT/Kidney_filtered.h5ad), and place it in the _Datasets_ folder.
 
 
 ```python
-adata_filtered=sc.read_h5ad('/data/mu0611151/data/Datasets/Revised_V1_PILOT/Zenodo/Kidney.h5ad')
+adata_filtered=sc.read_h5ad('/Datasets/Kidney_filtered.h5ad')
 ```
 
 
@@ -345,11 +294,6 @@ pl.pl.select_best_sil(adata_filtered, start = 0.3)
 ```python
 proportion_df=pl.pl.clustering_emd(adata_filtered, res = adata_filtered.uns['best_res'],show_gene_labels=False,sorter_leiden=['0','1'],save=True)
 ```
-
-    WARNING: dendrogram data not found (using key=dendrogram_Leiden). Running `sc.tl.dendrogram` with default parameters. For fine tuning it is recommended to run `sc.tl.dendrogram` independently.
-    WARNING: saving figure to file figures/heatmap.pdf
-
-
 
     
 ![png](Kidney_clusters_files/Kidney_clusters_32_1.png)
@@ -414,7 +358,7 @@ pl.tl.correlation_categorical_with_clustering(adata_filtered,proportion_df,sampl
 
 #### Visualizing Feature Distribution Within Patients sub-group 
 
-##### Disease
+###### Disease
 
 
 ```python
@@ -433,7 +377,7 @@ pl.tl.clinical_variables_corr_sub_clusters(adata_filtered, sorter_order=['0','1'
     
 
 
-##### BMI
+###### BMI
 
 
 ```python
@@ -452,7 +396,7 @@ pl.tl.clinical_variables_corr_sub_clusters(adata_filtered, sorter_order = ['0','
     
 
 
-##### Diabetes_history
+###### Diabetes_history
 
 
 ```python
