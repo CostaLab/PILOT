@@ -57,24 +57,20 @@ The Silhouette Score Curve is used to find the optimal number of clusters by plo
 ```python
 pl.pl.select_best_sil(adata, start = 0.2)
 ```
-    
+
 ![png](Kidney_clusters_files/Kidney_clusters_9_1.png)
-    
 
 
 
-    
 ![png](Kidney_clusters_files/Kidney_clusters_9_2.png)
-    
 
 
 
 ```python
 proportion_df=pl.pl.clustering_emd(adata, res = adata.uns['best_res'],show_gene_labels=False,sorter_leiden=['1','0','2'],save=True)
 ```
-    
+
 ![png](Kidney_clusters_files/Kidney_clusters_10_1.png)
-    
 
 
 ##### Evaluation of the association of estimated subgroups with experimental factor:
@@ -145,7 +141,9 @@ pl.tl.correlation_categorical_with_clustering(adata, proportion_df, sample_col =
 
 
 
-##### Numerical variables : Similarly, you can do the same analysis for numerical variables. 
+##### Numerical variables : 
+
+Similarly, you can do the same analysis for numerical variables. 
 
 
 ```python
@@ -198,57 +196,45 @@ To double check these results, one can of course plot the heatmap of clusters by
 
 
 ```python
-pl.tl.clinical_variables_corr_sub_clusters(adata,sorter_order=['1','0','2'],sample_col='donor_id',feature='disease',proportion_df=proportion_df)
+pl.tl.clinical_variables_corr_sub_clusters(adata,sorter_order=['1','0','2'],sample_col='donor_id',feature='disease',proportion_df=proportion_df,figsize_legend=(1,1))
 ```
 
 
-    
-![png](Kidney_clusters_files/Kidney_clusters_21_0.png)
-    
+![png](Kidney_clusters_files/Kidney_clusters_22_0.png)
 
 
 
-    
-![png](Kidney_clusters_files/Kidney_clusters_21_1.png)
-    
+![png](Kidney_clusters_files/Kidney_clusters_22_1.png)
 
 
 ###### Tissue
 
 
 ```python
-pl.tl.clinical_variables_corr_sub_clusters(adata,sorter_order=['1','0','2'],sample_col='donor_id',feature='tissue',proportion_df=proportion_df)
+pl.tl.clinical_variables_corr_sub_clusters(adata,sorter_order=['1','0','2'],sample_col='donor_id',feature='tissue',proportion_df=proportion_df,figsize_legend=(1,1))
 ```
 
 
-    
-![png](Kidney_clusters_files/Kidney_clusters_23_0.png)
-    
+![png](Kidney_clusters_files/Kidney_clusters_24_0.png)
 
 
 
-    
-![png](Kidney_clusters_files/Kidney_clusters_23_1.png)
-    
+![png](Kidney_clusters_files/Kidney_clusters_24_1.png)
 
 
 ###### BMI
 
 
 ```python
-pl.tl.clinical_variables_corr_sub_clusters(adata,sorter_order=['1','0','2'],sample_col='donor_id',feature='BMI',proportion_df=proportion_df)
+pl.tl.clinical_variables_corr_sub_clusters(adata,sorter_order=['1','0','2'],sample_col='donor_id',feature='BMI',proportion_df=proportion_df,figsize_legend=(1,1))
 ```
 
 
-    
-![png](Kidney_clusters_files/Kidney_clusters_25_0.png)
-    
+![png](Kidney_clusters_files/Kidney_clusters_26_0.png)
 
 
 
-    
-![png](Kidney_clusters_files/Kidney_clusters_25_1.png)
-    
+![png](Kidney_clusters_files/Kidney_clusters_26_1.png)
 
 
 #### Filtering of samples
@@ -257,7 +243,7 @@ We focus therefore only on biopsies from sample locationn 'kidney', which were u
 
 
 ```python
-adata_filtered=sc.read_h5ad('/data/scRNA/For_Mina/batch_PILOT/filter_data/Kidney.h5ad')
+adata_filtered=sc.read_h5ad('/Datasets/Kidney.h5ad')
 ```
 
 
@@ -279,23 +265,19 @@ pl.pl.select_best_sil(adata_filtered, start = 0.3)
 ```
 
 
-    
-![png](Kidney_clusters_files/Kidney_clusters_31_0.png)
-    
+![png](Kidney_clusters_files/Kidney_clusters_32_0.png)
 
 
 
-    
-![png](Kidney_clusters_files/Kidney_clusters_31_1.png)
-    
+![png](Kidney_clusters_files/Kidney_clusters_32_1.png)
 
 
 
 ```python
 proportion_df=pl.pl.clustering_emd(adata_filtered, res = adata_filtered.uns['best_res'],show_gene_labels=False,sorter_leiden=['0','1'],save=True)
 ```
-![png](Kidney_clusters_files/Kidney_clusters_32_1.png)
-    
+
+![png](Kidney_clusters_files/Kidney_clusters_33_1.png)
 
 
 We next recheck the association of variables with the estimated sub-clusters. 
@@ -353,6 +335,8 @@ pl.tl.correlation_categorical_with_clustering(adata_filtered,proportion_df,sampl
   </tbody>
 </table>
 </div>
+
+
 
 
 
@@ -435,6 +419,11 @@ contingency_table
 
 
 
+
+```python
+
+```
+
 ##### BMI
 
 
@@ -513,6 +502,11 @@ contingency_table
 
 
 
+
+```python
+
+```
+
 ##### Diabetes history
 
 
@@ -579,6 +573,11 @@ contingency_table
 
 
 
+
+```python
+
+```
+
 To double check these results, one can of course plot the heatmap of clusters by showing the variables with 'clinical_variables_corr_sub_clusters' function. 
 
 
@@ -586,55 +585,43 @@ To double check these results, one can of course plot the heatmap of clusters by
 
 
 ```python
-pl.tl.clinical_variables_corr_sub_clusters(adata_filtered, sorter_order=['0','1'],sample_col='donor_id',feature= 'disease',proportion_df = proportion_df)
+pl.tl.clinical_variables_corr_sub_clusters(adata_filtered, sorter_order=['0','1'],sample_col='donor_id',feature= 'disease',proportion_df = proportion_df,figsize_legend=(1,1))
 ```
 
 
-    
-![png](Kidney_clusters_files/Kidney_clusters_45_0.png)
-    
+![png](Kidney_clusters_files/Kidney_clusters_49_0.png)
 
 
 
-    
-![png](Kidney_clusters_files/Kidney_clusters_45_1.png)
-    
+![png](Kidney_clusters_files/Kidney_clusters_49_1.png)
 
 
 ###### BMI
 
 
 ```python
-pl.tl.clinical_variables_corr_sub_clusters(adata_filtered, sorter_order = ['0','1'],sample_col = 'donor_id',feature = 'BMI',proportion_df = proportion_df)
+pl.tl.clinical_variables_corr_sub_clusters(adata_filtered, sorter_order = ['0','1'],sample_col = 'donor_id',feature = 'BMI',proportion_df = proportion_df,figsize_legend=(1,1))
 ```
 
 
-    
-![png](Kidney_clusters_files/Kidney_clusters_47_0.png)
-    
+![png](Kidney_clusters_files/Kidney_clusters_51_0.png)
 
 
 
-    
-![png](Kidney_clusters_files/Kidney_clusters_47_1.png)
-    
+![png](Kidney_clusters_files/Kidney_clusters_51_1.png)
 
 
 ###### Diabetes_history
 
 
 ```python
-pl.tl.clinical_variables_corr_sub_clusters(adata_filtered, sorter_order = ['0','1'],sample_col = 'donor_id',feature = 'diabetes_history',proportion_df = proportion_df)
+pl.tl.clinical_variables_corr_sub_clusters(adata_filtered, sorter_order = ['0','1'],sample_col = 'donor_id',feature = 'diabetes_history',proportion_df = proportion_df,figsize_legend=(1,1))
 ```
 
 
-    
-![png](Kidney_clusters_files/Kidney_clusters_49_0.png)
-    
+![png](Kidney_clusters_files/Kidney_clusters_53_0.png)
 
 
 
-    
-![png](Kidney_clusters_files/Kidney_clusters_49_1.png)
-    
+![png](Kidney_clusters_files/Kidney_clusters_53_1.png)
 

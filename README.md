@@ -6,7 +6,7 @@ PILOT uses optimal transport to compute the Wasserstein distance between two sin
 ![plot](./img/plot.png)
 
 
-Current version for PILOT is 2.0.1
+Current version for PILOT is 2.0.2
 
 ## Installation
 The easiest way to install PILOT and the required packages is using the following way:

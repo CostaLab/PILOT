@@ -284,35 +284,28 @@ def fit_pricipla_graph(adata,NumNodes=20,source_node=0,show_text=True,Do_PCA=Fal
 
 
  
+def clustering_emd(adata,res=0.3,metric='cosine',groupby_col='Leiden',swap_axes=False,cmap="Blues_r",dendrogram=True,show_gene_labels=True,var_group_rotation=45,figsize=[12,12],save=False,sorter_leiden=None):
     
-
-    
-    
-def clustering_emd(adata,res=0.3,metric='cosine',groupby_col='Leiden',swap_axes=False,cmap="Blues_r",dendrogram=True,show_gene_labels=True,var_group_rotation=45,figsize=[12,12],save=False):
     """
+    Perform clustering and visualization of EMD (Earth Mover's Distance) data in AnnData object.
 
-    Parameters
-    ----------
-    EMD : W distance,
-    proportions : pd.DataFrame, optional
-        cell types proportion in each samples. The default is None.
-    annot : dataframe, annoation file.
-    real_labels : list, status of samples.
+    Parameters:
+    adata (AnnData): Input AnnData object containing EMD data.
+    res (float): Resolution parameter for Leiden clustering. Default is 0.3.
+    metric (str): Distance metric for clustering. Default is 'cosine'.
+    groupby_col (str): Grouping variable for plotting. 'Leiden' groups by predicted clusters, 'status' groups by real labels. Default is 'Leiden'.
+    swap_axes (bool): Swap the axes in the heatmap. Default is False.
+    cmap (str): Colormap for the heatmap. Default is "Blues_r".
+    dendrogram (bool): Display dendrograms in the heatmap. Default is True.
+    show_gene_labels (bool): Show gene labels in the heatmap. Default is True.
+    var_group_rotation (int): Rotation angle for gene labels. Default is 45 degrees.
+    figsize (list): Size of the heatmap figure. Default is [12, 12].
+    save (bool): Save the heatmap figure. Default is False.
+    sorter_leiden (list or None): Custom order for Leiden clusters. If not provided, the default order is used.
 
-    res : float, resulotion for leiden clsutering.
-    metric: str, metric for leiden clustering and calculating sil.
-
-    groupby_col: name of the column to do groupby by scanpy.pl.heatmap and show the grouping based on.
-
-    Other parametrs are for scanpy.pl.heatmap function. https://scanpy.readthedocs.io/en/stable/generated/scanpy.pl.heatmap.html
-
-
-    Returns
-    -------
-    Proportion matrix with predicted lables for each sample based on leiden clustering over EMD data.
+    Returns:
+    proportion_df (DataFrame): DataFrame containing proportions of sub-clusters in each sample.
     """
-
-    
     
     EMD=adata.uns['EMD']
     proportions=adata.uns['proportions']
@@ -335,7 +328,7 @@ def clustering_emd(adata,res=0.3,metric='cosine',groupby_col='Leiden',swap_axes=
     proportion_df.columns=annot.cell_type.unique()
     
     proportion_df['Predicted_Labels']=predicted_labels
-    proportion_df['sampIeD']=list(proportions.keys())
+    proportion_df['sampleID']=list(proportions.keys())
     
     EMD_df['Leiden']=predicted_labels
     if groupby_col=='status':
@@ -344,7 +337,10 @@ def clustering_emd(adata,res=0.3,metric='cosine',groupby_col='Leiden',swap_axes=
         EMD_df['status'] = EMD_df['status'].cat.set_categories(sorter)
         EMD_df=EMD_df.sort_values(["status"])
     elif groupby_col=='Leiden':
-        sorter=EMD_df.Leiden.unique()
+        if sorter_leiden==None:
+            sorter=EMD_df.Leiden.unique()
+        else:
+            sorter=sorter_leiden
         EMD_df['Leiden'] = EMD_df.Leiden.astype("category")
         EMD_df['Leiden'] = EMD_df['Leiden'].cat.set_categories(sorter)
         EMD_df=EMD_df.sort_values(["Leiden"])
@@ -356,6 +352,11 @@ def clustering_emd(adata,res=0.3,metric='cosine',groupby_col='Leiden',swap_axes=
     adata_emd = anndata.AnnData(X = EMD_df[ EMD_df.columns[0:EMD_df.shape[0]]].values, var =df_genes, obs = obs )
     sc.pl.heatmap(adata_emd,adata_emd.obs.sampleID,groupby=[groupby_col],swap_axes=swap_axes,cmap=cmap,dendrogram=dendrogram,show_gene_labels=show_gene_labels,var_group_rotation=var_group_rotation,figsize=figsize,save=save)
     return proportion_df
+    
+
+    
+    
+
 
 def Sil_computing(EMD, real_labels, metric='cosine'):
     """
@@ -2005,8 +2006,6 @@ def plot_stats_by_pattern(cluster_names: list = None,
                           file_name: str = "/Whole_expressions.csv",
                           font_size: int = 24,p_value=0.01,create_new_plot_folder=False,fc_ther=0.5):
     """
-    
-
     Parameters
     ----------
     cluster_names : list, optional

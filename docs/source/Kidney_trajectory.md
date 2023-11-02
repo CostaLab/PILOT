@@ -60,17 +60,15 @@ pl.pl.trajectory(adata, colors = ['red','orange','Blue'])
 ```
 
 
-    
 ![png](Kidney_trajectory_files/Kidney_trajectory_8_0.png)
-    
 
 
 Then estimate the trajectory by fitting a principle graph and calculte the order of samples by 'cell_importance' functions. See main [tutorial](https://pilot.readthedocs.io/en/latest/Myocardial_infarction.html), for details. 
 
 
 ```python
-#pl.pl.fit_pricipla_graph(adata, source_node = 8)
-#pl.tl.cell_importance(adata,heatmap_w = 20,height = 15,xlim = 30)
+pl.pl.fit_pricipla_graph(adata, source_node = 8)
+pl.tl.cell_importance(adata,heatmap_w = 20,height = 15,xlim = 30)
 ```
 
 ##### Evaluation of the association of estimated disease progression with experimental factor:
@@ -140,7 +138,15 @@ pl.tl.correlation_categorical_with_trajectory(adata, sample_col = 'donor_id', fe
 
 
 
-#####  Numerical variables : Similarly, you can do the same analysis for numerical variables. 
+
+```python
+
+```
+
+#####  Numerical variables : 
+
+
+Similarly, you can do the same analysis for numerical variables. 
 
 
 ```python
@@ -186,6 +192,11 @@ pl.tl.correlation_numeric_with_trajectory(adata, sample_col = 'donor_id', featur
 
 
 
+
+```python
+
+```
+
 We observe that there is a clear association of the trajectory with the origin of the biopsies. This is not surprising as PILOT uses cellular composition information, as samples at distinct regions do have distinct cells. Regarding continuous variable, we find an association with the degen.score, which is a gene signature score estimated from the comparisons of controls and disease samples (see data manuscript for more details https://doi.org/10.1038/s41586-023-05769-3). 
 
 To double check these results, one can of course plot the trajectory by showing the location as labels. 
@@ -211,9 +222,7 @@ pl.pl.trajectory(adata, colors = colors)
 ```
 
 
-    
-![png](Kidney_trajectory_files/Kidney_trajectory_21_0.png)
-    
+![png](Kidney_trajectory_files/Kidney_trajectory_24_0.png)
 
 
 #### Filtering of samples
@@ -222,8 +231,7 @@ We focus therefore only on biopsies from sample locationn 'kidney', which were u
 
 
 ```python
-#adata_filtered=sc.read_h5ad('/Datasets/Kidney_filtered.h5ad')
-adata_filtered=sc.read_h5ad('/data/scRNA/For_Mina/batch_PILOT/filter_data/Kidney.h5ad')
+adata_filtered=sc.read_h5ad('/Datasets/Kidney.h5ad')
 ```
 
 
@@ -243,9 +251,7 @@ pl.pl.trajectory(adata_filtered, colors = ['red','orange','Blue'])
 ```
 
 
-    
-![png](Kidney_trajectory_files/Kidney_trajectory_26_0.png)
-    
+![png](Kidney_trajectory_files/Kidney_trajectory_29_0.png)
 
 
 ##### Categorical variables 
@@ -307,6 +313,11 @@ pl.tl.correlation_categorical_with_trajectory(adata_filtered, sample_col='donor_
 </div>
 
 
+
+
+```python
+
+```
 
 We observed data the true label (disease) has highest association followed by BMI or Diabetes History. While the latter are two clinical factors with a impact on kidney disease, as closer investigation of the variables indicates these association as spurious, as only controls have BMI values and most disease are diabetic. 
 
@@ -380,6 +391,11 @@ contingency_table
 </div>
 
 
+
+
+```python
+
+```
 
 ##### BMI
 

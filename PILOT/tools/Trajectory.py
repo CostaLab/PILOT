@@ -27,8 +27,10 @@ from cycler import cycler
 from matplotlib.image import imread
 from scipy.stats import mannwhitneyu, f_oneway, kruskal,spearmanr,kendalltau, chi2_contingency
 import anndata
+from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.patches import Patch
 warnings.filterwarnings('ignore')
+
 
 
 def wasserstein_distance(adata,emb_matrix='X_PCA',
@@ -686,7 +688,7 @@ def cell_importance(adata, width=40, height=35, xlim=5, p_val=1, plot_cell=True,
     -------
     None
         Visualizes and saves the cell type importance plot.
-    """
+     """
 
 
     
@@ -1336,6 +1338,26 @@ def detect_numeric_values(series):
 
 
 def correlation_categorical_with_trajectory(adata, sample_col='sampleID', features=[],sort_column='ANOVA_PValue'):
+    """
+    Calculate the correlation of categorical variables with trajectory information.
+
+    Parameters:
+    adata (AnnData): Input AnnData object containing trajectory and clinical data.
+    sample_col (str): Name of the column in the AnnData object that contains sample IDs. Default is 'sampleID'.
+    features (list): List of categorical variables to be correlated with trajectory data.
+    sort_column (str): Column by which the results DataFrame should be sorted. Default is 'ANOVA_PValue'.
+
+    Returns:
+    df_results_sorted (DataFrame): Sorted DataFrame containing correlation results with trajectory data.
+
+    Output:
+    - Results DataFrame: Contains the feature, ANOVA F-statistic, and ANOVA p-value for each specified categorical variable.
+    - The DataFrame is sorted by the specified 'sort_column'.
+
+    Example:
+    correlation_results = correlation_categorical_with_trajectory(adata, sample_col='sampleID', features=['Gender', 'Treatment'],
+                                                                sort_column='ANOVA_PValue')
+    """
     results_list = []
     orders=adata.uns['orders']
     for feature in features:
@@ -1383,6 +1405,26 @@ def detect_values_to_remove(series):
     return values_to_remove
 
 def correlation_numeric_with_trajectory(adata, sample_col='sampleID', features=[],sort_column='Spearman_PValue'):
+    """
+    Calculate the correlation of numeric variables with trajectory information.
+
+    Parameters:
+    adata (AnnData): Input AnnData object containing trajectory and clinical data.
+    sample_col (str): Name of the column in the AnnData object that contains sample IDs. Default is 'sampleID'.
+    features (list): List of numeric variables to be correlated with trajectory data.
+    sort_column (str): Column by which the results DataFrame should be sorted. Default is 'Spearman_PValue'.
+
+    Returns:
+    df_results_sorted (DataFrame): Sorted DataFrame containing correlation results with trajectory data.
+
+    Output:
+    - Results DataFrame: Contains the feature, Spearman correlation coefficient, and Spearman p-value for each specified numeric variable.
+    - The DataFrame is sorted by the specified 'sort_column'.
+
+    Example:
+    correlation_results = correlation_numeric_with_trajectory(adata, sample_col='sampleID', features=['Age', 'BMI'],
+                                                             sort_column='Spearman_PValue')
+    """
     results_list = []
     orders=adata.uns['orders']
     for feature in features:
@@ -1416,6 +1458,28 @@ def correlation_numeric_with_trajectory(adata, sample_col='sampleID', features=[
 
 
 def correlation_categorical_with_clustering(adata, proportion_df, sample_col='sampleID', features=[],sort_column='ChiSquared_PValue'):
+    """
+    Calculate the correlation of categorical variables with clustering results.
+
+    Parameters:
+    adata (AnnData): Input AnnData object containing clinical data and clustering results.
+    proportion_df (DataFrame): DataFrame containing predicted cluster labels.
+    sample_col (str): Name of the column in the AnnData object that contains sample IDs. Default is 'sampleID'.
+    features (list): List of categorical variables to be correlated with clustering results.
+    sort_column (str): Column by which the results DataFrame should be sorted. Default is 'ChiSquared_PValue'.
+
+    Returns:
+    df_results_sorted (DataFrame): Sorted DataFrame containing correlation results with clustering data.
+
+    Output:
+    - Results DataFrame: Contains the feature, Chi-squared statistic, and Chi-squared p-value for each specified categorical variable.
+    - The DataFrame is sorted by the specified 'sort_column'.
+
+    Example:
+    correlation_results = correlation_categorical_with_clustering(adata, proportion_df, sample_col='sampleID', 
+                                                                 features=['Gender', 'Treatment'], sort_column='ChiSquared_PValue')
+    """
+
     results_list = []
     proportion_df = proportion_df[['sampleID', 'Predicted_Labels']]
     for feature in features:
@@ -1448,6 +1512,28 @@ def correlation_categorical_with_clustering(adata, proportion_df, sample_col='sa
     return df_results_sorted
 
 def correlation_numeric_with_clustering(adata, proportion_df, sample_col='sampleID', features=[],sort_column='ANOVA_P_Value'):
+    
+    """
+    Calculate the correlation of numeric variables with clustering results.
+
+    Parameters:
+    adata (AnnData): Input AnnData object containing clinical data and clustering results.
+    proportion_df (DataFrame): DataFrame containing predicted cluster labels.
+    sample_col (str): Name of the column in the AnnData object that contains sample IDs. Default is 'sampleID'.
+    features (list): List of numeric variables to be correlated with clustering results.
+    sort_column (str): Column by which the results DataFrame should be sorted. Default is 'ANOVA_P_Value'.
+
+    Returns:
+    df_results_sorted (DataFrame): Sorted DataFrame containing correlation results with clustering data.
+
+    Output:
+    - Results DataFrame: Contains the feature, ANOVA F-statistic, and ANOVA p-value for each specified numeric variable.
+    - The DataFrame is sorted by the specified 'sort_column'.
+
+    Example:
+    correlation_results = correlation_numeric_with_clustering(adata, proportion_df, sample_col='sampleID',
+                                                             features=['Age', 'BMI'], sort_column='ANOVA_P_Value')
+    """
     results_list = []
     proportion_df = proportion_df[['sampleID', 'Predicted_Labels']]
 
@@ -1486,10 +1572,32 @@ def correlation_numeric_with_clustering(adata, proportion_df, sample_col='sample
     return df_results_sorted
 
 
+def clinical_variables_corr_sub_clusters(adata,sorter_order=None,size_fig=(12,12),col_cluster=False, row_cluster=False,cmap="Blues_r", yticklabels=False, xticklabels=False,sample_col='donor_id',feature='sex',
+                                         figsize_legend=(2, 2),legend_font_size=8,proportion_df=None,save_figures=False):
+    
+    """
+    Visualize and analyze the correlation between clinical variables and sub-clusters within an AnnData object.
 
+    Parameters:
+    adata (AnnData): Input AnnData object containing expression data and clinical information.
+    sorter_order (list or None): Order in which sub-cluster groups should be displayed. If not provided, the default order is used.
+    size_fig (tuple): Size of the clustermap figure. Default is (12, 12).
+    col_cluster (bool): Whether to cluster columns (features). Default is False.
+    row_cluster (bool): Whether to cluster rows (sub-cluster groups). Default is False.
+    cmap (str): Colormap for the clustermap. Default is "Blues_r".
+    yticklabels (bool): Whether to display y-axis tick labels. Default is False.
+    xticklabels (bool): Whether to display x-axis tick labels. Default is False.
+    sample_col (str): Name of the column in the AnnData object that contains sample IDs.
+    feature (str): Name of the column in the AnnData object that contains the clinical variable of interest.
+    figsize_legend (tuple): Size of the legend figure. Default is (2, 2).
+    legend_font_size (int): Font size for the legend. Default is 8.
+    proportion_df (DataFrame or None): DataFrame containing predicted labels for sub-cluster groups. If provided, it will be used to create the 'Lieden' column in the output clustermap.
+    save_figures (bool): Whether to save clustermap and legend as PDF files. Default is False.
 
-def clinical_variables_corr_sub_clusters(adata,sorter_order=None,size_fig=(12,12),col_cluster=False, row_cluster=False,cmap="Blues_r", yticklabels=False, xticklabels=False,sample_col='donor_id',feature='sex',proportion_df=None):
-        #EMD_df['Lieden_Label'] =EMD_df['Lieden'].astype(str)+'_'+EMD_df['group'].astype(str)
+    Returns:
+    None
+    """
+    #EMD_df['Lieden_Label'] =EMD_df['Lieden'].astype(str)+'_'+EMD_df['group'].astype(str)
     EMD_df=pd.DataFrame(adata.uns['EMD'],columns=adata.uns['proportions'].keys())
     EMD_df['sampleID']=adata.uns['proportions'].keys()
     # Convert the 'obs' slot into a DataFrame
@@ -1504,7 +1612,7 @@ def clinical_variables_corr_sub_clusters(adata,sorter_order=None,size_fig=(12,12
     EMD_df['Lieden'] = EMD_df['Lieden'].cat.set_categories(sorter)
     EMD_df=EMD_df.sort_values(["Lieden"])
     obs = pd.DataFrame()
-
+    import anndata
     obs['sampleID']=EMD_df.sampleID.astype(str)
     obs['Lables']=EMD_df.group.astype(str)
     obs['Lieden']=EMD_df.Lieden.astype(str)
@@ -1515,18 +1623,25 @@ def clinical_variables_corr_sub_clusters(adata,sorter_order=None,size_fig=(12,12
     lut = {value: color for value, color in zip(EMD_df['group'].unique(), color_palette)}
     # Map colors to the 'group' column
     row_colors = EMD_df['group'].map(lut)
-    
+   
 
     handles = [Patch(facecolor=lut[name]) for name in lut]
     
-    plt.legend(handles, lut, title='Groups',
-             loc='best')
-        # To remove any other elements and just show the legend, you may want to hide the axes and clear the plot.
+    legend_fig = plt.figure(figsize=figsize_legend)  # Adjust the figure size as needed
+    legend_font_size = legend_font_size  # Adjust the font size as needed
+
+    # Adjust the font size for the legend
+    plt.legend(handles, lut, title='Groups', loc='best', fontsize=legend_font_size)  # Adjust the fontsize here
+
+    # Remove unnecessary axes
     plt.axis('off')
     plt.gca().xaxis.set_major_locator(plt.NullLocator())
     plt.gca().yaxis.set_major_locator(plt.NullLocator())
-    sns.clustermap(EMD_df[adata_clustering.obs.sampleID],figsize=size_fig,col_cluster=col_cluster, row_cluster=row_cluster,cmap=cmap, yticklabels=yticklabels, xticklabels=xticklabels,tree_kws=dict(linewidths=2),row_colors=row_colors) 
-   
-   
-
+        # Save the legend as a separate PDF
+    if save_figures:
+        with PdfPages('legend.pdf') as pdf:
+            pdf.savefig(legend_fig)
+    clustermap=sns.clustermap(EMD_df[adata_clustering.obs.sampleID],figsize=size_fig,col_cluster=col_cluster, row_cluster=row_cluster,cmap=cmap, yticklabels=yticklabels, xticklabels=xticklabels,tree_kws=dict(linewidths=2),row_colors=row_colors)
+    if save_figures:
+        clustermap.savefig("heatmap.pdf")
 
