@@ -58,6 +58,7 @@ The Silhouette Score Curve is used to find the optimal number of clusters by plo
 pl.pl.select_best_sil(adata, start = 0.2)
 ```
 
+
 ![png](Kidney_clusters_files/Kidney_clusters_9_1.png)
 
 
@@ -70,15 +71,14 @@ pl.pl.select_best_sil(adata, start = 0.2)
 proportion_df=pl.pl.clustering_emd(adata, res = adata.uns['best_res'],show_gene_labels=False,sorter_leiden=['1','0','2'],save=True)
 ```
 
+
 ![png](Kidney_clusters_files/Kidney_clusters_10_1.png)
 
 
 ##### Evaluation of the association of estimated subgroups with experimental factor:
 A very important question is if PILOT analysis is affected by experimental artefacts (location of tissues, batch processing). To evaluate this, we use ANOVA statistics and  Chi-Squared correlation to check any association between any variables describing the found clusters. 
-To run these functions, provide the sample_col as the Sample/Patient column and your interested variables. Of note, these functions show just the significant variables (p-value < 0.05).
+To run these functions, provide the sample_col as the Sample/Patient column and your interested variables. Of note, these functions only show the  significant variables (p-value < 0.05).
 
-
-##### Categorical variables 
 
 
 ```python
@@ -141,8 +141,6 @@ pl.tl.correlation_categorical_with_clustering(adata, proportion_df, sample_col =
 
 
 
-##### Numerical variables : 
-
 Similarly, you can do the same analysis for numerical variables. 
 
 
@@ -188,7 +186,9 @@ pl.tl.correlation_numeric_with_clustering(adata, proportion_df, sample_col = 'do
 
 
 
-We observe that there is a clear association of the sub-clusters with the origin of the biopsies. This is not surprising as PILOT uses cellular composition information, as samples at distinct regions do have distinct cells.
+
+
+We observe that there is a clear association between the sub-clusters and the origin of the biopsies. This is not surprising as PILOT uses cellular composition information, as samples at distinct regions do have distinct cells.
 
 To double check these results, one can of course plot the heatmap of clusters by showing the variables with 'clinical_variables_corr_sub_clusters' function. 
 
@@ -200,11 +200,11 @@ pl.tl.clinical_variables_corr_sub_clusters(adata,sorter_order=['1','0','2'],samp
 ```
 
 
-![png](Kidney_clusters_files/Kidney_clusters_22_0.png)
+![png](Kidney_clusters_files/Kidney_clusters_20_0.png)
 
 
 
-![png](Kidney_clusters_files/Kidney_clusters_22_1.png)
+![png](Kidney_clusters_files/Kidney_clusters_20_1.png)
 
 
 ###### Tissue
@@ -215,11 +215,11 @@ pl.tl.clinical_variables_corr_sub_clusters(adata,sorter_order=['1','0','2'],samp
 ```
 
 
-![png](Kidney_clusters_files/Kidney_clusters_24_0.png)
+![png](Kidney_clusters_files/Kidney_clusters_22_0.png)
 
 
 
-![png](Kidney_clusters_files/Kidney_clusters_24_1.png)
+![png](Kidney_clusters_files/Kidney_clusters_22_1.png)
 
 
 ###### BMI
@@ -230,16 +230,16 @@ pl.tl.clinical_variables_corr_sub_clusters(adata,sorter_order=['1','0','2'],samp
 ```
 
 
-![png](Kidney_clusters_files/Kidney_clusters_26_0.png)
+![png](Kidney_clusters_files/Kidney_clusters_24_0.png)
 
 
 
-![png](Kidney_clusters_files/Kidney_clusters_26_1.png)
+![png](Kidney_clusters_files/Kidney_clusters_24_1.png)
 
 
 #### Filtering of samples
 
-We focus therefore only on biopsies from sample locationn 'kidney', which were used in our benchmarking. You can download the Anndata (h5ad) file from [here](https://costalab.ukaachen.de/open_data/PILOT/Kidney_filtered.h5ad), and place it in the _Datasets_ folder.
+Therefore, we only focus on biopsies from sample locationn 'kidney', which were used in our benchmarking. You can download the Anndata (h5ad) file from [here](https://costalab.ukaachen.de/open_data/PILOT/Kidney_filtered.h5ad), and place it in the _Datasets_ folder.
 
 
 ```python
@@ -265,11 +265,11 @@ pl.pl.select_best_sil(adata_filtered, start = 0.3)
 ```
 
 
-![png](Kidney_clusters_files/Kidney_clusters_32_0.png)
+![png](Kidney_clusters_files/Kidney_clusters_30_0.png)
 
 
 
-![png](Kidney_clusters_files/Kidney_clusters_32_1.png)
+![png](Kidney_clusters_files/Kidney_clusters_30_1.png)
 
 
 
@@ -277,7 +277,9 @@ pl.pl.select_best_sil(adata_filtered, start = 0.3)
 proportion_df=pl.pl.clustering_emd(adata_filtered, res = adata_filtered.uns['best_res'],show_gene_labels=False,sorter_leiden=['0','1'],save=True)
 ```
 
-![png](Kidney_clusters_files/Kidney_clusters_33_1.png)
+
+
+![png](Kidney_clusters_files/Kidney_clusters_31_1.png)
 
 
 We next recheck the association of variables with the estimated sub-clusters. 
@@ -340,7 +342,7 @@ pl.tl.correlation_categorical_with_clustering(adata_filtered,proportion_df,sampl
 
 
 
-We observed data the true label (disease) has the highest association followed by Diabetes History and BMI.
+In the data we observed that the true label (disease) has the highest association followed by Diabetes History and BMI.
 
 We can show the distribution of variables in the found clusters:
 
@@ -574,10 +576,6 @@ contingency_table
 
 
 
-```python
-
-```
-
 To double check these results, one can of course plot the heatmap of clusters by showing the variables with 'clinical_variables_corr_sub_clusters' function. 
 
 
@@ -589,11 +587,11 @@ pl.tl.clinical_variables_corr_sub_clusters(adata_filtered, sorter_order=['0','1'
 ```
 
 
-![png](Kidney_clusters_files/Kidney_clusters_49_0.png)
+![png](Kidney_clusters_files/Kidney_clusters_45_0.png)
 
 
 
-![png](Kidney_clusters_files/Kidney_clusters_49_1.png)
+![png](Kidney_clusters_files/Kidney_clusters_45_1.png)
 
 
 ###### BMI
@@ -604,11 +602,11 @@ pl.tl.clinical_variables_corr_sub_clusters(adata_filtered, sorter_order = ['0','
 ```
 
 
-![png](Kidney_clusters_files/Kidney_clusters_51_0.png)
+![png](Kidney_clusters_files/Kidney_clusters_47_0.png)
 
 
 
-![png](Kidney_clusters_files/Kidney_clusters_51_1.png)
+![png](Kidney_clusters_files/Kidney_clusters_47_1.png)
 
 
 ###### Diabetes_history
@@ -619,9 +617,9 @@ pl.tl.clinical_variables_corr_sub_clusters(adata_filtered, sorter_order = ['0','
 ```
 
 
-![png](Kidney_clusters_files/Kidney_clusters_53_0.png)
+![png](Kidney_clusters_files/Kidney_clusters_49_0.png)
 
 
 
-![png](Kidney_clusters_files/Kidney_clusters_53_1.png)
+![png](Kidney_clusters_files/Kidney_clusters_49_1.png)
 

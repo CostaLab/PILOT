@@ -63,7 +63,7 @@ pl.pl.trajectory(adata, colors = ['red','orange','Blue'])
 ![png](Kidney_trajectory_files/Kidney_trajectory_8_0.png)
 
 
-Then estimate the trajectory by fitting a principle graph and calculte the order of samples by 'cell_importance' functions. See main [tutorial](https://pilot.readthedocs.io/en/latest/Myocardial_infarction.html), for details. 
+Then, estimate the trajectory by fitting a principle graph and calculate the order of samples by 'cell_importance' functions. See the main [tutorial](https://pilot.readthedocs.io/en/latest/Myocardial_infarction.html), for details. 
 
 
 ```python
@@ -74,7 +74,7 @@ pl.tl.cell_importance(adata,heatmap_w = 20,height = 15,xlim = 30)
 ##### Evaluation of the association of estimated disease progression with experimental factor:
 A very important question is if PILOT analysis is affected by experimental artefacts (location of tissues, batch processing). To evaluate this, we use ANOVA statistics and Spearman correlation to check any association between any variables describing the disease cohort and the predicted variables. 
 
-To run these functions, provide the sample_col as the Sample/Patient column and your interested variables. Of note, these functions show just the significant variables (p-value < 0.05).
+To run these functions, provide the sample_col as the Sample/Patientcolumns and your variables of interest. Of note, these functions only show the significant variables (p-value < 0.05).
 
 
 ```python
@@ -197,7 +197,7 @@ pl.tl.correlation_numeric_with_trajectory(adata, sample_col = 'donor_id', featur
 
 ```
 
-We observe that there is a clear association of the trajectory with the origin of the biopsies. This is not surprising as PILOT uses cellular composition information, as samples at distinct regions do have distinct cells. Regarding continuous variable, we find an association with the degen.score, which is a gene signature score estimated from the comparisons of controls and disease samples (see data manuscript for more details https://doi.org/10.1038/s41586-023-05769-3). 
+We observe that there is a clear association between the trajectory and the origin of the biopsies. This is not surprising as PILOT uses cellular composition information, as samples at distinct regions do have distinct cells. Regarding continuous variable, we find an association with the degen.score, which is a gene signature score estimated from the comparisons of controls and disease samples (see data manuscript for more details https://doi.org/10.1038/s41586-023-05769-3). 
 
 To double check these results, one can of course plot the trajectory by showing the location as labels. 
 
@@ -227,7 +227,7 @@ pl.pl.trajectory(adata, colors = colors)
 
 #### Filtering of samples
 
-We focus therefore only on biopsies from sample locationn 'kidney', which were used in our benchmarking. You can download the Anndata (h5ad) file from [here](https://costalab.ukaachen.de/open_data/PILOT/Kidney_filtered.h5ad), and place it in the _Datasets_ folder.
+Therefore, we only focus on biopsies from sample locationn 'kidney', which were used in our benchmarking. You can download the Anndata (h5ad) file from [here](https://costalab.ukaachen.de/open_data/PILOT/Kidney_filtered.h5ad), and place it in the _Datasets_ folder.
 
 
 ```python
