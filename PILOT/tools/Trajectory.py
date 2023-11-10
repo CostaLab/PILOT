@@ -1645,3 +1645,48 @@ def clinical_variables_corr_sub_clusters(adata,sorter_order=None,size_fig=(12,12
     if save_figures:
         clustermap.savefig("heatmap.pdf")
 
+
+
+def Precomputed_distance(adata,distances,cost_df,features_matrix,emb_matrix='X_PCA',
+clusters_col='cell_types',sample_col='sampleID',status='status'):
+    """
+    Store the Precomputed distance among samples in the object.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Loaded AnnData object containing the data.
+    distances : numpy.ndarray 
+            Precomputed_distances between samples. Please make sure your distances order of samples is match with the order of your samples in the Adata.
+    cost_df  : Dataframe
+            Cost matrix for your OT.  
+    proportions: numpy.ndarray 
+            Proportion matrix.        
+    emb_matrix : numpy.ndarray
+        PCA representation of data (variable).
+    clusters_col : str
+        Column name in the observation level of 'adata' that represents cell types or clustering.
+    sample_col : str
+        Column name in the observation level of 'adata' that represents samples or patients.
+    status : str
+        Column name in the observation level of 'adata' that represents status or disease, e.g., control/case.
+    Returns
+    -------
+    None
+      stores the distance among samples in the adata object.
+    """
+
+    if data_type=='scRNA':
+        data,annot=extract_data_anno_scRNA_from_h5ad(adata,emb_matrix=emb_matrix,
+clusters_col=clusters_col,sample_col=sample_col,status=status)
+    else:
+         data,annot=extract_data_anno_pathomics_from_h5ad(adata,var_names=list(adata.var_names),clusters_col=clusters_col,sample_col=sample_col,status=status)
+           
+    adata.uns['data'] =data
+    adata.uns['annot'] =annot
+    adata.uns['proportions'] = features_matrix
+    adata.uns['cost'] = cost_df
+    adata.uns['EMD'] =distances
+    adata.uns['real_labels']=return_real_labels(annot)
+      
+
