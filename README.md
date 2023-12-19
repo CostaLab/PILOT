@@ -27,8 +27,9 @@ When doing so, remember to move to the tutorial folder, as all the work will be 
 cd Tutorial
 ```
 
-## [Tutorial](https://pilot.readthedocs.io/en/latest/index.html)
+## [Tutorial&Data sets](https://pilot.readthedocs.io/en/latest/index.html)
 There are five tutorials, one for [Myocardial Infarction (single cell data)](https://pilot.readthedocs.io/en/latest/Myocardial_infarction.html), and the second tutorial for [pathomics data, the combination of Kidney IgAN(G) & Kidney IgAN(T)](https://pilot.readthedocs.io/en/latest/Combination_Kidney_IgAN.html), and the third one  for [Patients sub-group detection and then ranking cells/genes (Pancreas data)](https://pilot.readthedocs.io/en/latest/Patients_sub_group_detection.html) and the forth one for 
 [evaluation of the presence of batch effects in Trajectory](https://pilot.readthedocs.io/en/latest/Kidney_trajectory.html) and the last one for [evaluation of the presence of batch effects in detected sub-groups](https://pilot.readthedocs.io/en/latest/Kidney_clusters.html)
+You can access the used data sets by PILOT in  [Part_1](https://zenodo.org/records/8370081) and  [Part_2](https://zenodo.org/records/7957118)
 
 
