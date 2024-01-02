@@ -17,8 +17,8 @@
  ,Ian S.D. Roberts<sup>[8]</sup>
  ,Rosanna Coppo<sup>[9]</sup>
  ,Rafael Kramann<sup>[3,4]</sup>
- ,Peter Boor<sup>[2,*]</sup>
- ,Ivan G. Costa<sup>[1,*]</sup>
+ ,Peter Boor<sup>[2,@]</sup>
+ ,Ivan G. Costa<sup>[1,@]</sup>
 
 **Affiliations:**
 - [1] Institute for Computational Genomics, Joint Research Center for Computational Biomedicine, RWTH Aachen University Medical School
