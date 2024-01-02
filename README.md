@@ -2,23 +2,23 @@
 
 
 **Authors:**
- -Mehdi Joodaki<sup>[1]</sup>
- -Mina Shaigan<sup>[1]</sup>
- -Victor Parra<sup>[1]</sup>
- -Roman D. Bülow<sup>[2]</sup>
- -Christoph Kuppe<sup>[3]</sup>
- -David L. Hölscher<sup>[2]</sup>
- -Mingbo Cheng<sup>[1]</sup>
- -James S. Nagai<sup>[1]</sup>
- -Michaël Goedertier<sup>[1,2]</sup>
- -Nassim Bouteldja<sup>[2]</sup>
- -Vladimir Tesar<sup>[5]</sup> 
--Jonathan Barratt<sup>[6,7]</sup>
- -Ian S.D. Roberts<sup>[8]</sup>
- -Rosanna Coppo<sup>[9]</sup>
- -Rafael Kramann<sup>[3,4]</sup>
- -Peter Boor<sup>[2,*]</sup>
- -Ivan G. Costa<sup>[1,*]</sup>
+ Mehdi Joodaki<sup>[1]</sup>
+ ,Mina Shaigan<sup>[1]</sup>
+ ,Victor Parra<sup>[1]</sup>
+ ,Roman D. Bülow<sup>[2]</sup>
+ ,Christoph Kuppe<sup>[3]</sup>
+ ,David L. Hölscher<sup>[2]</sup>
+ ,Mingbo Cheng<sup>[1]</sup>
+ ,James S. Nagai<sup>[1]</sup>
+ ,Michaël Goedertier<sup>[1,2]</sup>
+ ,Nassim Bouteldja<sup>[2]</sup>
+ ,Vladimir Tesar<sup>[5]</sup> 
+,Jonathan Barratt<sup>[6,7]</sup>
+ ,Ian S.D. Roberts<sup>[8]</sup>
+ ,Rosanna Coppo<sup>[9]</sup>
+ ,Rafael Kramann<sup>[3,4]</sup>
+ ,Peter Boor<sup>[2,*]</sup>
+ ,Ivan G. Costa<sup>[1,*]</sup>
 
 **Affiliations:**
 - [1] Institute for Computational Genomics, Joint Research Center for Computational Biomedicine, RWTH Aachen University Medical School
