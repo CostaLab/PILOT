@@ -30,9 +30,7 @@
 - [7] Department of Cardiovascular Sciences, University of Leicester, Leicester, United Kingdom
 - [8] Department of Cellular Pathology, Oxford University Hospitals National Health Services Foundation Trust, Oxford, United Kingdom
 - [9] Fondazione Ricerca Molinette. Regina Margherita Children's University Hospital, Torino, Italy
-- [*] pboor@ukaachen.de, ivan.costa@rwth-aachen.de
-
-
+  
 ![plot](./img/plot.png)
 
 
