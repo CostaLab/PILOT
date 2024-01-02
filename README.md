@@ -1,6 +1,36 @@
 # PILOT
 
-PILOT uses optimal transport to compute the Wasserstein distance between two single single-cell experiments. This allows us to perform unsupervised analysis at the sample level and to uncover trajectories associated with disease progression. Moreover, PILOT provides a statistical approach to delineate non-linear changes in cell populations, gene expression and tissues structures related to the disease trajectories.  We evaluate PILOT and competing approaches in  disease single-cell genomics and pathomics studies with up to 1.000 patients/donors and millions of cells or structures. Results demonstrate that PILOT detects disease-associated samples, cells, and genes from large and complex single-cell and pathomics data.
+
+**Authors:**
+ -Mehdi Joodaki<sup>[1]</sup>
+ -Mina Shaigan<sup>[1]</sup>
+ -Victor Parra<sup>[1]</sup>
+ -Roman D. Bülow<sup>[2]</sup>
+ -Christoph Kuppe<sup>[3]</sup>
+ -David L. Hölscher<sup>[2]</sup>
+ -Mingbo Cheng<sup>[1]</sup>
+ -James S. Nagai<sup>[1]</sup>
+ -Michaël Goedertier<sup>[1,2]</sup>
+ -Nassim Bouteldja<sup>[2]</sup>
+ -Vladimir Tesar<sup>[5]</sup> 
+-Jonathan Barratt<sup>[6,7]</sup>
+ -Ian S.D. Roberts<sup>[8]</sup>
+ -Rosanna Coppo<sup>[9]</sup>
+ -Rafael Kramann<sup>[3,4]</sup>
+ -Peter Boor<sup>[2,*]</sup>
+ -Ivan G. Costa<sup>[1,*]</sup>
+
+**Affiliations:**
+- [1] Institute for Computational Genomics, Joint Research Center for Computational Biomedicine, RWTH Aachen University Medical School
+- [2] Institute of Pathology, Laboratory of Nephropathology, RWTH Aachen University Medical School
+- [3] Institute of Experimental Medicine and Systems Biology, RWTH Aachen University
+- [4] Department of Internal Medicine, Nephrology and Transplantation, Erasmus Medical Center
+- [5] Department of Nephrology, $1^{st}$ Faculty of Medicine and General University Hospital, Charles University, Prague, Czech Republic
+- [6] John Walls Renal Unit, University Hospital of Leicester National Health Service Trust, Leicester, United Kingdom
+- [7] Department of Cardiovascular Sciences, University of Leicester, Leicester, United Kingdom
+- [8] Department of Cellular Pathology, Oxford University Hospitals National Health Services Foundation Trust, Oxford, United Kingdom
+- [9] Fondazione Ricerca Molinette. Regina Margherita Children's University Hospital, Torino, Italy
+- [*] pboor@ukaachen.de, ivan.costa@rwth-aachen.de
 
 
 ![plot](./img/plot.png)
@@ -32,6 +62,14 @@ There are five tutorials, one for [Myocardial Infarction (single cell data)](htt
 [evaluation of the presence of batch effects in Trajectory](https://pilot.readthedocs.io/en/latest/Kidney_trajectory.html) and the last one for [evaluation of the presence of batch effects in detected sub-groups](https://pilot.readthedocs.io/en/latest/Kidney_clusters.html).
 
 
-You can access the used data sets by PILOT in  [Part_1](https://zenodo.org/records/8370081) and  [Part_2](https://zenodo.org/records/7957118)
+You can access the used data sets by PILOT in Part_1 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4740646.svg)](https://zenodo.org/records/8370081) and  Part_2 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4740646.svg)]([https://zenodo.org/records/8370081](https://zenodo.org/records/7957118))
+
+# References
+ PILOT: Detection of PatIent-Level distances from single cell genomics and pathomics data with Optimal Transport (PILOT) [link](https://www.embopress.org/doi/full/10.1038/s44320-023-00003-8)
+
+
+
+
+
 
 
