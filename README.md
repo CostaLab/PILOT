@@ -1,5 +1,6 @@
 # PILOT
 
+[![GitHub license](https://img.shields.io/github/license/CostaLab/PILOT.svg)](https://github.com/CostaLab/PILOT?tab=MIT-1-ov-file#MIT-1-ov-file)
 
 **Authors:**
  Mehdi Joodaki<sup>[1]</sup>
