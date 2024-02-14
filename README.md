@@ -3,8 +3,8 @@
 [![GitHub license](https://img.shields.io/github/license/CostaLab/PILOT.svg)](https://github.com/CostaLab/PILOT?tab=MIT-1-ov-file#MIT-1-ov-file)
 
 **Authors:**
- Mehdi Joodaki<sup>[1*]</sup>
- ,Mina Shaigan<sup>[1*]</sup>
+ Mehdi Joodaki<sup>[*1]</sup>
+ ,Mina Shaigan<sup>[*1]</sup>
  ,Victor Parra<sup>[1]</sup>
  ,Roman D. Bülow<sup>[2]</sup>
  ,Christoph Kuppe<sup>[3]</sup>
@@ -61,7 +61,7 @@ There are five tutorials, one for [Myocardial Infarction (single cell data)](htt
 [evaluation of the presence of batch effects in Trajectory](https://pilot.readthedocs.io/en/latest/Kidney_trajectory.html) and the last one for [evaluation of the presence of batch effects in detected sub-groups](https://pilot.readthedocs.io/en/latest/Kidney_clusters.html).
 
 
-You can access the used data sets by PILOT in Part_1 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4740646.svg)](https://zenodo.org/records/8370081) and  Part_2 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4740646.svg)](https://zenodo.org/records/7957118)
+You can access the used data sets by PILOT in Part 1 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4740646.svg)](https://zenodo.org/records/8370081) and  Part 2 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4740646.svg)](https://zenodo.org/records/7957118)
 
 # References
  PILOT: Detection of PatIent-Level distances from single cell genomics and pathomics data with Optimal Transport (PILOT) [link](https://www.embopress.org/doi/full/10.1038/s44320-023-00003-8)
