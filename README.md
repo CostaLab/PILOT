@@ -3,8 +3,8 @@
 [![GitHub license](https://img.shields.io/github/license/CostaLab/PILOT.svg)](https://github.com/CostaLab/PILOT?tab=MIT-1-ov-file#MIT-1-ov-file)
 
 **Authors:**
- Mehdi Joodaki<sup>[1]</sup>
- ,Mina Shaigan<sup>[1]</sup>
+ Mehdi Joodaki<sup>[1*]</sup>
+ ,Mina Shaigan<sup>[1*]</sup>
  ,Victor Parra<sup>[1]</sup>
  ,Roman D. Bülow<sup>[2]</sup>
  ,Christoph Kuppe<sup>[3]</sup>
