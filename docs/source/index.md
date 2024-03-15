@@ -57,14 +57,16 @@ Patients_sub_group_detection
 ```{toctree}
 ---
 maxdepth: 2
-caption: Evaluation of the presence of batch effects(Trajectory)
+caption: Evaluation of the presence of
+batch effects(Trajectory)
 ---
 Kidney_trajectory
 ```
 ```{toctree}
 ---
 maxdepth: 2
-caption: Evaluation of the presence of batch effects(Clusters)
+caption: Evaluation of the presence of
+batch effects(Clusters)
 ---
 Kidney_clusters
 ```
