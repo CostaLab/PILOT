@@ -32,7 +32,7 @@ cd Tutorial
 
 ```{toctree}
 ---
-caption: Tutorial for scRNA-seq Analysis
+caption: scRNA-seq Analysis
 maxdepth: 2
 ---
 Myocardial_infarction
@@ -41,7 +41,7 @@ Myocardial_infarction
 ```{toctree}
 ---
 maxdepth: 2
-caption: Tutorial for pathomics data Analysis
+caption: Pathomics data Analysis
 ---
 Combination_Kidney_IgAN
 ```
@@ -49,7 +49,7 @@ Combination_Kidney_IgAN
 ```{toctree}
 ---
 maxdepth: 2
-caption: Tutorial for Patients sub-group detection
+caption: Patients sub-group detection
 ---
 Patients_sub_group_detection
 ```
@@ -57,14 +57,14 @@ Patients_sub_group_detection
 ```{toctree}
 ---
 maxdepth: 2
-caption: Tutorial for evaluation of the presence of batch effects(Trajectory)
+caption: Evaluation of the presence of batch effects(Trajectory)
 ---
 Kidney_trajectory
 ```
 ```{toctree}
 ---
 maxdepth: 2
-caption: Tutorial for evaluation of the presence of batch effects(Clusters)
+caption: Evaluation of the presence of batch effects(Clusters)
 ---
 Kidney_clusters
 ```
