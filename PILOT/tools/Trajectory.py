@@ -643,9 +643,22 @@ def return_real_labels(df, category = 'status', sample_col=1):
         
 
 
-def cell_importance(adata, width=40, height=35, xlim=5, p_val=1, plot_cell=True, point_size=100, color_back='white',
-                   fontsize=20, alpha=1, cmap_proportions='viridis', cmap_heatmap='Blues', save_as_pdf=True,
-                   figsize=(12, 12), col_cluster=True, row_cluster=False):
+def cell_importance(adata,
+                    width = 40,
+                    height = 35,
+                    xlim = 5,
+                    p_val = 1,
+                    plot_cell = True,
+                    point_size = 100,
+                    color_back = 'white',
+                    fontsize = 20,
+                    alpha = 1,
+                    cmap_proportions = 'viridis',
+                    cmap_heatmap = 'Blues',
+                    save_as_pdf = True,
+                    figsize = (12, 12),
+                    col_cluster = True,
+                    row_cluster = False):
     """
     Order cells based on estimated time and visualize cell type importance.
 
@@ -692,75 +705,99 @@ def cell_importance(adata, width=40, height=35, xlim=5, p_val=1, plot_cell=True,
 
 
     
-    path=path_to_results
-    real_labels=adata.uns['real_labels']
-    pseudotime=adata.uns['pseudotime']
-    annot=adata.uns['annot']
-    bins=adata.uns['proportions']
-    embedding_diff=adata.uns['embedding']
-    cell_types_propo=bins
-    patients_id=bins.keys()
+    path = path_to_results
+    real_labels = adata.uns['real_labels']
+    pseudotime = adata.uns['pseudotime']
+    annot = adata.uns['annot']
+    bins = adata.uns['proportions']
+    embedding_diff = adata.uns['embedding']
+    cell_types_propo = bins
+    patients_id = bins.keys()
     cell_types = annot['cell_type'].unique()
-    emd=embedding_diff
-    labels=real_labels
-    emd_dataframe = pd.DataFrame({'sampleID':list(patients_id), 'pseudotime':pseudotime,'lables':list(labels)},dtype=object)
-    emd_dataframe_sort = emd_dataframe.sort_values('pseudotime', ascending=True) 
-    emd_dataframe_sort['pseudotime']=np.arange(1, len(emd_dataframe)+1, 1).tolist()
+    emd = embedding_diff
+    labels = real_labels
+    emd_dataframe = pd.DataFrame({'sampleID': list(patients_id),
+                                  'pseudotime': pseudotime,
+                                  'lables': list(labels)}, dtype = object)
+    emd_dataframe_sort = emd_dataframe.sort_values('pseudotime', ascending = True) 
+    emd_dataframe_sort['pseudotime'] = np.arange(1, len(emd_dataframe) + 1, 1).tolist()
     pathies_cell_proportions = pd.DataFrame.from_dict(bins).T
-    pathies_cell_proportions.columns=cell_types
-    pathies_cell_proportions.index.name='sampleID'
-    df_join = pd.merge(emd_dataframe_sort['sampleID'], pathies_cell_proportions, how='inner', on = 'sampleID')
-    df_join=df_join.set_index('sampleID')
-    #Normalizing the proportions for heat map
-    normalized_df=(df_join-df_join.min())/(df_join.max()-df_join.min())
+    pathies_cell_proportions.columns = cell_types
+    
+    
+    pathies_cell_proportions.index.name = 'sampleID'
+
+    ### got error slice(None, None, None)
+    # df_join = pd.merge(emd_dataframe_sort['sampleID'], pathies_cell_proportions,
+    #                    how='inner', on = 'sampleID')
+    df_join = pathies_cell_proportions.loc[emd_dataframe_sort['sampleID']]
+    df_join = df_join.set_index('sampleID')
+    # Normalizing the proportions for heat map
+    normalized_df = (df_join - df_join.min()) / (df_join.max() - df_join.min())
  
     #Saving Heat map based on sorte pseuduscores of the Trajectory 
     
-    heatmaps_df(normalized_df[cell_types],row_cluster=row_cluster,col_cluster=col_cluster,cmap=cmap_heatmap,figsize=figsize) 
+    heatmaps_df(normalized_df[cell_types], row_cluster=row_cluster,
+                col_cluster = col_cluster, cmap = cmap_heatmap, figsize = figsize) 
     #Building a model based on Regression and pseuduscores 
-    pathies_cell_proportions['Time_score']=list(emd_dataframe['pseudotime'])
-    pathies_cell_proportions = pathies_cell_proportions.sort_values('Time_score', ascending=True)
-    pathies_cell_proportions['Time_score']=np.arange(1, len(emd_dataframe)+1, 1).tolist()
-    pathies_cell_proportions=pathies_cell_proportions.reset_index()
+    pathies_cell_proportions['Time_score'] = list(emd_dataframe['pseudotime'])
+    pathies_cell_proportions = pathies_cell_proportions.sort_values('Time_score', ascending = True)
+    pathies_cell_proportions['Time_score'] = np.arange(1, len(emd_dataframe) + 1, 1).tolist()
+    pathies_cell_proportions = pathies_cell_proportions.reset_index()
     RNA_data = pd.DataFrame()
     RNA_data['label'] = pathies_cell_proportions['Time_score']
-    RNA_target = np.transpose(pathies_cell_proportions.iloc[:,1:len(annot.cell_type.unique())+1])
-    min_target=min(RNA_data['label'])
-    max_target=max(RNA_data['label'])
+    RNA_target = np.transpose(pathies_cell_proportions.iloc[:, 1:len(annot.cell_type.unique()) + 1])
+    min_target = min(RNA_data['label'])
+    max_target = max(RNA_data['label'])
     #sorted_best = fit_best_model_cell_types(RNA_target, RNA_data,min_target=min_target, max_target=max_target)
     
     
-    sorted_best=fit_best_model(RNA_target, RNA_data, model_type='LinearRegression',max_iter_huber=1,epsilon_huber=1,pval_thr=p_val,modify_r2=False)
+    sorted_best = fit_best_model(RNA_target, RNA_data, model_type = 'LinearRegression',
+                                 max_iter_huber = 1, epsilon_huber = 1,
+                                 pval_thr = p_val, modify_r2 = False)
     
     if save_as_pdf:
-        suffix='Cell_types_importance.pdf'
+        suffix = 'Cell_types_importance.pdf'
     else:
-        suffix='Cell_types_importance.png'
+        suffix = 'Cell_types_importance.png'
     
     if plot_cell:
     
         with plt.rc_context():
-                plot_best_matches_cell_types(RNA_target, RNA_data,pathies_cell_proportions, sorted_best, "Cell Proportion",
-        min_target=min_target, max_target=max_target,num=len(sorted_best.keys()),width=width,height=height,xlim=xlim,point_size=point_size,color_back=color_back,fontsize=fontsize,alpha=alpha,cmap=cmap_proportions)
-                plt.savefig(path+"/"+suffix)
+                plot_best_matches_cell_types(RNA_target, RNA_data,pathies_cell_proportions,
+                                             sorted_best, "Cell Proportion", 
+                                             min_target = min_target,
+                                             max_target = max_target,
+                                             num = len(sorted_best.keys()),
+                                             width = width,
+                                             height = height,
+                                             xlim = xlim,
+                                             point_size = point_size,
+                                             color_back = color_back,
+                                             fontsize = fontsize,
+                                             alpha = alpha,
+                                             cmap = cmap_proportions)
+                plt.savefig(path + "/" + suffix)
     
     
-    cellnames=list(sorted_best.keys())
+    cellnames = list(sorted_best.keys())
     #return orders of samples based on the trejctory and selected cell-types
     
     
-    if not os.path.exists(path+'/Cell_type_Report'):
-        os.makedirs(path+'/Cell_type_Report')
+    if not os.path.exists(path + '/Cell_type_Report'):
+        os.makedirs(path + '/Cell_type_Report')
   
     
     save_data(sorted_best, 
-                   ['Cell name', 'Expression pattern', 'Slope', 'Fitted function', 'Intercept', 'Treat', 'Treat2', 'adjusted P-value', 'R-squared','mod_rsquared_adj'],
-                       path+'/Cell_type_Report/','Cells_Importance',p_val=p_val,pro=None)
+              ['Cell name', 'Expression pattern', 'Slope', 'Fitted function',
+               'Intercept', 'Treat', 'Treat2', 'adjusted P-value', 'R-squared',
+               'mod_rsquared_adj'], path + '/Cell_type_Report/', 'Cells_Importance',
+              p_val = p_val, pro = None)
     
     
     
-    adata.uns['cellnames']=cellnames
-    adata.uns['orders']=pathies_cell_proportions[['sampleID','Time_score']]
+    adata.uns['cellnames'] = cellnames
+    adata.uns['orders'] = pathies_cell_proportions[['sampleID', 'Time_score']]
  
 
 
