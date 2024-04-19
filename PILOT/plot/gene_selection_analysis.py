@@ -265,7 +265,7 @@ def compute_curves_activities(curves: pd.DataFrame = None,
     save_path = path_to_results + "/Markers/" + str(cell_type) 
     if not os.path.exists(save_path):
         os.makedirs(save_path)
-    curves_activities.to_csv(save_path + "curves_activities.csv")
+    curves_activities.to_csv(save_path + "/curves_activities.csv")
     
     return curves_activities
 
