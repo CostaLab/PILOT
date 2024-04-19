@@ -101,21 +101,21 @@ def get_noised_curves(adata: ad.AnnData = None,
 
     noised_curves = noised_curves.fillna(0)
     
-    return noised_curves, pseudotime_sample_names
+    scaler = StandardScaler()
+    scaled_noised_curves = pd.DataFrame(scaler.fit_transform(noised_curves.transpose()).transpose())
+    scaled_noised_curves.columns = noised_curves.columns
+    scaled_noised_curves.index = noised_curves.index
+    
+    return scaled_noised_curves, pseudotime_sample_names
 
 def cluster_genes_curves(curves: pd.DataFrame = None,
                          cluster_method: str = 'average',
                          cluster_metric: str = 'euclidean',
                          scaler_value: float = 0.65):
-    
-    scaler = StandardScaler()
-    df = pd.DataFrame(scaler.fit_transform(curves.transpose()).transpose())
-    df.columns = curves.columns
-    df.index = curves.index
 
     try:
         # retrieve clusters using fcluster 
-        d = sch.distance.pdist(df)
+        d = sch.distance.pdist(curves)
         L = sch.linkage(d, method = cluster_method, metric = cluster_metric)
         
         # scaler_value can be modified to retrieve more stringent or relaxed clusters
