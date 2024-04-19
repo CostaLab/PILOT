@@ -123,7 +123,7 @@ pl.tl.cell_importance(adata)
 
 
     
-![png](Myocardial_infarction_files/Myocardial_infarction_14_1.png)
+![png](Myocardial_infarction_files/Myocardial_infarction_14_2.png)
     
 
 
@@ -152,7 +152,35 @@ for cell in adata.uns['cellnames']:
     plot_genes = False)
 ```
 
-    
+##### Group genes by pattern:
+
+<div class="alert alert-block alert-info"> 
+Here, we cluster genes based on the pattern found for each and plot their heatmap. Below the heatmap, we depict the pattern of each group's 
+genes and top 10 genes having significant changes through disease progression.
+
+You can find curves activities' statistical scores that show the fold changes of the genes through disease progression in the ‘Markers‘ folder for each cell type separately.
+</div>
+
+```python
+pl.pl.genes_selection_analysis(adata, 'healthy_CM')
+```
+
+![png](Myocardial_infarction_files/healthy_CM_heatmap.png)
+
+![png](Myocardial_infarction_files/healthy_CM_heatmap_clusters.png)
+
+![png](Myocardial_infarction_files/healthy_CM_heatmap_top_genes.png)
+
+
+```python
+pl.pl.genes_selection_analysis(adata, 'Myofib')
+```
+
+![png](Myocardial_infarction_files/Myofib_heatmap.png)
+
+![png](Myocardial_infarction_files/Myofib_heatmap_clusters.png)
+
+![png](Myocardial_infarction_files/Myofib_heatmap_top_genes.png)
 
 
 ##### Cluster Specific Marker Changes:
