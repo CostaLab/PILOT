@@ -19,7 +19,10 @@ import matplotlib.ticker as tick
 from scipy.stats import zscore
 from scipy.stats import norm
 
-import curve_activity as ca
+from .curve_activity import _curvesnamic_network_char_terminal_logfc_, \
+    _curvesnamic_network_char_transient_logfc_, \
+        _curvesnamic_network_char_switching_time_, \
+            _curvesnamic_network_char_area_
 
 
 def generate_feature_list(func_type, X):
@@ -244,7 +247,7 @@ def compute_curves_activities(curves: pd.DataFrame = None,
     curves_activities = pd.DataFrame(index = curves.index,
                                      columns = ('Terminal_logFC', 'Terminal_pvalue', 'Terminal_adjPvalue',
                                                 'Transient_logFC', 'Switching_time', 'area'))
-    terminal_logFC = ca._curvesnamic_network_char_terminal_logfc_(np.array((curves)), times)
+    terminal_logFC = _curvesnamic_network_char_terminal_logfc_(np.array((curves)), times)
     curves_activities['Terminal_logFC'] = np.round(terminal_logFC.ravel(), 2)
     
     z_score = zscore(curves_activities['Terminal_logFC'])
@@ -252,11 +255,11 @@ def compute_curves_activities(curves: pd.DataFrame = None,
     curves_activities['Terminal_pvalue'] = p_values
     curves_activities['Terminal_adjPvalue'] = adjust_p_values(p_values)
     
-    transient_logFC = ca._curvesnamic_network_char_transient_logfc_(np.array((curves)), times)
+    transient_logFC = _curvesnamic_network_char_transient_logfc_(np.array((curves)), times)
     curves_activities['Transient_logFC'] = np.round(transient_logFC.ravel(), 2)
-    switching_time = ca._curvesnamic_network_char_switching_time_(np.array((curves)), times)
+    switching_time = _curvesnamic_network_char_switching_time_(np.array((curves)), times)
     curves_activities['Switching_time'] = np.round(switching_time.ravel(), 2)
-    areas = ca._curvesnamic_network_char_area_(np.array((curves)), times)
+    areas = _curvesnamic_network_char_area_(np.array((curves)), times)
     curves_activities['area'] = np.round(areas, 2)
 
     genes_clusters.index = genes_clusters['Gene ID'].values
