@@ -3,7 +3,7 @@
 """
 Created on Thu Apr 18 17:29:07 2024
 
-@author: mina
+@author: Mina Shaigan
 """
 
 import os
@@ -18,6 +18,8 @@ import scipy.cluster.hierarchy as sch
 import matplotlib.ticker as tick
 from scipy.stats import zscore
 from scipy.stats import norm
+from gprofiler import GProfiler
+import textwrap as tw
 
 from .curve_activity import _curvesnamic_network_char_terminal_logfc_, \
     _curvesnamic_network_char_transient_logfc_, \
@@ -43,7 +45,22 @@ def generate_feature_list(func_type, X):
     return X
 
 def make_curves(table, points):
-    # define curves
+    """
+    define curves
+
+    Parameters
+    ----------
+    table : TYPE
+        DESCRIPTION.
+    points : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    df_TFs_curves : TYPE
+        DESCRIPTION.
+
+    """
     TFs_coefs = np.array([table.iloc[:,]['Intercept'], 
                           table.iloc[:,]['Treat'], 
                           table.iloc[:,]['Treat2']])    
@@ -68,6 +85,35 @@ def get_noised_curves(adata: ad.AnnData = None,
                       table_filter_thr: float = 0.1,
                       table_filter_pval_thr: float = 0.05,
                       path_to_results: str = 'Results_PILOT/'):
+    """
+      Based on the fitted function we generate the curve again by considering the
+    variance of the cells at each disease progression time point
+
+    Parameters
+    ----------
+    adata : ad.AnnData, optional
+        DESCRIPTION. The default is None.
+    cell_type : str, optional
+        DESCRIPTION. The default is None.
+    filter_table_feature : str, optional
+        DESCRIPTION. The default is 'R-squared'.
+    filter_table_feature_pval : str, optional
+        DESCRIPTION. The default is 'adjusted P-value'.
+    table_filter_thr : float, optional
+        DESCRIPTION. The default is 0.1.
+    table_filter_pval_thr : float, optional
+        DESCRIPTION. The default is 0.05.
+    path_to_results : str, optional
+        DESCRIPTION. The default is 'Results_PILOT/'.
+
+    Returns
+    -------
+    scaled_noised_curves : TYPE
+        DESCRIPTION.
+    pseudotime_sample_names : TYPE
+        DESCRIPTION.
+
+    """
 
     # Get cells of one cell_type 
     cells = pd.read_csv(path_to_results + "/cells/" + str(cell_type) + ".csv", index_col = 0)
@@ -112,6 +158,26 @@ def cluster_genes_curves(curves: pd.DataFrame = None,
                          cluster_method: str = 'average',
                          cluster_metric: str = 'euclidean',
                          scaler_value: float = 0.65):
+    """
+    
+
+    Parameters
+    ----------
+    curves : pd.DataFrame, optional
+        DESCRIPTION. The default is None.
+    cluster_method : str, optional
+        DESCRIPTION. The default is 'average'.
+    cluster_metric : str, optional
+        DESCRIPTION. The default is 'euclidean'.
+    scaler_value : float, optional
+        DESCRIPTION. The default is 0.65.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
 
     try:
         # retrieve clusters using fcluster 
@@ -134,6 +200,31 @@ def plot_heatmap_curves(curves: pd.DataFrame = None,
                         figsize: tuple = (7, 9),
                         fontsize: int = 14
                         ):
+    """
+    
+
+    Parameters
+    ----------
+    curves : pd.DataFrame, optional
+        DESCRIPTION. The default is None.
+    genes_clusters : pd.DataFrame, optional
+        DESCRIPTION. The default is None.
+    cluster_method : str, optional
+        DESCRIPTION. The default is 'average'.
+    cluster_metric : str, optional
+        DESCRIPTION. The default is 'euclidean'.
+    cmap_color : str, optional
+        DESCRIPTION. The default is 'RdBu_r'.
+    figsize : tuple, optional
+        DESCRIPTION. The default is (7, 9).
+    fontsize : int, optional
+        DESCRIPTION. The default is 14.
+
+    Returns
+    -------
+    None.
+
+    """
 
     my_palette = dict(zip(genes_clusters['cluster'].unique(),
                           sns.color_palette("tab10", len(genes_clusters['cluster'].unique()))))
@@ -179,6 +270,25 @@ def plot_each_cluster_activities(curves: pd.DataFrame = None,
                                  pseudotime_sample_names: pd.DataFrame = None,
                                  fontsize: int = 14
                                 ):
+    """
+    
+
+    Parameters
+    ----------
+    curves : pd.DataFrame, optional
+        DESCRIPTION. The default is None.
+    genes_clusters : pd.DataFrame, optional
+        DESCRIPTION. The default is None.
+    pseudotime_sample_names : pd.DataFrame, optional
+        DESCRIPTION. The default is None.
+    fontsize : int, optional
+        DESCRIPTION. The default is 14.
+
+    Returns
+    -------
+    None.
+
+    """
     
     n_clusters = np.unique(genes_clusters['cluster'])
     fig, axs = plt.subplots(nrows = 1, ncols = len(n_clusters), figsize = (len(n_clusters) * 3, 2))
@@ -242,6 +352,28 @@ def compute_curves_activities(curves: pd.DataFrame = None,
                               pseudotime_sample_names: pd.DataFrame = None,
                               cell_type: str = None,
                               path_to_results: str = 'Results_PILOT/'):
+    """
+    
+
+    Parameters
+    ----------
+    curves : pd.DataFrame, optional
+        DESCRIPTION. The default is None.
+    genes_clusters : pd.DataFrame, optional
+        DESCRIPTION. The default is None.
+    pseudotime_sample_names : pd.DataFrame, optional
+        DESCRIPTION. The default is None.
+    cell_type : str, optional
+        DESCRIPTION. The default is None.
+    path_to_results : str, optional
+        DESCRIPTION. The default is 'Results_PILOT/'.
+
+    Returns
+    -------
+    curves_activities : TYPE
+        DESCRIPTION.
+
+    """
 
     times = pseudotime_sample_names.index
     curves_activities = pd.DataFrame(index = curves.index,
@@ -274,6 +406,21 @@ def compute_curves_activities(curves: pd.DataFrame = None,
 
 def plot_rank_genes_cluster(curves_activities: pd.DataFrame = None,
                             fontsize: int = 12):
+    """
+    
+
+    Parameters
+    ----------
+    curves_activities : pd.DataFrame, optional
+        DESCRIPTION. The default is None.
+    fontsize : int, optional
+        DESCRIPTION. The default is 12.
+
+    Returns
+    -------
+    None.
+
+    """
     
     rank_genes = curves_activities.sort_values('Terminal_pvalue').groupby('cluster').head(10)
     clusters = rank_genes['cluster']
@@ -325,21 +472,211 @@ def plot_rank_genes_cluster(curves_activities: pd.DataFrame = None,
     
     plt.show()
     
+
+def gene_annotation_cell_type_genes(cell_type: str = None,
+                                    genes: list = None,
+                                    group: str = None,
+                                    num_gos: int = 10,
+                                    fig_h: int = 7,
+                                    fig_w: int = 5,
+                                    font_size: int = 16,
+                                    max_length:int = 50,
+                                    sources: list = ['GO:CC', 'GO:PB', 'GO:MF']
+                                    ):
+    """
+    
+
+    Parameters
+    ----------
+    cell_type : str, optional
+        DESCRIPTION. The default is None.
+    genes : list, optional
+        DESCRIPTION. The default is None.
+    group : str, optional
+        DESCRIPTION. The default is None.
+    num_gos : int, optional
+        DESCRIPTION. The default is 10.
+    fig_h : int, optional
+        DESCRIPTION. The default is 7.
+    fig_w : int, optional
+        DESCRIPTION. The default is 5.
+    font_size : int, optional
+        DESCRIPTION. The default is 16.
+    max_length : int, optional
+        DESCRIPTION. The default is 50.
+    sources : list, optional
+        DESCRIPTION. The default is ['GO:CC', 'GO:PB', 'GO:MF'].
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
+
+    gp = GProfiler(return_dataframe = True)
+    if list(genes):
+        gprofiler_results = gp.profile(organism = 'hsapiens', sources = sources,
+                                       query = list(genes), no_evidences = False)
+    else:
+        return "Genes list is empty!"
+    
+    if(gprofiler_results.shape[0] == 0):
+        return "Not enough information!"
+    elif(gprofiler_results.shape[0] < num_gos):
+        num_gos = gprofiler_results.shape[0]
+        
+    all_gprofiler_results = gprofiler_results.copy()    
+    
+    selected_gps = gprofiler_results.head(num_gos)[['name', 'p_value']]
+    
+    selected_gps['nlog10'] = -np.log10(selected_gps['p_value'].values)
+
+    for i in selected_gps.index:
+        split_name = "\n".join(tw.wrap(selected_gps.loc[i, 'name'], max_length))
+        selected_gps.loc[i, 'name'] = split_name
+
+    figsize = (fig_h, fig_w)
+
+    plt.figure(figsize = figsize, dpi = 100)
+    plt.style.use('default')
+    sns.scatterplot(data = selected_gps, x = "nlog10", y = "name", s = 200, color = 'tab:blue')
+
+    plt.title('GO enrichment in ' + cell_type + ' associated with ' + str(group) + \
+              '\n Number of genes: ' + str(len(genes))
+              , fontsize = font_size + 2)
+
+    plt.xticks(size = font_size)
+    plt.yticks(size = font_size)
+
+    plt.ylabel("GO Terms", size = font_size)
+    plt.xlabel("-$log_{10}$ (P-value)", size = font_size)
+    plt.show()
+    
+    return all_gprofiler_results
+
+def annotation_cluster_genes_by_curves(curves_activities: pd.DataFrame = None,
+                                       cell_type: str = None,
+                                       num_gos: int = 10,
+                                       fig_h: int = 7,
+                                       fig_w: int = 5,
+                                       max_length: int = 50,
+                                       sources: list = ['GO:CC', 'GO:PB', 'GO:MF'],
+                                       path_to_results: str = 'Results_PILOT/',
+                                       fontsize: int = 14):
+    """
+    
+
+    Parameters
+    ----------
+    curves_activities : pd.DataFrame, optional
+        DESCRIPTION. The default is None.
+    cell_type : str, optional
+        DESCRIPTION. The default is None.
+    num_gos : int, optional
+        DESCRIPTION. The default is 10.
+    fig_h : int, optional
+        DESCRIPTION. The default is 7.
+    fig_w : int, optional
+        DESCRIPTION. The default is 5.
+    max_length : int, optional
+        DESCRIPTION. The default is 50.
+    sources : list, optional
+        DESCRIPTION. The default is ['GO:CC', 'GO:PB', 'GO:MF'].
+    path_to_results : str, optional
+        DESCRIPTION. The default is 'Results_PILOT/'.
+    fontsize : int, optional
+        DESCRIPTION. The default is 14.
+
+    Returns
+    -------
+    None.
+
+    """
+    
+    for c in list(np.unique(curves_activities['cluster'])):
+        genes = curves_activities.loc[curves_activities['cluster'] == c].index.values
+        gprofiler_results = gene_annotation_cell_type_genes(cell_type, genes, "cluster " + str(c),
+                                                            num_gos, fig_h, fig_w,
+                                                            fontsize, max_length,
+                                                            sources)
+        
+        if type(gprofiler_results) != str:
+            save_path = path_to_results + "/Markers/" + str(cell_type) + "/GOs/"
+            if not os.path.exists(save_path):
+                os.makedirs(save_path)
+            gprofiler_results.to_csv(save_path + "/cluster_" + str(c) + ".csv")
+        else:
+            print("No information for cluster " + str(c) + "!")
+    
+    
 def genes_selection_analysis(
-    adata: ad.AnnData = None,
-    cell_type: str = None,
-    filter_table_feature: str = 'R-squared',
-    filter_table_feature_pval: str = 'adjusted P-value',
-    table_filter_thr: float = 0.05,
-    table_filter_pval_thr: float = 0.05,
-    cluster_method: str = 'average',
-    cluster_metric: str = 'euclidean',
-    scaler_value: float = 0.4,
-    cmap_color: str = 'RdBu_r',
-    figsize: tuple = (7, 9),
-    fontsize: int = 14,
-    path_to_results: str = 'Results_PILOT/'
+        adata: ad.AnnData = None,
+        cell_type: str = None,
+        filter_table_feature: str = 'R-squared',
+        filter_table_feature_pval: str = 'adjusted P-value',
+        table_filter_thr: float = 0.05,
+        table_filter_pval_thr: float = 0.05,
+        cluster_method: str = 'average',
+        cluster_metric: str = 'euclidean',
+        scaler_value: float = 0.4,
+        cmap_color: str = 'RdBu_r',
+        figsize: tuple = (7, 9),
+        num_gos: int = 10,
+        fig_h: int = 7,
+        fig_w: int = 5,
+        max_length: int = 50,
+        sources: list = ['GO:CC', 'GO:PB', 'GO:MF'],
+        fontsize: int = 14,
+        path_to_results: str = 'Results_PILOT/'
     ):
+    """
+    
+
+    Parameters
+    ----------
+    adata : ad.AnnData, optional
+        DESCRIPTION. The default is None.
+    cell_type : str, optional
+        DESCRIPTION. The default is None.
+    filter_table_feature : str, optional
+        DESCRIPTION. The default is 'R-squared'.
+    filter_table_feature_pval : str, optional
+        DESCRIPTION. The default is 'adjusted P-value'.
+    table_filter_thr : float, optional
+        DESCRIPTION. The default is 0.05.
+    table_filter_pval_thr : float, optional
+        DESCRIPTION. The default is 0.05.
+    cluster_method : str, optional
+        DESCRIPTION. The default is 'average'.
+    cluster_metric : str, optional
+        DESCRIPTION. The default is 'euclidean'.
+    scaler_value : float, optional
+        DESCRIPTION. The default is 0.4.
+    cmap_color : str, optional
+        DESCRIPTION. The default is 'RdBu_r'.
+    figsize : tuple, optional
+        DESCRIPTION. The default is (7, 9).
+    num_gos : int, optional
+        DESCRIPTION. The default is 10.
+    fig_h : int, optional
+        DESCRIPTION. The default is 7.
+    fig_w : int, optional
+        DESCRIPTION. The default is 5.
+    max_length : int, optional
+        DESCRIPTION. The default is 50.
+    sources : list, optional
+        DESCRIPTION. The default is ['GO:CC', 'GO:PB', 'GO:MF'].
+    fontsize : int, optional
+        DESCRIPTION. The default is 14.
+    path_to_results : str, optional
+        DESCRIPTION. The default is 'Results_PILOT/'.
+
+    Returns
+    -------
+    None.
+
+    """
 
     print("Filter genes based on R-square and p-value...")
     noised_curves, pseudotime_sample_names = get_noised_curves(adata, cell_type,
@@ -363,11 +700,16 @@ def genes_selection_analysis(
     print("Plot patterns of clusters... ")
     print("Compute curves activities... ")
     print("Save curves activities... ")
-    print("Plot top 10 genes for cluster")
+    print("Plot top 10 genes for each cluster")
+    print("Plot GO analysis for each cluster")
     
     plot_each_cluster_activities(noised_curves, genes_clusters,
                                  pseudotime_sample_names)
     curves_activities = compute_curves_activities(noised_curves, genes_clusters,
-                                                  pseudotime_sample_names, cell_type,
-                                                  path_to_results)
+                                                  pseudotime_sample_names,
+                                                  cell_type, path_to_results)
     plot_rank_genes_cluster(curves_activities, fontsize)
+    
+    annotation_cluster_genes_by_curves(curves_activities, cell_type, num_gos,
+                                       fig_h, fig_w, max_length, sources,
+                                       path_to_results, fontsize)
