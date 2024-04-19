@@ -644,7 +644,7 @@ def return_real_labels(df, category = 'status', sample_col=1):
 
 
 def cell_importance(adata,
-                    width = 40,
+                    width = 20,
                     height = 35,
                     xlim = 5,
                     p_val = 1,
@@ -731,7 +731,7 @@ def cell_importance(adata,
     # df_join = pd.merge(emd_dataframe_sort['sampleID'], pathies_cell_proportions,
     #                    how='inner', on = 'sampleID')
     df_join = pathies_cell_proportions.loc[emd_dataframe_sort['sampleID']]
-    df_join = df_join.set_index('sampleID')
+    #df_join = df_join.set_index('sampleID')
     # Normalizing the proportions for heat map
     normalized_df = (df_join - df_join.min()) / (df_join.max() - df_join.min())
  
