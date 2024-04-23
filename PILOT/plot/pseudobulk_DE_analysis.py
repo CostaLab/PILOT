@@ -7,8 +7,6 @@ Created on Mon Apr 22 14:43:35 2024
 """
 
 import os
-import re
-import pickle as pkl
 import pandas as pd
 import numpy as np
 import anndata as ad
@@ -16,7 +14,7 @@ import itertools
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.decomposition import PCA
 from matplotlib.lines import Line2D
-from matplotlib.patches import Patch
+
 from adjustText import adjust_text
 from gprofiler import GProfiler
 import textwrap as tw
@@ -26,7 +24,7 @@ import matplotlib.pyplot as plt
 import rpy2.robjects as robjects
 import rpy2.robjects.numpy2ri
 from rpy2.robjects import pandas2ri
-from rpy2.robjects.packages import importr
+
 from rpy2.rinterface_lib.callbacks import logger as rpy2_logger
 import logging
 rpy2_logger.setLevel(logging.ERROR)
@@ -39,6 +37,32 @@ def plot_cell_numbers(adata, proportion_df,
                       celltype_col: str = "cell_types",
                       sample_col: str = "sampleID",
                       my_pal = None):
+    """
+    
+
+    Parameters
+    ----------
+    adata : TYPE
+        DESCRIPTION.
+    proportion_df : TYPE
+        DESCRIPTION.
+    cell_type : str, optional
+        DESCRIPTION. The default is None.
+    cluster_col : str, optional
+        DESCRIPTION. The default is "Predicted_Labels".
+    celltype_col : str, optional
+        DESCRIPTION. The default is "cell_types".
+    sample_col : str, optional
+        DESCRIPTION. The default is "sampleID".
+    my_pal : TYPE, optional
+        DESCRIPTION. The default is None.
+
+    Returns
+    -------
+    None.
+
+    """
+    
     copy_cells = adata.obs.copy()
     copy_cells= copy_cells[copy_cells[celltype_col] == cell_type]
     copy_cells['group'] = proportion_df.loc[copy_cells[sample_col]][cluster_col].values
@@ -107,7 +131,7 @@ def compute_pseudobulk_DE(
     R('library(SingleCellExperiment)')
     R('library(DESeq2)')
     R('library(apeglm)')
-    R('library(tidyverse)')
+    R('library(tidyverse, verbose = FALSE)')
     R.assign('cluster_counts', my_cluster_counts)
     R.assign('cluster_metadata', my_cluster_metadata)
 
@@ -168,7 +192,7 @@ def compute_pseudobulk_PCA(
     R('library(SingleCellExperiment)')
     R('library(DESeq2)')
     R('library(apeglm)')
-    R('library(tidyverse)')
+    R('library(tidyverse, verbose = FALSE)')
     R.assign('cluster_counts', cluster_counts)
     R.assign('cluster_metadata', cluster_metadata)
 
@@ -229,6 +253,47 @@ def volcano_plot_ps(data, symbol, foldchange, p_value,
                  my_pal = None,
                  fontsize: int = 14
                 ):
+    """
+    
+
+    Parameters
+    ----------
+    data : TYPE
+        DESCRIPTION.
+    symbol : TYPE
+        DESCRIPTION.
+    foldchange : TYPE
+        DESCRIPTION.
+    p_value : TYPE
+        DESCRIPTION.
+    cell_type : TYPE
+        DESCRIPTION.
+    feature1 : TYPE
+        DESCRIPTION.
+    feature2 : TYPE
+        DESCRIPTION.
+    low_fc_thr : TYPE, optional
+        DESCRIPTION. The default is 1.
+    high_fc_thr : TYPE, optional
+        DESCRIPTION. The default is 1.
+    pv_thr : TYPE, optional
+        DESCRIPTION. The default is 1.
+    figsize : TYPE, optional
+        DESCRIPTION. The default is (20,10).
+    output_path : TYPE, optional
+        DESCRIPTION. The default is None.
+    my_pal : TYPE, optional
+        DESCRIPTION. The default is None.
+    fontsize : int, optional
+        DESCRIPTION. The default is 14.
+
+    Returns
+    -------
+    str
+        DESCRIPTION.
+
+    """
+    
     df = pd.DataFrame(columns=['log2FoldChange', 'nlog10', 'symbol'])
     df['log2FoldChange'] = data[foldchange]
     df['nlog10'] = -np.log10(data[p_value].values)
@@ -322,25 +387,41 @@ def gene_annotation_cell_type_subgroup(data: pd.DataFrame = None,
                                        my_pal = None
                                      ):
     """
-    
+    Plot to show the most relative GO terms for specifc cell-type of determind patient sub-group
 
     Parameters
     ----------
-    cell_type : str, optional
-        Specify cell type name to check its differential expression genes. The default is None.
-    group : str, optional
-        Name of patients sub-group of interest. The default is None.
+    data : pd.DataFrame
+        DESCRIPTION. The default is None.
+    symbol : str, optional
+        DESCRIPTION. The default is 'gene'.
+    sig_col : str, optional
+        DESCRIPTION. The default is 'significant_gene'.
+    cell_type : str
+        DESCRIPTION. The default is None.
+    group : str
+        DESCRIPTION. The default is None.
+    sources : str, optional
+        DESCRIPTION. The default is None.
+    num_gos : int, optional
+        DESCRIPTION. The default is 10.
+    fig_h : int, optional
+        DESCRIPTION. The default is 6.
+    fig_w : int, optional
+        DESCRIPTION. The default is 4.
+    font_size : int, optional
+        DESCRIPTION. The default is 14.
+    max_length : int, optional
+        DESCRIPTION. The default is 50.
     path_to_results : str, optional
-        Path to store the results. The default is None.
-    num_gos: float, number of GO for ploting.
-    fig_h: int, height of figure,
-    fig_w: int, width of figure
-    font_size: int, size of labels
-    
+        DESCRIPTION. The default is None.
+    my_pal : TYPE, optional
+        DESCRIPTION. The default is None.
+
     Returns
     -------
     None.
-    Plot to show the most relative GO terms for specifc cell-type of determind patient sub-group
+
     """
 
 #     path_to_results = 'Results_PILOT'
@@ -413,10 +494,6 @@ def get_sig_genes(data, symbol, foldchange, p_value, cell_type,
     df.replace([np.inf, -np.inf], np.nan, inplace = True)
     df.dropna(subset = ["nlog10"], how = "all", inplace = True)
     
-
-    selected_labels = df.loc[ (df.log2FoldChange <= low_fc_thr) & (df.log2FoldChange >= high_fc_thr) & \
-                             (df['nlog10'] >= pv_thr)]['symbol'].values
-    
     data['significant_gene'] = ""
     group1_selected_labels = df.loc[ (df.log2FoldChange <= -low_fc_thr) & (df['nlog10'] >= pv_thr), 'symbol'].values
     data.loc[data[symbol].isin(group1_selected_labels), 'significant_gene'] = feature1
@@ -426,10 +503,10 @@ def get_sig_genes(data, symbol, foldchange, p_value, cell_type,
 
     return data
 
-def get_pseudobulk_DE(adata: ad.AnnData = None,
-                      proportion_df: pd.DataFrame = None,
-                      cell_type: str = None,
-                      fc_thr: list = None,
+def get_pseudobulk_DE(adata: ad.AnnData,
+                      proportion_df: pd.DataFrame,
+                      cell_type: str,
+                      fc_thr: list,
                       pv_thr: float = 0.05,
                       celltype_col: str = "cell_types",
                       sample_col: str = "sampleID",
@@ -445,6 +522,54 @@ def get_pseudobulk_DE(adata: ad.AnnData = None,
                       fontsize: int = 14,
                       load: bool = False
                      ):
+    """
+    
+
+    Parameters
+    ----------
+    adata : ad.AnnData
+        DESCRIPTION.
+    proportion_df : pd.DataFrame
+        DESCRIPTION.
+    cell_type : str
+        DESCRIPTION.
+    fc_thr : list
+        DESCRIPTION.
+    pv_thr : float, optional
+        DESCRIPTION. The default is 0.05.
+    celltype_col : str, optional
+        DESCRIPTION. The default is "cell_types".
+    sample_col : str, optional
+        DESCRIPTION. The default is "sampleID".
+    cluster_col : str, optional
+        DESCRIPTION. The default is "Predicted_Labels".
+    remove_samples : list, optional
+        DESCRIPTION. The default is [].
+    my_pal : dict, optional
+        DESCRIPTION. The default is None.
+    path_to_results : str, optional
+        DESCRIPTION. The default is 'Results_PILOT/'.
+    figsize : tuple, optional
+        DESCRIPTION. The default is (30, 15).
+    num_gos : int, optional
+        DESCRIPTION. The default is 10.
+    fig_h : int, optional
+        DESCRIPTION. The default is 6.
+    fig_w : int, optional
+        DESCRIPTION. The default is 4.
+    sources : list, optional
+        DESCRIPTION. The default is ['GO:CC', 'GO:PB', 'GO:MF'].
+    fontsize : int, optional
+        DESCRIPTION. The default is 14.
+    load : bool, optional
+        DESCRIPTION. The default is False.
+
+    Returns
+    -------
+    None.
+
+    """
+    
 
     n_clusters = np.unique(proportion_df[cluster_col])
     if my_pal is None:
@@ -456,11 +581,13 @@ def get_pseudobulk_DE(adata: ad.AnnData = None,
     save_path = path_to_results + "/Diff_Expressions_Results/" + str(cell_type) + "/pseudobulk/"
     log_pv_thr = -np.log10(pv_thr)
 
+    print("Plot cells frequency for each sample... ")
     plot_cell_numbers(adata, proportion_df, cell_type = cell_type,
                   cluster_col = cluster_col, celltype_col = celltype_col,
                       sample_col = sample_col, my_pal= my_pal)
     
     if load == False:
+        print("Aggregating the counts and metadata to the sample level...")
         counts_df = adata.to_df()
         counts_df[[celltype_col, sample_col]] = adata.obs[[celltype_col, sample_col]].values
         
@@ -482,6 +609,8 @@ def get_pseudobulk_DE(adata: ad.AnnData = None,
         cluster_metadata = cluster_metadata.loc[cluster_counts.index]
         cluster_counts = cluster_counts.loc[:, (cluster_counts != 0).any(axis=0)]
     
+        print("Use the median of ratios method for count normalization from DESeq2")
+        print("Use regularized log transform (rlog) of the normalized counts from DESeq2")
         rld = compute_pseudobulk_PCA(cluster_counts, cluster_metadata)
     
         if rld is not None:
@@ -493,8 +622,10 @@ def get_pseudobulk_DE(adata: ad.AnnData = None,
         rld = pd.read_csv(save_path + "rld_PCA.csv", index_col = 0)
         
     deseq2_counts = rld.transpose()
+    print("Plot the first two principal components... ")
     plotPCA_subgroups(proportion_df, deseq2_counts, cell_type, my_pal, cluster_col)
 
+    print("Performing the DE analysis... ")
     j = 0
     for groups in itertools.combinations(n_clusters, 2):
         data = None
@@ -515,11 +646,13 @@ def get_pseudobulk_DE(adata: ad.AnnData = None,
             data = pd.read_csv(save_path + "/" + str(groups[1]) + "vs" + str(groups[0]) + "_DE.csv", index_col = 0)
 
         if data is not None:
+            print("Plot volcano plot for " + str(groups[1]) + " vs " + str(groups[0]))
             volcano_plot_ps(data, 'gene', 'log2FoldChange', 'padj', cell_type, 
                          groups[0], groups[1], fc_thr[j], fc_thr[j], log_pv_thr, figsize = figsize,
                          output_path = save_path + "/",
                          my_pal = my_pal, fontsize = fontsize)
 
+            print("Plot GO analysis for " + str(groups[1]) + " vs " + str(groups[0]))
             gene_annotation_cell_type_subgroup(data, cell_type = cell_type, group = groups[0],
                                                sources = sources, num_gos = num_gos,
                                                fig_h = fig_h, fig_w = fig_w, font_size = fontsize,
