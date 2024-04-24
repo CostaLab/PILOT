@@ -20,6 +20,8 @@ from scipy.stats import zscore
 from scipy.stats import norm
 from gprofiler import GProfiler
 import textwrap as tw
+import matplotlib.colors as pltcolors
+from decimal import Decimal
 
 from .curve_activity import _curvesnamic_network_char_terminal_logfc_, \
     _curvesnamic_network_char_transient_logfc_, \
@@ -152,11 +154,16 @@ def get_noised_curves(adata: ad.AnnData = None,
     scaled_noised_curves.columns = noised_curves.columns
     scaled_noised_curves.index = noised_curves.index
     
-    return scaled_noised_curves, pseudotime_sample_names
+    scaler = StandardScaler()
+    scaled_curves = pd.DataFrame(scaler.fit_transform(curves.transpose()).transpose())
+    scaled_curves.columns = curves.columns
+    scaled_curves.index = curves.index
+    
+    return scaled_curves, scaled_noised_curves, pseudotime_sample_names
 
 def cluster_genes_curves(curves: pd.DataFrame = None,
-                         cluster_method: str = 'average',
-                         cluster_metric: str = 'euclidean',
+                         cluster_method: str = 'complete',
+                         cluster_metric: str = 'correlation',
                          scaler_value: float = 0.65):
     """
     
@@ -194,8 +201,8 @@ def cluster_genes_curves(curves: pd.DataFrame = None,
 
 def plot_heatmap_curves(curves: pd.DataFrame = None,
                         genes_clusters: pd.DataFrame = None,
-                        cluster_method: str = 'average',
-                        cluster_metric: str = 'euclidean',
+                        cluster_method: str = 'complete',
+                        cluster_metric: str = 'correlation',
                         cmap_color: str = 'RdBu_r',
                         figsize: tuple = (7, 9),
                         fontsize: int = 14
@@ -448,16 +455,16 @@ def plot_rank_genes_cluster(curves_activities: pd.DataFrame = None,
         txts = my_data.index.values
     
         start = 0
-        step = 0.5
+        step = 1
         num = len(y)
     
         y = start + np.arange(0, num) * step
     
-        ax.scatter(x, y, color = 'white')
+        ax.scatter(x, y + 0.05, color = 'k', s = 10)
         for i, txt in enumerate(txts):
-            ax.annotate(txt, (x[i], y[i]), ha='left', fontsize = fontsize - 2)
+            ax.annotate(txt, (x[i] + 0.05, y[i]), ha = 'left', fontsize = fontsize - 2)
     
-        margin = 0.5
+        margin = 1
         ax.set_xlim(0, np.ceil(np.max(x)) + margin)
         ax.set_ylim(-0.1, num * step + 0.2)
     
@@ -471,14 +478,15 @@ def plot_rank_genes_cluster(curves_activities: pd.DataFrame = None,
         j += 1
     
     plt.show()
+    return rank_genes
     
 
 def gene_annotation_cell_type_genes(cell_type: str = None,
                                     genes: list = None,
                                     group: str = None,
                                     num_gos: int = 10,
-                                    fig_h: int = 7,
-                                    fig_w: int = 5,
+                                    fig_h: int = 6,
+                                    fig_w: int = 4,
                                     font_size: int = 16,
                                     max_length:int = 50,
                                     sources: list = ['GO:CC', 'GO:PB', 'GO:MF']
@@ -497,9 +505,9 @@ def gene_annotation_cell_type_genes(cell_type: str = None,
     num_gos : int, optional
         DESCRIPTION. The default is 10.
     fig_h : int, optional
-        DESCRIPTION. The default is 7.
+        DESCRIPTION. The default is 6.
     fig_w : int, optional
-        DESCRIPTION. The default is 5.
+        DESCRIPTION. The default is 4.
     font_size : int, optional
         DESCRIPTION. The default is 16.
     max_length : int, optional
@@ -558,8 +566,8 @@ def gene_annotation_cell_type_genes(cell_type: str = None,
 def annotation_cluster_genes_by_curves(curves_activities: pd.DataFrame = None,
                                        cell_type: str = None,
                                        num_gos: int = 10,
-                                       fig_h: int = 7,
-                                       fig_w: int = 5,
+                                       fig_h: int = 6,
+                                       fig_w: int = 4,
                                        max_length: int = 50,
                                        sources: list = ['GO:CC', 'GO:PB', 'GO:MF'],
                                        path_to_results: str = 'Results_PILOT/',
@@ -576,9 +584,9 @@ def annotation_cluster_genes_by_curves(curves_activities: pd.DataFrame = None,
     num_gos : int, optional
         DESCRIPTION. The default is 10.
     fig_h : int, optional
-        DESCRIPTION. The default is 7.
+        DESCRIPTION. The default is 6.
     fig_w : int, optional
-        DESCRIPTION. The default is 5.
+        DESCRIPTION. The default is 4.
     max_length : int, optional
         DESCRIPTION. The default is 50.
     sources : list, optional
@@ -609,22 +617,237 @@ def annotation_cluster_genes_by_curves(curves_activities: pd.DataFrame = None,
         else:
             print("No information for cluster " + str(c) + "!")
     
+def  plot_top_genes_patterns(rank_genes: pd.DataFrame,
+                             pseudotime_sample_names: pd.DataFrame,
+                             cell_type: str,
+                             curves: pd.DataFrame,
+                             sample_col: str = 'sampleID',
+                             time_col: str = 'Time_score',
+                             path_to_results: str = 'Results_PILOT/',
+                             plot_color: str = 'tab:orange',
+                             points_color: str = 'viridis',
+                             fontsize: str = 14):
+    """
     
+
+    Parameters
+    ----------
+    rank_genes : pd.DataFrame
+        DESCRIPTION.
+    pseudotime_sample_names : pd.DataFrame
+        DESCRIPTION.
+    cell_type : str
+        DESCRIPTION.
+    curves : pd.DataFrame
+        DESCRIPTION.
+    sample_col : str, optional
+        DESCRIPTION. The default is 'sampleID'.
+    time_col : str, optional
+        DESCRIPTION. The default is 'Time_score'.
+    path_to_results : str, optional
+        DESCRIPTION. The default is 'Results_PILOT/'.
+    plot_color : TYPE, optional
+        DESCRIPTION. The default is 'tab:orange'.
+    points_color : TYPE, optional
+        DESCRIPTION. The default is 'viridis'.
+    fontsize : TYPE, optional
+        DESCRIPTION. The default is 14.
+
+    Returns
+    -------
+    None.
+
+    """
+    
+    n_clusters = np.unique(rank_genes['cluster'])
+    rank_genes.sort_values(['Terminal_logFC', 'Terminal_pvalue'],
+                           ascending=[True, False], inplace = True, key = abs)
+    rank_genes['rank'] = rank_genes.groupby('cluster').cumcount(ascending=True)
+    
+    cells = pd.read_csv(path_to_results + "/cells/" + str(cell_type) + ".csv",
+                        usecols = np.concatenate((np.array([sample_col, time_col]), rank_genes.index.values)))
+    
+    scaler = StandardScaler()
+    scaled_cells = pd.DataFrame(scaler.fit_transform(cells.iloc[:, 2:]))
+    scaled_cells.columns = cells.iloc[:, 2:].columns
+    scaled_cells.index = cells.iloc[:, 2:].index
+    scaled_cells[[sample_col, time_col]] = cells[[sample_col, time_col]].values
+
+    table = pd.read_csv(path_to_results + "/Markers/" + str(cell_type) + "/Whole_expressions.csv", index_col = 0)
+    table.index = table['Gene ID']
+    table = table.loc[rank_genes.index]
+    
+    n_px = 10
+
+    fig, axes = plt.subplots(10, len(n_clusters), constrained_layout = True,
+                             figsize = (len(n_clusters) * n_px * 2, 10 * n_px))
+    
+    for c in n_clusters:
+        for g in range(10):
+            if (rank_genes[['cluster','rank']].values == [c, g]).all(axis=1).any():
+                gene_name = rank_genes[(rank_genes[['cluster','rank']].values == [c, g]).all(axis=1)].index.values[0]
+                axes[g, c - 1].scatter(scaled_cells[time_col], scaled_cells[gene_name], c = scaled_cells[gene_name],
+                                       alpha = 0.5, cmap = points_color, s = 100 * len(n_clusters),
+                                       norm = pltcolors.CenteredNorm(np.mean(scaled_cells[gene_name])))
+                
+                
+                axes[g, c - 1].plot(pseudotime_sample_names.index.values, curves.loc[gene_name],
+                                    c = plot_color, linewidth = 6.0)
+                axes[g, c - 1].set_xticklabels(axes[g, c - 1].get_xticks().astype(int))
+
+                axes[g, c - 1].set_title(gene_name, size = fontsize * len(n_clusters), weight = 'bold')
+
+                for item in (axes[g, c - 1].get_xticklabels() + axes[g, c - 1].get_yticklabels()):
+                        item.set_fontsize( (fontsize - 2) * len(n_clusters))
+
+                if(float(table.loc[gene_name, 'Slope']) > 0):
+                    axes[g, c - 1].text(.01, .99, 'adj. p-value = %.2e \n$R^{2}$ = %.2f' % (Decimal(table.loc[gene_name, 'adjusted P-value']),
+                                                                                      table.loc[gene_name, 'mod_rsquared_adj'] ),
+                                  ha = 'left', va = 'top',
+                                  transform=axes[g, c - 1].transAxes, size = (fontsize - 2) * len(n_clusters))
+                else:
+                    axes[g, c - 1].text(.99, .99, 'adj. p-value = %.2e\n$R^{2}$ = %.2f' % (Decimal(table.loc[gene_name, 'adjusted P-value']),
+                                                                                      table.loc[gene_name, 'mod_rsquared_adj'] ),
+                                  ha = 'right', va = 'top',
+                                  transform=axes[g, c - 1].transAxes, size = (fontsize - 2) * len(n_clusters))
+                
+                if c == 1:
+                    axes[g, c - 1].set_ylabel('Gene expression', size = (fontsize - 2) * len(n_clusters))
+            else:
+                axes[g, c - 1].set_axis_off()
+    
+    plt.show()
+  
+def plot_gene_list_pattern(gene_list: list,
+                            cell_type: str,
+                            sample_col: str = 'sampleID',
+                            time_col: str = 'Time_score',
+                            path_to_results: str = 'Results_PILOT/',
+                            plot_color: str = 'tab:orange',
+                            points_color: str = 'viridis',
+                            fontsize = 14):
+    """
+    
+
+    Parameters
+    ----------
+    gene_list : list
+        DESCRIPTION.
+    cell_type : str
+        DESCRIPTION.
+    sample_col : str, optional
+        DESCRIPTION. The default is 'sampleID'.
+    time_col : str, optional
+        DESCRIPTION. The default is 'Time_score'.
+    path_to_results : str, optional
+        DESCRIPTION. The default is 'Results_PILOT/'.
+    plot_color : str, optional
+        DESCRIPTION. The default is 'tab:orange'.
+    points_color : str, optional
+        DESCRIPTION. The default is 'viridis'.
+    fontsize : TYPE, optional
+        DESCRIPTION. The default is 14.
+
+    Returns
+    -------
+    Plot
+        Plot genes pattern for specific cell type
+
+    """
+    
+    if len(gene_list) > len(set(gene_list)):
+        return "The gene list is not unique!"
+    
+    try:
+        cells = pd.read_csv(path_to_results + "/cells/" + str(cell_type) + ".csv",
+                                usecols = np.concatenate((np.array([sample_col, time_col]), gene_list)))
+    except ValueError:
+        return "Some of the genes are not exists in cell type " + str(cell_type) + "!"
+        
+    scaler = StandardScaler()
+    scaled_cells = pd.DataFrame(scaler.fit_transform(cells.iloc[:, 2:]))
+    scaled_cells.columns = cells.iloc[:, 2:].columns
+    scaled_cells.index = cells.iloc[:, 2:].index
+    scaled_cells[[sample_col, time_col]] = cells[[sample_col, time_col]].values
+    
+    try:
+        table = pd.read_csv(path_to_results + "/Markers/" + str(cell_type) + "/Whole_expressions.csv", index_col = 0)
+        table.index = table['Gene ID']
+        table = table.loc[gene_list]
+    except KeyError:
+        return "There is no good fit for some of the genes!"
+    
+    # Get the pseudotime points
+    pseudotime_sample_names = cells[['sampleID', 'Time_score']].groupby('Time_score').first()
+    pseudotime_sample_names = pseudotime_sample_names.sort_index()
+    
+    # Get curves of each gene
+    curves = make_curves(table, pseudotime_sample_names.index.values)
+    
+    scaler = StandardScaler()
+    scaled_curves = pd.DataFrame(scaler.fit_transform(curves.transpose()).transpose())
+    scaled_curves.columns = curves.columns
+    scaled_curves.index = curves.index
+    
+    n_px = 5
+    n_clusters = range(3)
+    
+    fig, axes = plt.subplots(int(np.ceil(len(gene_list) / 3)), len(n_clusters), constrained_layout = True,
+                             figsize=(len(n_clusters) * n_px * 2, int(np.ceil(len(gene_list) / 3)) * len(n_clusters) * n_px / 2))
+    axes = np.atleast_2d(axes)
+    
+    
+    for c in n_clusters:
+        for g in range(int(np.ceil(len(gene_list) / 3))):
+            if (g * len(n_clusters) + c) < len(gene_list):
+                gene_name = gene_list[g * len(n_clusters) + c]
+                axes[g, c].scatter(scaled_cells[time_col], scaled_cells[gene_name], c = scaled_cells[gene_name],
+                                       alpha = 0.5, cmap = points_color, s = 100 * len(n_clusters),
+                                       norm = pltcolors.CenteredNorm(np.mean(scaled_cells[gene_name])))
+                
+                
+                axes[g, c].plot(pseudotime_sample_names.index.values, scaled_curves.loc[gene_name],
+                                    c = plot_color, linewidth = 6.0)
+                axes[g, c].set_xticklabels(axes[g, c].get_xticks().astype(int))
+    
+                axes[g, c].set_title(gene_name, size = fontsize * len(n_clusters), weight = 'bold')
+    
+                for item in (axes[g, c].get_xticklabels() + axes[g, c].get_yticklabels()):
+                        item.set_fontsize( (fontsize - 2) * len(n_clusters))
+    
+                if(float(table.loc[gene_name, 'Slope']) > 0):
+                    axes[g, c].text(.01, .99, 'adj. p-value = %.2e \n$R^{2}$ = %.2f' % (Decimal(table.loc[gene_name, 'adjusted P-value']),
+                                                                                      table.loc[gene_name, 'mod_rsquared_adj'] ),
+                                  ha = 'left', va = 'top',
+                                  transform=axes[g, c].transAxes, size = (fontsize - 2) * len(n_clusters))
+                else:
+                    axes[g, c].text(.99, .99, 'adj. p-value = %.2e\n$R^{2}$ = %.2f' % (Decimal(table.loc[gene_name, 'adjusted P-value']),
+                                                                                      table.loc[gene_name, 'mod_rsquared_adj'] ),
+                                    ha = 'right', va = 'top',
+                                    transform=axes[g, c].transAxes, size = (fontsize - 2) * len(n_clusters))
+                
+                if c == 1:
+                    axes[g, c].set_ylabel('Gene expression', size = (fontsize - 2) * len(n_clusters))
+            else:
+                axes[g, c].set_axis_off()
+    
+    plt.show()  
+  
 def genes_selection_analysis(
-        adata: ad.AnnData = None,
-        cell_type: str = None,
+        adata: ad.AnnData,
+        cell_type: str,
         filter_table_feature: str = 'R-squared',
         filter_table_feature_pval: str = 'adjusted P-value',
         table_filter_thr: float = 0.05,
         table_filter_pval_thr: float = 0.05,
-        cluster_method: str = 'average',
-        cluster_metric: str = 'euclidean',
+        cluster_method: str = 'complete',
+        cluster_metric: str = 'correlation',
         scaler_value: float = 0.4,
         cmap_color: str = 'RdBu_r',
         figsize: tuple = (7, 9),
         num_gos: int = 10,
-        fig_h: int = 7,
-        fig_w: int = 5,
+        fig_h: int = 6,
+        fig_w: int = 4,
         max_length: int = 50,
         sources: list = ['GO:CC', 'GO:PB', 'GO:MF'],
         fontsize: int = 14,
@@ -635,10 +858,10 @@ def genes_selection_analysis(
 
     Parameters
     ----------
-    adata : ad.AnnData, optional
-        DESCRIPTION. The default is None.
-    cell_type : str, optional
-        DESCRIPTION. The default is None.
+    adata : ad.AnnData
+        DESCRIPTION.
+    cell_type : str
+        DESCRIPTION.
     filter_table_feature : str, optional
         DESCRIPTION. The default is 'R-squared'.
     filter_table_feature_pval : str, optional
@@ -679,12 +902,12 @@ def genes_selection_analysis(
     """
 
     print("Filter genes based on R-square and p-value...")
-    noised_curves, pseudotime_sample_names = get_noised_curves(adata, cell_type,
-                                                               filter_table_feature,
-                                                               filter_table_feature_pval,
-                                                               table_filter_thr,
-                                                               table_filter_pval_thr,
-                                                               path_to_results)
+    curves, noised_curves, pseudotime_sample_names = get_noised_curves(adata, cell_type,
+                                                                       filter_table_feature,
+                                                                       filter_table_feature_pval,
+                                                                       table_filter_thr,
+                                                                       table_filter_pval_thr,
+                                                                       path_to_results)
 
     print("Cluster genes using hierarchical clustering... ")
     genes_clusters = cluster_genes_curves(noised_curves,
@@ -708,7 +931,10 @@ def genes_selection_analysis(
     curves_activities = compute_curves_activities(noised_curves, genes_clusters,
                                                   pseudotime_sample_names,
                                                   cell_type, path_to_results)
-    plot_rank_genes_cluster(curves_activities, fontsize)
+    rank_genes = plot_rank_genes_cluster(curves_activities, fontsize)
+    
+    plot_top_genes_patterns(rank_genes, pseudotime_sample_names, cell_type, curves,
+                            path_to_results = path_to_results, fontsize = fontsize)
     
     annotation_cluster_genes_by_curves(curves_activities, cell_type, num_gos,
                                        fig_h, fig_w, max_length, sources,
