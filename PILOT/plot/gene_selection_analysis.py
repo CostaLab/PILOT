@@ -22,6 +22,8 @@ from gprofiler import GProfiler
 import textwrap as tw
 import matplotlib.colors as pltcolors
 from decimal import Decimal
+import json
+import requests
 
 from .curve_activity import _curvesnamic_network_char_terminal_logfc_, \
     _curvesnamic_network_char_transient_logfc_, \
@@ -429,7 +431,9 @@ def plot_rank_genes_cluster(curves_activities: pd.DataFrame = None,
 
     """
     
-    rank_genes = curves_activities.sort_values('Terminal_pvalue').groupby('cluster').head(10)
+    rank_genes = curves_activities.sort_values(['Terminal_logFC', 'Terminal_pvalue'],
+                                               ascending=[False, True],
+                                               key = abs).groupby('cluster').head(10)
     clusters = rank_genes['cluster']
     n_clusters = np.unique(clusters)
     
@@ -446,8 +450,8 @@ def plot_rank_genes_cluster(curves_activities: pd.DataFrame = None,
     for ticker, ax in zip(tickers, my_axs):
     
         my_data = rank_genes[rank_genes['cluster'] == ticker].copy()
-        my_data.sort_values(['Terminal_logFC', 'Terminal_pvalue'], ascending=[True, False],
-                                inplace = True, key = abs)
+        my_data.sort_values(['Terminal_logFC', 'Terminal_pvalue'],
+                            ascending=[True, False], inplace = True, key = abs)
         my_data['log_pval'] = -np.log10(my_data['Terminal_pvalue'].values)
     
         x = my_data['log_pval'].values
@@ -462,7 +466,8 @@ def plot_rank_genes_cluster(curves_activities: pd.DataFrame = None,
     
         ax.scatter(x, y + 0.05, color = 'k', s = 10)
         for i, txt in enumerate(txts):
-            ax.annotate(txt, (x[i] + 0.05, y[i]), ha = 'left', fontsize = fontsize - 2)
+            ax.annotate(txt, (x[i] + 0.05, y[i]), ha = 'left',
+                        fontsize = fontsize - 2)
     
         margin = 1
         ax.set_xlim(0, np.ceil(np.max(x)) + margin)
@@ -493,7 +498,6 @@ def gene_annotation_cell_type_genes(cell_type: str = None,
                                     ):
     """
     
-
     Parameters
     ----------
     cell_type : str, optional
@@ -801,33 +805,42 @@ def plot_gene_list_pattern(gene_list: list,
         for g in range(int(np.ceil(len(gene_list) / 3))):
             if (g * len(n_clusters) + c) < len(gene_list):
                 gene_name = gene_list[g * len(n_clusters) + c]
-                axes[g, c].scatter(scaled_cells[time_col], scaled_cells[gene_name], c = scaled_cells[gene_name],
-                                       alpha = 0.5, cmap = points_color, s = 100 * len(n_clusters),
-                                       norm = pltcolors.CenteredNorm(np.mean(scaled_cells[gene_name])))
+                axes[g, c].scatter(scaled_cells[time_col],
+                                   scaled_cells[gene_name],
+                                   c = scaled_cells[gene_name],
+                                   alpha = 0.5, cmap = points_color,
+                                   s = 100 * len(n_clusters),
+                                   norm = pltcolors.CenteredNorm(np.mean(scaled_cells[gene_name])))
                 
                 
-                axes[g, c].plot(pseudotime_sample_names.index.values, scaled_curves.loc[gene_name],
-                                    c = plot_color, linewidth = 6.0)
+                axes[g, c].plot(pseudotime_sample_names.index.values,
+                                scaled_curves.loc[gene_name],
+                                c = plot_color, linewidth = 6.0)
                 axes[g, c].set_xticklabels(axes[g, c].get_xticks().astype(int))
     
-                axes[g, c].set_title(gene_name, size = fontsize * len(n_clusters), weight = 'bold')
+                axes[g, c].set_title(gene_name,
+                                     size = (fontsize - 2) * len(n_clusters),
+                                     weight = 'bold')
     
                 for item in (axes[g, c].get_xticklabels() + axes[g, c].get_yticklabels()):
-                        item.set_fontsize( (fontsize - 2) * len(n_clusters))
+                        item.set_fontsize( (fontsize - 4) * len(n_clusters))
     
                 if(float(table.loc[gene_name, 'Slope']) > 0):
                     axes[g, c].text(.01, .99, 'adj. p-value = %.2e \n$R^{2}$ = %.2f' % (Decimal(table.loc[gene_name, 'adjusted P-value']),
                                                                                       table.loc[gene_name, 'mod_rsquared_adj'] ),
                                   ha = 'left', va = 'top',
-                                  transform=axes[g, c].transAxes, size = (fontsize - 2) * len(n_clusters))
+                                  transform=axes[g, c].transAxes,
+                                  size = (fontsize - 4) * len(n_clusters))
                 else:
                     axes[g, c].text(.99, .99, 'adj. p-value = %.2e\n$R^{2}$ = %.2f' % (Decimal(table.loc[gene_name, 'adjusted P-value']),
                                                                                       table.loc[gene_name, 'mod_rsquared_adj'] ),
                                     ha = 'right', va = 'top',
-                                    transform=axes[g, c].transAxes, size = (fontsize - 2) * len(n_clusters))
+                                    transform=axes[g, c].transAxes,
+                                    size = (fontsize - 4) * len(n_clusters))
                 
-                if c == 1:
-                    axes[g, c].set_ylabel('Gene expression', size = (fontsize - 2) * len(n_clusters))
+                if c == 0:
+                    axes[g, c].set_ylabel('Gene expression',
+                                          size = (fontsize - 4) * len(n_clusters))
             else:
                 axes[g, c].set_axis_off()
     
@@ -939,3 +952,458 @@ def genes_selection_analysis(
     annotation_cluster_genes_by_curves(curves_activities, cell_type, num_gos,
                                        fig_h, fig_w, max_length, sources,
                                        path_to_results, fontsize)
+
+def genes_selection_heatmap(
+        adata: ad.AnnData,
+        cell_type: str,
+        filter_table_feature: str = 'R-squared',
+        filter_table_feature_pval: str = 'adjusted P-value',
+        table_filter_thr: float = 0.05,
+        table_filter_pval_thr: float = 0.05,
+        cluster_method: str = 'complete',
+        cluster_metric: str = 'correlation',
+        scaler_value: float = 0.4,
+        cmap_color: str = 'RdBu_r',
+        figsize: tuple = (7, 9),
+        fontsize: int = 14,
+        path_to_results: str = 'Results_PILOT/'
+    ):
+    """
+    
+
+    Parameters
+    ----------
+    adata : ad.AnnData
+        DESCRIPTION.
+    cell_type : str
+        DESCRIPTION.
+    filter_table_feature : str, optional
+        DESCRIPTION. The default is 'R-squared'.
+    filter_table_feature_pval : str, optional
+        DESCRIPTION. The default is 'adjusted P-value'.
+    table_filter_thr : float, optional
+        DESCRIPTION. The default is 0.05.
+    table_filter_pval_thr : float, optional
+        DESCRIPTION. The default is 0.05.
+    cluster_method : str, optional
+        DESCRIPTION. The default is 'complete'.
+    cluster_metric : str, optional
+        DESCRIPTION. The default is 'correlation'.
+    scaler_value : float, optional
+        DESCRIPTION. The default is 0.4.
+    cmap_color : str, optional
+        DESCRIPTION. The default is 'RdBu_r'.
+    figsize : tuple, optional
+        DESCRIPTION. The default is (7, 9).
+    fontsize : int, optional
+        DESCRIPTION. The default is 14.
+    path_to_results : str, optional
+        DESCRIPTION. The default is 'Results_PILOT/'.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    print("Filter genes based on R-square and p-value...")
+    curves, noised_curves, pseudotime_sample_names = get_noised_curves(adata, cell_type,
+                                                                       filter_table_feature,
+                                                                       filter_table_feature_pval,
+                                                                       table_filter_thr,
+                                                                       table_filter_pval_thr,
+                                                                       path_to_results)
+
+    print("Cluster genes using hierarchical clustering... ")
+    genes_clusters = cluster_genes_curves(noised_curves,
+                                          cluster_method,
+                                          cluster_metric,
+                                          scaler_value)
+
+    print("Compute curves activities... ")
+    print("Save curves activities... ")
+    curves_activities = compute_curves_activities(noised_curves, genes_clusters,
+                              pseudotime_sample_names,
+                              cell_type, path_to_results)
+
+    print("Plot the heatmap of genes clustered... ")
+    plot_heatmap_curves(noised_curves, genes_clusters,
+                        cluster_method, cluster_metric,
+                        cmap_color, figsize, fontsize)
+    
+    adata.uns['gene_selection_heatmap'] = {'cell_type': cell_type,
+                                           'curves': curves,
+                                           'noised_curves': noised_curves,
+                                           'pseudotime_sample_names': pseudotime_sample_names,
+                                           'curves_activities': curves_activities}
+
+    
+
+    
+def plot_rank_genes_cluster_specific(adata: ad.AnnData,
+                                     cell_type: str,
+                                     cluster: int,
+                                     fontsize: int = 14):
+    """
+    
+
+    Parameters
+    ----------
+    adata : ad.AnnData
+        DESCRIPTION.
+    cell_type : str
+        DESCRIPTION.
+    cluster : int
+        DESCRIPTION.
+    fontsize : int, optional
+        DESCRIPTION. The default is 14.
+
+    Returns
+    -------
+    str
+        DESCRIPTION.
+
+    """
+    
+    save_cell_type = adata.uns['gene_selection_heatmap']['cell_type']
+    if save_cell_type == cell_type:
+        curves_activities = adata.uns['gene_selection_heatmap']['curves_activities']
+        if cluster in curves_activities['cluster'].values:
+            
+            fig, axs = plt.subplots(nrows = 1, ncols = 2, figsize = (2 * 3, 3))
+            
+            ### plot average cluster pattern
+            cluster_features = curves_activities[curves_activities['cluster'] == cluster].index.values
+            curves = adata.uns['gene_selection_heatmap']['noised_curves']
+            pseudotime_sample_names = adata.uns['gene_selection_heatmap']['pseudotime_sample_names']
+            
+            curves_mean = curves.loc[cluster_features].mean()
+            curves_std = curves.loc[cluster_features].std()
+        
+            axs[0].plot(pseudotime_sample_names.index, curves_mean, '-')
+            
+            axs[0].xaxis.set_major_locator(tick.NullLocator())
+            axs[0].yaxis.set_major_locator(tick.NullLocator())
+            
+            if(len(cluster_features) < 40 and len(cluster_features) >= 30):
+                alpha = 2.042
+            elif(len(cluster_features) < 60 and len(cluster_features) >= 40):
+                alpha = 2.021
+            elif(len(cluster_features) < 80 and len(cluster_features) >= 60):
+                alpha = 2.0
+            elif(len(cluster_features) < 100 and len(cluster_features) >= 80):
+                alpha = 1.99
+            elif(len(cluster_features) < 1000 and len(cluster_features) >= 100):
+                alpha = 1.984
+            else:
+                alpha = 1.962
+                 
+            axs[0].fill_between(pseudotime_sample_names.index,
+                            curves_mean - alpha * (curves_std),
+                            curves_mean + alpha * (curves_std),
+                            alpha = 0.2)
+            axs[0].set_title('cluster {}'.format(cluster), fontsize = fontsize)
+        
+            axs[0].set_ylabel('gene expression', fontsize = fontsize)
+            axs[0].set_xlabel('disease progression', fontsize = fontsize)
+            
+            ### plot top 10 genes of cluster
+            rank_genes = curves_activities[curves_activities['cluster'] == cluster].sort_values(['Terminal_logFC',
+                                                                                                 'Terminal_pvalue'],
+                                                   ascending=[False, True],
+                                                   key = abs).head(10)
+        
+            
+            my_data = rank_genes.copy()
+            my_data.sort_values(['Terminal_logFC', 'Terminal_pvalue'],
+                                ascending=[True, False], inplace = True, key = abs)
+            my_data['log_pval'] = -np.log10(my_data['Terminal_pvalue'].values)
+        
+            x = my_data['log_pval'].values
+            y = my_data['Terminal_logFC'].values
+            txts = my_data.index.values
+        
+            start = 0
+            step = 1
+            num = len(y)
+        
+            y = start + np.arange(0, num) * step
+        
+            axs[1].scatter(x, y + 0.05, color = 'k', s = 10)
+            for i, txt in enumerate(txts):
+                axs[1].annotate(txt, (x[i] + 0.05, y[i]), ha = 'left',
+                                fontsize = fontsize - 2)
+        
+            margin = 1
+            axs[1].set_xlim(0, np.ceil(np.max(x)) + margin)
+            axs[1].set_ylim(-0.1, num * step + 0.2)
+        
+            axs[1].set_xlabel('$-log_{10}$(p-value)', fontsize = fontsize - 2)
+            axs[1].set_ylabel('rank', fontsize = fontsize - 2)
+            axs[1].tick_params(axis='x', labelsize = fontsize - 2)
+            axs[1].tick_params(axis='y', labelsize = fontsize - 2)
+        
+            axs[1].set_title('cluster {}'.format(cluster), fontsize = fontsize)
+        
+            plt.tight_layout()
+            plt.show()
+            
+            
+        else:
+            return "The cluster does not exist!"
+    else:
+        return "Please run the funtion genes_selection_heatmap first!"
+    
+    
+    
+def plot_top_genes_patterns_cluster_specific(adata: ad.AnnData,
+                                             cell_type: str,
+                                             cluster: int,
+                                             sample_col: str = 'sampleID',
+                                             time_col: str = 'Time_score',
+                                             plot_color: str = 'tab:orange',
+                                             points_color: str = 'viridis',
+                                             fontsize: int = 14,
+                                             path_to_results: str = 'Results_PILOT/'):
+    """
+    
+
+    Parameters
+    ----------
+    adata : ad.AnnData
+        DESCRIPTION.
+    cell_type : str
+        DESCRIPTION.
+    cluster : int
+        DESCRIPTION.
+    sample_col : str, optional
+        DESCRIPTION. The default is 'sampleID'.
+    time_col : str, optional
+        DESCRIPTION. The default is 'Time_score'.
+    plot_color : str, optional
+        DESCRIPTION. The default is 'tab:orange'.
+    points_color : str, optional
+        DESCRIPTION. The default is 'viridis'.
+    fontsize : int, optional
+        DESCRIPTION. The default is 14.
+    path_to_results : str, optional
+        DESCRIPTION. The default is 'Results_PILOT/'.
+
+    Returns
+    -------
+    str
+        DESCRIPTION.
+
+    """
+    save_cell_type = adata.uns['gene_selection_heatmap']['cell_type']
+    if save_cell_type == cell_type:
+    
+        curves_activities = adata.uns['gene_selection_heatmap']['curves_activities']
+        if cluster in curves_activities['cluster'].values:
+            rank_genes = curves_activities[curves_activities['cluster'] == cluster]
+            rank_genes = rank_genes.sort_values(['Terminal_logFC', 'Terminal_pvalue'], 
+                                                ascending = [False, True], key = abs).head(10)
+            
+                
+            my_data = rank_genes.copy()
+            my_data.sort_values(['Terminal_logFC', 'Terminal_pvalue'],
+                                ascending=[True, False], inplace = True, key = abs)
+            plot_gene_list_pattern(my_data.index, cell_type,
+                                   sample_col, time_col, path_to_results,
+                                   plot_color, points_color, fontsize)
+        else:
+            return "The cluster does not exist!"
+    else:
+        return "Please run the funtion genes_selection_heatmap first!"
+    
+def annotation_genes_cluster_specific(adata: ad.AnnData,
+                                      cell_type: str,
+                                      cluster: int,
+                                      num_gos: int = 10,
+                                      fig_h: int = 6,
+                                      fig_w: int = 4,
+                                      max_length: int = 50,
+                                      sources: list = ['GO:CC', 'GO:PB', 'GO:MF'],
+                                      fontsize: int = 14,
+                                      path_to_results: str = 'Results_PILOT/'):
+    """
+    
+
+    Parameters
+    ----------
+    adata : ad.AnnData
+        DESCRIPTION.
+    cell_type : str
+        DESCRIPTION.
+    cluster : int
+        DESCRIPTION.
+    num_gos : int, optional
+        DESCRIPTION. The default is 10.
+    fig_h : int, optional
+        DESCRIPTION. The default is 6.
+    fig_w : int, optional
+        DESCRIPTION. The default is 4.
+    max_length : int, optional
+        DESCRIPTION. The default is 50.
+    sources : list, optional
+        DESCRIPTION. The default is ['GO:CC', 'GO:PB', 'GO:MF'].
+    fontsize : int, optional
+        DESCRIPTION. The default is 14.
+    path_to_results : str, optional
+        DESCRIPTION. The default is 'Results_PILOT/'.
+
+    Returns
+    -------
+    str
+        DESCRIPTION.
+
+    """
+    save_cell_type = adata.uns['gene_selection_heatmap']['cell_type']
+    if save_cell_type == cell_type:
+    
+        curves_activities = adata.uns['gene_selection_heatmap']['curves_activities']
+        genes = curves_activities.loc[curves_activities['cluster'] == cluster].index.values
+        gprofiler_results = gene_annotation_cell_type_genes(cell_type, genes, "cluster " + str(cluster),
+                                                            num_gos, fig_h, fig_w,
+                                                            fontsize, max_length,
+                                                            sources)
+        
+        if type(gprofiler_results) != str:
+            save_path = path_to_results + "/Markers/" + str(cell_type) + "/GOs/"
+            if not os.path.exists(save_path):
+                os.makedirs(save_path)
+            gprofiler_results.to_csv(save_path + "/cluster_" + str(cluster) + ".csv")
+        else:
+            print("No information for cluster " + str(cluster) + "!")
+    else:
+        return "Please run the funtion genes_selection_heatmap first!"
+
+def star_sig(x):
+    if x < 0.001:
+        return "**"
+    elif x < 0.01:
+        return "*"
+    else:
+        return 
+        
+def plot_hallmark_genes_clusters(adata: ad.AnnData,
+                                 cell_type: str,
+                                 gene_set_library: str = 'MSigDB_Hallmark_2020',
+                                 cmap: str = 'coolwarm',
+                                 font_size: int = 14):
+    """
+    
+
+    Parameters
+    ----------
+    adata : ad.AnnData
+        DESCRIPTION.
+    cell_type : str
+        DESCRIPTION.
+    gene_set_library : str, optional
+        DESCRIPTION. The default is 'MSigDB_Hallmark_2020'.
+    cmap : str, optional
+        DESCRIPTION. The default is 'coolwarm'.
+    font_size : int, optional
+        DESCRIPTION. The default is 14.
+
+    Raises
+    ------
+    Exception
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
+    save_cell_type = adata.uns['gene_selection_heatmap']['cell_type']
+    if save_cell_type == cell_type:
+        curves_activities = adata.uns['gene_selection_heatmap']['curves_activities']
+        col_names = ['rank', 'term', 'p-value', 'odds ratio', 'combined score',
+                     'evidence genes', 'q-value', 'unknown1', 'unknown2']
+        
+        GO_terms = pd.DataFrame(columns = col_names)
+        for cluster in np.unique(curves_activities['cluster']):
+            ENRICHR_URL = 'https://maayanlab.cloud/Enrichr/addList'
+            genes_str = '\n'.join(curves_activities[curves_activities['cluster'] == cluster].index.values)
+            description = 'Example gene list'
+            payload = {
+                'list': (None, genes_str),
+                'description': (None, description)
+            }
+            
+            response = requests.post(ENRICHR_URL, files=payload)
+            if not response.ok:
+                raise Exception('Error analyzing gene list')
+            
+            data = json.loads(response.text)
+            
+            ENRICHR_URL = 'https://maayanlab.cloud/Enrichr/enrich'
+            query_string = '?userListId=%s&backgroundType=%s'
+            user_list_id = data['userListId']
+            gene_set_library = gene_set_library#'MSigDB_Hallmark_2020'#'KEGG_2021_Human'
+            response = requests.get(
+                ENRICHR_URL + query_string % (user_list_id, gene_set_library)
+             )
+            if not response.ok:
+                raise Exception('Error fetching enrichment results')
+            
+            data = json.loads(response.text)
+            data_df = pd.DataFrame(data[gene_set_library], columns = col_names)
+            data_df['cluster'] = cluster
+            GO_terms = pd.concat([GO_terms, data_df])
+            
+        GO_terms['cluster'] = GO_terms['cluster'].astype(int)
+        GO_terms_clusters = pd.DataFrame(0, index = np.unique(GO_terms['term']), columns = np.unique(curves_activities['cluster']))
+        for cluster in np.unique(curves_activities['cluster']):
+            data = GO_terms[GO_terms['cluster'] == cluster]
+            data.index = data['term'].values
+            GO_terms_clusters.loc[data.index, cluster] = data['combined score'].values
+            
+        
+        scaler = StandardScaler()
+        scaled_GO_terms_clusters = pd.DataFrame(scaler.fit_transform(GO_terms_clusters.transpose()).transpose())
+        scaled_GO_terms_clusters.columns = GO_terms_clusters.columns
+        scaled_GO_terms_clusters.index = GO_terms_clusters.index
+        
+        GO_terms_annot = pd.DataFrame(0, index = np.unique(GO_terms['term']), columns = np.unique(curves_activities['cluster']))
+        for cluster in np.unique(curves_activities['cluster']):
+            data = GO_terms[GO_terms['cluster'] == cluster]
+            data.index = data['term'].values
+            GO_terms_annot.loc[data.index, cluster] = data['q-value'].values
+            
+        
+        plt.figure(figsize=(scaled_GO_terms_clusters.shape[1],
+                            int(np.round(scaled_GO_terms_clusters.shape[0]/3))))
+        plt.title("{}".format(gene_set_library))
+        g = sns.heatmap(scaled_GO_terms_clusters.sort_values(list(scaled_GO_terms_clusters.columns[::-1])),
+                        cmap = cmap,
+                        cbar_kws={"shrink": 0.3, 'label': 'Z-scaled score'},
+                        yticklabels = True, center = 0, vmin = -1.5, vmax = 1.5,
+                        annot = GO_terms_annot.map(star_sig).fillna(""), fmt="")
+        g.set_xticklabels(g.get_xmajorticklabels(), fontsize = font_size);
+        g.set_yticklabels(g.get_ymajorticklabels(), fontsize = font_size);    
+    else:
+        return "Please run the funtion genes_selection_heatmap first!"
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
