@@ -1,0 +1,27 @@
+version: 2
+formats: []
+
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.8"
+  # image: latest
+  apt_packages:
+    - make
+    - gcc
+    - libtool
+    - autoconf
+    - automake
+    - libsuitesparse-dev
+
+# Build documentation in the docs/ directory with Sphinx
+sphinx:
+  configuration: docs/source/conf.py
+
+python:
+  install:
+    - requirements: docs/requirements.txt
+    - method: pip
+      path: .
+      extra_requirements:
+        - docs
