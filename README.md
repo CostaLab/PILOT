@@ -52,7 +52,8 @@ Once you've completed these steps, you can proceed to run the tutorials and expl
 When doing so, remember to move to the tutorial folder, as all the work will be performed there:
 
 ```terminal
-cd Tutorial
+git clone https://github.com/CostaLab/PILOT.git
+cd PILOT/Tutorial
 ```
 
 ## [Tutorial&Data sets](https://pilot.readthedocs.io/en/latest/index.html)
