@@ -35,7 +35,7 @@
 ![plot](./img/plot.png)
 
 
-Current version for PILOT is 2.0.4
+Current version for PILOT is 2.0.6
 
 ## Installation
 The easiest way to install PILOT and the required packages is using the following way:
@@ -44,8 +44,6 @@ The easiest way to install PILOT and the required packages is using the followin
 
 conda create --name PILOT python=3.11.5 r-base
 conda activate PILOT
-conda install -c conda-forge rpy2
-conda install jupyter
 pip install pilotpy
 ```
 Once you've completed these steps, you can proceed to run the tutorials and explore the features of PILOT. 
