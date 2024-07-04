@@ -61,11 +61,20 @@ There are five tutorials, one for [Myocardial Infarction (single cell data)](htt
 
 You can access the used data sets by PILOT in Part 1 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4740646.svg)](https://zenodo.org/records/8370081) and  Part 2 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4740646.svg)](https://zenodo.org/records/7957118)
 
-# References
- PILOT: Detection of PatIent-Level distances from single cell genomics and pathomics data with Optimal Transport (PILOT) [link](https://www.embopress.org/doi/full/10.1038/s44320-023-00003-8)
 
-
-
+## Citation
+```
+@article{joodaki2024detection,
+  title={Detection of PatIent-Level distances from single cell genomics and pathomics data with Optimal Transport (PILOT)},
+  author={Joodaki, Mehdi and Shaigan, Mina and Parra, Victor and B{\"u}low, Roman D and Kuppe, Christoph and H{\"o}lscher, David L and Cheng, Mingbo and Nagai, James S and Goedertier, Micha{\"e}l and Bouteldja, Nassim and others},
+  journal={Molecular systems biology},
+  volume={20},
+  number={2},
+  pages={57--74},
+  year={2024},
+  publisher={Nature Publishing Group UK London}
+}
+```
 
 
 
