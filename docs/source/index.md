@@ -2,7 +2,7 @@
 # Welcome to the exciting world of data analysis with PILOT!
 
 ```{eval-rst}
-..  figure:: img/logo.png
+..  figure:: logo.png
     :scale: 20%
     :align: right
 ```
