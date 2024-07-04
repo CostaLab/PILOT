@@ -27,6 +27,21 @@ cd Tutorial
 ```
 
 
+## Citation
+```
+@article{joodaki2024detection,
+  title={Detection of PatIent-Level distances from single cell genomics and pathomics data with Optimal Transport (PILOT)},
+  author={Joodaki, Mehdi and Shaigan, Mina and Parra, Victor and B{\"u}low, Roman D and Kuppe, Christoph and H{\"o}lscher, David L and Cheng, Mingbo and Nagai, James S and Goedertier, Micha{\"e}l and Bouteldja, Nassim and others},
+  journal={Molecular systems biology},
+  volume={20},
+  number={2},
+  pages={57--74},
+  year={2024},
+  publisher={Nature Publishing Group UK London}
+}
+```
+
+
 
 ```{toctree}
 ---
