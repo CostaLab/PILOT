@@ -19,8 +19,6 @@ Follow these steps to install and set up PILOT:
 ```bash
 conda create --name PILOT python=3.11.5 r-base
 conda activate PILOT
-conda install -c conda-forge rpy2
-conda install jupyter
 pip install pilotpy
 ```
 Once you've completed these steps, you can proceed to run the tutorials and explore the features of PILOT. 
