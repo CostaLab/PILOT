@@ -24,15 +24,15 @@ jobs:
 
       - name: Create Conda environment
         run: |
-          conda env create --name PILOT python=3.11.5 r-base --yes
+          conda env create -f environment.yml
           echo "conda activate PILOT" >> $GITHUB_ENV
 
-      - name: Install dependencies
+      - name: Install additional dependencies
         run: |
-          pip install pilotpy
-          pip install -r docs/requirements.txt
+          conda activate PILOT
+          pip install pilotpy  # Ensure pilotpy is installed
 
       - name: Run tests
         run: |
           conda activate PILOT
-          pytest
+          pytest  # Run your tests
