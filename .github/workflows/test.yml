@@ -1,4 +1,4 @@
-name: Run Tests
+name: CI Workflow
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,13 +24,13 @@ jobs:
 
       - name: Create Conda environment
         run: |
-          conda env create -f environment.yml
+          conda env create --file environment.yml
           conda activate PILOT
 
-      - name: Install additional dependencies
+      - name: Install dependencies
         run: |
-          conda run -n PILOT pip install pilotpy
+          pip install pilotpy
 
       - name: Run tests
         run: |
-          conda run -n PILOT pytest
+          pytest 
