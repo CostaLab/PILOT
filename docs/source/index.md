@@ -44,8 +44,13 @@ cd Tutorial
   publisher={Nature Publishing Group UK London}
 }
 ```
-
-
+```{toctree}
+---
+maxdepth: 2
+caption: API Reference
+---
+api
+```
 
 ```{toctree}
 ---
