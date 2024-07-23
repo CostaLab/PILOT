@@ -1,0 +1,39 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: false
+          miniforge-version: 4.10.3-0
+
+      - name: Create Conda environment
+        run: |
+          conda create --name PILOT python=3.11.5 r-base --yes
+          conda activate PILOT
+
+      - name: Install dependencies
+        run: |
+          conda activate PILOT
+          pip install pilotpy
+
+      - name: Run tests
+        run: |
+          conda activate PILOT
+          #`tests` directory with test files and pytest installed
+          pytest
