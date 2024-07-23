@@ -2,7 +2,7 @@ name: base
 channels:
   - defaults
 dependencies:
-  - python=3.11
+  - python=3.11.5
   - r-base
   - pip
   - pip:
