@@ -1,0 +1,43 @@
+name: Build Documentation
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: false
+          miniforge-version: 4.10.3-0
+
+      - name: Create Conda environment
+        run: |
+          conda create --name PILOT python=3.11.5 r-base --yes
+          conda activate PILOT
+
+      - name: Install dependencies
+        run: |
+          conda activate PILOT
+          pip install -r docs/requirements.txt
+          pip install .
+
+      - name: Build docs
+        run: |
+          conda activate PILOT
+          cd docs
+          make html  # Adjust if your build command is different
+
+      - name: Deploy docs
+        run: |
+          # Deploy your built documentation if needed
+          # e.g., push to a different branch, copy to another location
+          # This step is optional and depends on your deployment needs
