@@ -30,7 +30,7 @@ jobs:
       - name: Install additional dependencies
         run: |
           conda activate PILOT
-          pip install pilotpy  # Ensure pilotpy is installed
+          pip install pilotpy  
 
       - name: Run tests
         run: |
