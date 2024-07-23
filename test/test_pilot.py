@@ -28,9 +28,8 @@ def test_pilot():
     assert len(adata_T.uns['real_labels'])==adata_T.uns['EMD'].shape[1]
     adata_Com = adata_G
     adata_Com.uns['EMD'] = adata_G.uns['EMD'] + adata_T.uns['EMD']
+    pl.pl.trajectory(adata_Com, colors = ['red','blue','orange'])
     pl.pl.fit_pricipla_graph(adata_Com, source_node = 2)
-    pl.pl.heatmaps(adata_T)
-    pl.pl.trajectory(adata_T, colors = ['red','blue','orange'])
     pl.tl.cell_importance(adata_Com, xlim = 125)
     pl.tl.extract_cells_from_pathomics(adata_Com)
     data=pl.tl.norm_morphological_features(
