@@ -2,5 +2,7 @@ myst-parser
 nbsphinx
 sphinx_rtd_theme
 sphinx
+# Additional requirements for your code
+rpy2>=3.5.11
 
 
