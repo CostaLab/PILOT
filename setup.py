@@ -27,7 +27,7 @@ setup(
             "elpigraph-python>=0.3.1,<0.4.0",
             "adjusttext>=0.8,<0.9",
             "gprofiler-official>=1.0.0,<1.1.0",
-            "rpy2>=3.5.11",
+            
             
             
         ],
