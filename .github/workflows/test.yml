@@ -19,14 +19,24 @@ jobs:
       - name: Set up Conda
         uses: conda-incubator/setup-miniconda@v3
         with:
-          auto-activate-base: true
+          auto-activate-base: false  
           miniforge-version: 4.10.3-0
+
+      - name: Create and activate Conda environment
+        run: |
+          conda env create --file environment.yml
+          conda init bash
+          source ~/.bashrc
+          conda activate pilot
 
       - name: Install dependencies
         run: |
-          conda install python=3.11 r-base 
-          pip install pilotpy
+          source ~/.bashrc
+          conda activate pilot
+          pip install -r docs/requirements.txt
 
       - name: Run tests
         run: |
+          source ~/.bashrc
+          conda activate pilot
           pytest  
