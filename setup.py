@@ -6,6 +6,7 @@ setup(
     author='Mehdi Joodaki',
     author_email='judakimehdi@gmail.com',
     url='https://github.com/CostaLab/PILOT',
+    python_requires='>=3.11.5,<3.12',
     install_requires=[
             "cycler>=0.11.0,<0.12.0",
             "joypy>=0.2.6,<0.3.0",
