@@ -3,8 +3,8 @@ import scanpy as sc
 
 def test_pilot():
 
-    adata_T=sc.read_h5ad('../Tutorial/Datasets/Kidney_IgAN_T.h5ad') 
-    adata_G=sc.read_h5ad('../Tutorial/Datasets/Kidney_IgAN_G.h5ad')
+    adata_T=sc.read_h5ad('Tutorial/Datasets/Kidney_IgAN_T.h5ad') 
+    adata_G=sc.read_h5ad('Tutorial/Datasets/Kidney_IgAN_G.h5ad')
     
     pl.tl.wasserstein_distance(
     adata_G,
