@@ -6,8 +6,8 @@ setup(
     author='Mehdi Joodaki',
     author_email='judakimehdi@gmail.com',
     url='https://github.com/CostaLab/PILOT',
-    python_requires='>=3.11.5,<3.12',
     install_requires=[
+          "rpy2>=3.5.11",
            "cycler",
             "gprofiler-official==0.3.5",
             "joypy",
@@ -29,7 +29,7 @@ setup(
             "elpigraph-python",
             "adjusttext",
             "gprofiler-official",
-            "rpy2",
+           
   
         ],
         packages=find_packages()
