@@ -26,7 +26,7 @@ setup(
             "seaborn",
             "shap",
             "statsmodels",
-            "elpigraph-python"
+            "elpigraph-python",
             "adjusttext",
             "gprofiler-official",
             "rpy2",
