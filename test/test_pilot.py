@@ -38,5 +38,5 @@ def test_pilot():
      name_cell = 'All'
         )
     pl.tl.morphological_features_importance(data, height = 10, x_lim = 160, width = 20) 
-    assert len(adata_T.uns['orders']) == adata_Com.uns['orders'].shape[1]
+    assert len(adata_Com.uns['orders']) == adata_T.uns['EMD'].shape[1]
     
