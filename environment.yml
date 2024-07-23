@@ -1,9 +1,8 @@
-name: PILOT
+name: base
 channels:
   - defaults
-  - conda-forge
 dependencies:
-  - python=3.11.5
+  - python=3.11
   - r-base
   - pip
   - pip:
