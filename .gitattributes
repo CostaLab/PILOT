@@ -1,0 +1,2 @@
+*.py linguist-language=Python
+notebooks/* linguist-language=Jupyter Notebook
