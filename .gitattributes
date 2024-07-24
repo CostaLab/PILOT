@@ -1,2 +1,4 @@
+# Prioritize Python over Jupyter Notebook
 *.py linguist-language=Python
-notebooks/* linguist-language=Jupyter Notebook
+*.ipynb linguist-language=Jupyter Notebook
+
