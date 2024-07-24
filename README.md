@@ -2,36 +2,8 @@
 
 [![GitHub license](https://img.shields.io/github/license/CostaLab/PILOT.svg)](https://github.com/CostaLab/PILOT?tab=MIT-1-ov-file#MIT-1-ov-file)
 
-**Authors:**
- Mehdi Joodaki<sup>[*1]</sup>
- ,Mina Shaigan<sup>[*1]</sup>
- ,Victor Parra<sup>[1]</sup>
- ,Roman D. Bülow<sup>[2]</sup>
- ,Christoph Kuppe<sup>[3]</sup>
- ,David L. Hölscher<sup>[2]</sup>
- ,Mingbo Cheng<sup>[1]</sup>
- ,James S. Nagai<sup>[1]</sup>
- ,Michaël Goedertier<sup>[1,2]</sup>
- ,Nassim Bouteldja<sup>[2]</sup>
- ,Vladimir Tesar<sup>[5]</sup> 
-,Jonathan Barratt<sup>[6,7]</sup>
- ,Ian S.D. Roberts<sup>[8]</sup>
- ,Rosanna Coppo<sup>[9]</sup>
- ,Rafael Kramann<sup>[3,4]</sup>
- ,Peter Boor<sup>[2,@]</sup>
- ,Ivan G. Costa<sup>[1,@]</sup>
+Although clinical applications represent the next challenge in single-cell genomics and digital pathology, we still lack computational methods to analyze single-cell or pathomics data to find sample-level trajectories or clusters associated with diseases. This remains challenging as single-cell/pathomics data are multi-scale, i.e., a sample is represented by clusters of cells/structures, and samples cannot be easily compared with each other. Here we propose PatIent Level analysis with Optimal Transport (PILOT). PILOT uses optimal transport to compute the Wasserstein distance between two individual single-cell samples. This allows us to perform unsupervised analysis at the sample level and uncover trajectories or cellular clusters associated with disease progression. We evaluate PILOT and competing approaches in single-cell genomics or pathomics studies involving various human diseases with up to 600 samples/patients and millions of cells or tissue structures. Our results demonstrate that PILOT detects disease-associated samples from large and complex single-cell or pathomics data. Moreover, PILOT provides a statistical approach to find changes in cell populations, gene expression, and tissue structures related to the trajectories or clusters supporting interpretation of predictions.
 
-**Affiliations:**
-- [1] Institute for Computational Genomics, Joint Research Center for Computational Biomedicine, RWTH Aachen University Medical School
-- [2] Institute of Pathology, Laboratory of Nephropathology, RWTH Aachen University Medical School
-- [3] Institute of Experimental Medicine and Systems Biology, RWTH Aachen University
-- [4] Department of Internal Medicine, Nephrology and Transplantation, Erasmus Medical Center
-- [5] Department of Nephrology, $1^{st}$ Faculty of Medicine and General University Hospital, Charles University, Prague, Czech Republic
-- [6] John Walls Renal Unit, University Hospital of Leicester National Health Service Trust, Leicester, United Kingdom
-- [7] Department of Cardiovascular Sciences, University of Leicester, Leicester, United Kingdom
-- [8] Department of Cellular Pathology, Oxford University Hospitals National Health Services Foundation Trust, Oxford, United Kingdom
-- [9] Fondazione Ricerca Molinette. Regina Margherita Children's University Hospital, Torino, Italy
-  
 ![plot](./img/plot.png)
 
 
