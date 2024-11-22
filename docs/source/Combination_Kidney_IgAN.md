@@ -1,4 +1,4 @@
-### Trajectory Analysis of Kidney IgAN Data with PILOT
+### Trajectory Analysis and Integration of Modalities using Kidney IgAN (Pathomics) Data with PILOT
 
 <div class="alert alert-block alert-info">
 <b>PILOT</b>
