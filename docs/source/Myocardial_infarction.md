@@ -152,66 +152,6 @@ for cell in adata.uns['cellnames']:
     plot_genes = False)
 ```
 
-##### Cluster Specific Marker Changes:
-<div class="alert alert-block alert-info"> 
-The previous test only finds genes with significant changes over time for a given cell type. However, it does not consider if a similar pattern and expression values are found in other clusters. To further select genes, we use a Wald test that compares the fit of the gene in the cluster vs. the fit of the gene in other clusters.
-In the code below, we consider top genes (regarding the regression fit) for two interesting cell types discussed in the manuscript (‘healthy CM’ and ‘Myofib’).
-</div>
-
-
-```python
-pl.tl.gene_cluster_differentiation(adata,cellnames = ['healthy_CM','Myofib'], number_genes = 70)
-```
-
-    
-
-
-
-<div class="alert alert-block alert-info"> 
-Test results are saved in ‘gene_clusters_stats_extend.csv’. To find a final list of genes, we only consider genes with a fold change higher than 0.5, i.e. genes which expression is increased in the cluster at hand; and we sort the genes based on the Wald test p-value. These can be seen bellow.
-</div>
-
-
-```python
-df = pl.tl.results_gene_cluster_differentiation(cluster_name = 'Myofib',).head(50)
-df.head(15)
-```
-| gene     | cluster   | waldStat         | pvalue        | FC               | Expression pattern       | fit-pvalue      | fit-mod-rsquared |
-|----------|-----------|------------------|---------------|------------------|--------------------------|-----------------|------------------|
-| GAS7     | Myofib    | 212.477292       | 8.487275e-46  | 1.086644         | linear up quadratic down | 1.873033e-107   | 0.570704         |
-| EXT1     | Myofib    | 125.383128       | 5.344198e-27  | 0.786136         | linear up quadratic down | 3.159831e-35    | 0.555757         |
-| PKNOX2   | Myofib    | 89.738712        | 2.492742e-19  | 0.855504         | quadratic down           | 1.039404e-117   | 0.544122         |
-| FN1      | Myofib    | 70.641696        | 3.110595e-15  | 1.573680         | linear down quadratic up | 2.947389e-188   | 0.633774         |
-| COL6A3   | Myofib    | 54.751169        | 7.758841e-12  | 1.069156         | linear down quadratic up | 3.514298e-172   | 0.608543         |
-| ...      | ...       | ...              | ...           | ...              | ...                      | ...             | ...              |
-
-
-<div class="alert alert-block alert-info"> 
-Here is the GO enrichment for  the 50 first top genes of Myofib (FC >= 0.5 and p-value < 0.01). Plot is saved at Go folder.
-</div>
-
-
-```python
-pl.pl.go_enrichment(df, cell_type = 'Myofib')
-```
-
-
-    
-![png](Myocardial_infarction_files/Myocardial_infarction_23_0.png)
-    
-
-
-<div class="alert alert-block alert-info"> 
-We can visualize specific genes, for example the ones discussed in PILOT manuscript (COL1A2, DCN and EXT1). In the plot, the orange line indicates the fit in the target cell type (shown as orange lines) compared to other cell types (represented by grey lines). Plots of genes are saved at 'plot_genes_for_Myofib' folder.
-</div>
-
-
-```python
-pl.pl.exploring_specific_genes(cluster_name = 'Myofib', gene_list = ['COL1A2','DCN','EXT1'])
-```    
-![png](Myocardial_infarction_files/Myocardial_infarction_25_1.png)
-    
-
 
 ##### Group genes by pattern:
 
@@ -281,12 +221,15 @@ body {font-family: Arial;}
   border: 1px solid #ccc;
   border-top: none;
 }
+.tabcontent.active {
+    display: block;
+}
 </style>
 
 In each tab below, you can check the information for each cluster.
 
 <div class="tab button.active">
-    <button class="tablinks" onclick="openCity(event, 'cluster11')">Cluster 1</button>
+    <button class="tablinks active" onclick="openCity(event, 'cluster11')">Cluster 1</button>
     <button class="tablinks" onclick="openCity(event, 'cluster12')">Cluster 2</button>
     <button class="tablinks" onclick="openCity(event, 'cluster13')">Cluster 3</button>
     <button class="tablinks" onclick="openCity(event, 'cluster14')">Cluster 4</button>
@@ -294,7 +237,7 @@ In each tab below, you can check the information for each cluster.
     <button class="tablinks" onclick="openCity(event, 'cluster16')">Cluster 6</button>
 </div>
 
-<div id="cluster11" class="tabcontent">
+<div id="cluster11" class="tabcontent active">
     <img src="https://costalab.ukaachen.de/open_data/PILOT/images/healthy_CM_cluster11.png" >
     <img src="https://costalab.ukaachen.de/open_data/PILOT/images/healthy_CM_cluster12.png" >
     <img src="https://costalab.ukaachen.de/open_data/PILOT/images/healthy_CM_cluster13.png" >
@@ -365,72 +308,62 @@ In the table, you can check the curves activities of some genes of the healthy_C
 
 The complete table can be found here: [healthy_CM_curves_activities.csv](https://costalab.ukaachen.de/open_data/PILOT/healthy_CM_curves_activities.csv)
 
+##### Cluster Specific Marker Changes:
+<div class="alert alert-block alert-info"> 
+The previous test only finds genes with significant changes over time for a given cell type. However, it does not consider if a similar pattern and expression values are found in other clusters. To further select genes, we use a Wald test that compares the fit of the gene in the cluster vs. the fit of the gene in other clusters.
+In the code below, we consider top genes (regarding the regression fit) for two interesting cell types discussed in the manuscript (‘healthy CM’ and ‘Myofib’).
+</div>
+
 
 ```python
-pl.pl.genes_selection_analysis(adata, 'Myofib', scaler_value = 0.5)
+pl.tl.gene_cluster_differentiation(adata,cellnames = ['healthy_CM','Myofib'], number_genes = 70)
 ```
 
-![png](Myocardial_infarction_files/Myofib_heatmap.png)
+    
 
-Here, we utilize the [Enrichr](https://maayanlab.cloud/Enrichr/) tools to get the hallmarks of the clustered genes. The default dataset is MSigDB_Hallmark_2020, which you can change using the `gene_set_library` parameter.
+
+
+<div class="alert alert-block alert-info"> 
+Test results are saved in ‘gene_clusters_stats_extend.csv’. To find a final list of genes, we only consider genes with a fold change higher than 0.5, i.e. genes which expression is increased in the cluster at hand; and we sort the genes based on the Wald test p-value. These can be seen bellow.
+</div>
+
 
 ```python
-pl.pl.plot_hallmark_genes_clusters(adata, 'Myofib', 'MSigDB_Hallmark_2020')
+df = pl.tl.results_gene_cluster_differentiation(cluster_name = 'healthy_CM',).head(50)
+df.head(15)
 ```
+| gene     | cluster   | waldStat         | pvalue        | FC               | Expression pattern       | fit-pvalue      | fit-mod-rsquared |
+|----------|-----------|------------------|---------------|------------------|--------------------------|-----------------|------------------|
+| SORBS1   | healthy_CM| 1574.665604      | 0.000000e+00  | 1.296470         | linear down quadratic up | 8.946560e-05    | 0.522953         |
+| DLG2     | healthy_CM| 1055.313030      | 1.801893e-228 | 1.155496         | linear down quadratic up | 1.323610e-256   | 0.556306         |
+| THSD4    | healthy_CM| 834.288239       | 1.583902e-180 | 1.671315         | linear down quadratic up | 6.088694e-250   | 0.582085         |
+| CMYA5    | healthy_CM| 752.301407       | 9.561746e-163 | 1.559703         | linear down quadratic up | 3.774063e-66    | 0.527869         |
+| LDB3     | healthy_CM| 542.239458       | 3.342198e-117 | 1.426196         | linear down quadratic up | 1.511694e-238   | 0.546327         |
+| ...      | ...       | ...              | ...           | ...              | ...                      | ...             | ...              |
 
-![png](Myocardial_infarction_files/Myofib_hallmark.png)
 
-In each tab below, you can check the information for each cluster.
-
-<div class="tab button.active">
-    <button class="tablinks" onclick="openCity(event, 'cluster21')">Cluster 1</button>
-    <button class="tablinks" onclick="openCity(event, 'cluster22')">Cluster 2</button>
-    <button class="tablinks" onclick="openCity(event, 'cluster23')">Cluster 3</button>
-    <button class="tablinks" onclick="openCity(event, 'cluster24')">Cluster 4</button>
+<div class="alert alert-block alert-info"> 
+Here is the GO enrichment for  the 50 first top genes of healthy_CM (FC >= 0.5 and p-value < 0.01). Plot is saved at Go folder.
 </div>
 
-<div id="cluster21" class="tabcontent">
-    <img src="https://costalab.ukaachen.de/open_data/PILOT/images/Myofib_cluster11.png" >
-    <img src="https://costalab.ukaachen.de/open_data/PILOT/images/Myofib_cluster12.png" >
-    <img src="https://costalab.ukaachen.de/open_data/PILOT/images/Myofib_cluster13.png" >
+
+```python
+pl.pl.go_enrichment(df, cell_type = 'healthy_CM')
+```
+![png](Myocardial_infarction_files/Myocardial_infarction_29_0.png)
+    
+
+
+<div class="alert alert-block alert-info"> 
+We can visualize specific genes, for example the ones discussed in PILOT manuscript (MYBPC3,MYOM1, and FHOD3). In the plot, the orange line indicates the fit in the target cell type (shown as orange lines) compared to other cell types (represented by grey lines). Plots of genes are saved at 'plot_genes_for_healthy_CM' folder.
 </div>
 
-<div id="cluster22" class="tabcontent">
-    <img src="https://costalab.ukaachen.de/open_data/PILOT/images/Myofib_cluster21.png" >
-    <img src="https://costalab.ukaachen.de/open_data/PILOT/images/Myofib_cluster22.png" >
-    <img src="https://costalab.ukaachen.de/open_data/PILOT/images/Myofib_cluster23.png" >
-</div>
 
-<div id="cluster23" class="tabcontent">
-    <img src="https://costalab.ukaachen.de/open_data/PILOT/images/Myofib_cluster31.png" >
-    <img src="https://costalab.ukaachen.de/open_data/PILOT/images/Myofib_cluster32.png" >
-    No GO information for cluster 3!
-</div>
+```python
+pl.pl.exploring_specific_genes(cluster_name = 'healthy_CM', gene_list = ['MYBPC3','MYOM1','FHOD3'])
+```    
+![png](Myocardial_infarction_files/Myocardial_infarction_31_1.png)
 
-<div id="cluster24" class="tabcontent">
-    <img src="https://costalab.ukaachen.de/open_data/PILOT/images/Myofib_cluster41.png" >
-    <img src="https://costalab.ukaachen.de/open_data/PILOT/images/Myofib_cluster42.png" >
-    <img src="https://costalab.ukaachen.de/open_data/PILOT/images/Myofib_cluster43.png" >
-</div>
-
-</br>
-
-In the table, you can check the curves activities of some genes of the Myofib:
-| Gene ID | Expression pattern       | adjusted P-value | R-squared | mod_rsquared_adj | Terminal_logFC | Transient_logFC | Switching_time | area  | cluster |
-|---------|--------------------------|------------------|-----------|------------------|----------------|-----------------|----------------|-------|---------|
-| LAMA2   | linear up quadratic down | 0.00             | 0.38      | 0.74             | -0.15          | 0.05            | 0.76           | 28.73 | 2       |
-| COL1A1  | linear down quadratic up | 0.00             | 0.31      | 0.68             | 0.14           | -0.39           | 0.86           | 48.08 | 1       |
-| NEGR1   | quadratic down           | 0.00             | 0.28      | 0.67             | -0.17          | 0               | 0.64           | 16.17 | 2       |
-| COL3A1  | linear down quadratic up | 0.00             | 0.28      | 0.67             | 0.12           | -0.63           | 0.89           | 54.59 | 1       |
-| ZBTB20  | linear up quadratic down | 0.00             | 0.27      | 0.68             | -0.15          | 0.08            | 0.77           | 30.9  | 2       |
-| ...     | ...                      | ...              | ...       | ...              | ...            | ...             | ...            |       |         |
-| MAN2A1  | quadratic down           | 0.00             | -0.35     | 0.40             | -0.17          | 0               | 0.65           | 17.56 | 2       |
-| ADGRD1  | linear down              | 0.00             | -0.36     | 0.42             | -0.17          | 0               | 0.49           | 1.45  | 4       |
-| ATR     | quadratic down           | 0.00             | -0.36     | 0.39             | -0.17          | 0               | 0.65           | 17.71 | 2       |
-| URI1    | quadratic down           | 0.00             | -0.36     | 0.39             | -0.17          | 0               | 0.65           | 17.49 | 2       |
-| TRA2A   | quadratic down           | 0.01             | -0.39     | 0.38             | -0.17          | 0               | 0.65           | 17.01 | 2       |
-
-The complete table can be found here: [Myofib_curves_activities.csv](https://costalab.ukaachen.de/open_data/PILOT/Myofib_curves_activities.csv)
 
 ###### Plot specific genes:
 <div class="alert alert-block alert-info"> 
