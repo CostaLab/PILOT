@@ -1,4 +1,4 @@
-### Trajectory analysis of Myocardial Infarction using PILOT
+### Trajectory analysis of Myocardial Infarction using PILOT (old)
 
 <div class="alert alert-block alert-info">
 <b>PILOT</b>
