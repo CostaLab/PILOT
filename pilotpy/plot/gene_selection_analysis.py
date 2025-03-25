@@ -24,6 +24,7 @@ import matplotlib.colors as pltcolors
 from decimal import Decimal
 import json
 import requests
+import gseapy as gp
 
 from .curve_activity import _curvesnamic_network_char_terminal_logfc_, \
     _curvesnamic_network_char_transient_logfc_, \
@@ -1320,90 +1321,49 @@ def plot_hallmark_genes_clusters(adata: ad.AnnData,
     save_cell_type = adata.uns['gene_selection_heatmap']['cell_type']
     if save_cell_type == cell_type:
         curves_activities = adata.uns['gene_selection_heatmap']['curves_activities']
-        col_names = ['rank', 'term', 'p-value', 'odds ratio', 'combined score',
-                     'evidence genes', 'q-value', 'unknown1', 'unknown2']
+        col_names = ['Term', 'Combined Score', 'Genes', 'P-value']
         
         GO_terms = pd.DataFrame(columns = col_names)
         for cluster in np.unique(curves_activities['cluster']):
-            ENRICHR_URL = 'https://maayanlab.cloud/Enrichr/addList'
-            genes_str = '\n'.join(curves_activities[curves_activities['cluster'] == cluster].index.values)
-            description = 'Example gene list'
-            payload = {
-                'list': (None, genes_str),
-                'description': (None, description)
-            }
-            
-            response = requests.post(ENRICHR_URL, files=payload)
-            if not response.ok:
-                raise Exception('Error analyzing gene list')
-            
-            data = json.loads(response.text)
-            
-            ENRICHR_URL = 'https://maayanlab.cloud/Enrichr/enrich'
-            query_string = '?userListId=%s&backgroundType=%s'
-            user_list_id = data['userListId']
-            gene_set_library = gene_set_library#'MSigDB_Hallmark_2020'#'KEGG_2021_Human'
-            response = requests.get(
-                ENRICHR_URL + query_string % (user_list_id, gene_set_library)
-             )
-            if not response.ok:
-                raise Exception('Error fetching enrichment results')
-            
-            data = json.loads(response.text)
-            data_df = pd.DataFrame(data[gene_set_library], columns = col_names)
+            enrichr_results = gp.enrichr(gene_list = list(curves_activities[curves_activities['cluster'] == cluster].index.values), 
+                                 gene_sets = gene_set_library, 
+                                 organism = "human")
+            data_df = enrichr_results.results[col_names]
             data_df['cluster'] = cluster
             GO_terms = pd.concat([GO_terms, data_df])
-            
-        GO_terms['cluster'] = GO_terms['cluster'].astype(int)
-        GO_terms_clusters = pd.DataFrame(0, index = np.unique(GO_terms['term']), columns = np.unique(curves_activities['cluster']))
-        for cluster in np.unique(curves_activities['cluster']):
-            data = GO_terms[GO_terms['cluster'] == cluster]
-            data.index = data['term'].values
-            GO_terms_clusters.loc[data.index, cluster] = data['combined score'].values
-            
-        
-        scaler = StandardScaler()
-        scaled_GO_terms_clusters = pd.DataFrame(scaler.fit_transform(GO_terms_clusters.transpose()).transpose())
-        scaled_GO_terms_clusters.columns = GO_terms_clusters.columns
-        scaled_GO_terms_clusters.index = GO_terms_clusters.index
-        
-        GO_terms_annot = pd.DataFrame(0, index = np.unique(GO_terms['term']), columns = np.unique(curves_activities['cluster']))
-        for cluster in np.unique(curves_activities['cluster']):
-            data = GO_terms[GO_terms['cluster'] == cluster]
-            data.index = data['term'].values
-            GO_terms_annot.loc[data.index, cluster] = data['q-value'].values
-            
-        
-        plt.figure(figsize=(scaled_GO_terms_clusters.shape[1],
-                            int(np.round(scaled_GO_terms_clusters.shape[0]/3))))
-        plt.title("{}".format(gene_set_library))
-        g = sns.heatmap(scaled_GO_terms_clusters.sort_values(list(scaled_GO_terms_clusters.columns[::-1])),
-                        cmap = cmap,
-                        cbar_kws={"shrink": 0.3, 'label': 'Z-scaled score'},
-                        yticklabels = True, center = 0, vmin = -1.5, vmax = 1.5,
-                        annot = GO_terms_annot.map(star_sig).fillna(""), fmt="")
-        g.set_xticklabels(g.get_xmajorticklabels(), fontsize = font_size);
-        g.set_yticklabels(g.get_ymajorticklabels(), fontsize = font_size);    
+              
+        data = GO_terms.pivot(index='Term', columns='cluster', values='P-value')
+        data = data.fillna(1)
+        data = -np.log10(data)
+        data = data.sort_values(list(data.columns[::-1]))
+        data.columns = data.columns.astype(int)
+        plt.figure()
+        ans = sns.clustermap(data, 
+                     linewidths=1,
+                     cmap='Reds',
+                     fmt='',
+                     row_cluster=False,
+                     dendrogram_ratio=(0.2, 0.02),
+                     cbar_pos=(0.05, 0.45, .01, .2),
+                     cbar_kws={'label': '-$log_{10}$ (P-value)'},
+                     xticklabels=True,
+                     yticklabels=True
+                            )
+        ans.ax_heatmap.set_xticklabels(ans.ax_heatmap.get_xmajorticklabels(), fontsize = font_size);
+        ans.ax_heatmap.set_yticklabels(ans.ax_heatmap.get_ymajorticklabels(), fontsize = font_size);
+        cax = ans.figure.axes[-1]
+        cax.tick_params(labelsize = font_size)
+        cax.yaxis.label.set_size(font_size)
+        ans.ax_heatmap.set_xlabel('')
+        ans.ax_heatmap.set_ylabel('')
+        ans.cax.yaxis.set_label_coords(-1.5,0.5)
+
+        plt.show()
+        plt.savefig("pathways.pdf",
+                    bbox_inches='tight', 
+                    transparent=True,)
     else:
-        return "Please run the funtion genes_selection_heatmap first!"
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+        return "Please run the funtion genes_selection_heatmap first!"        
         
         
         
