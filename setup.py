@@ -29,9 +29,7 @@ setup(
             "adjusttext>=0.8,<0.9",
             "gprofiler-official>=1.0.0,<1.1.0",
             "rpy2>=3.5.11",
-            
-            
-            
+            "gseapy>=1.1.7"
         ],
         packages=find_packages()
 )
