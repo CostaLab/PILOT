@@ -240,37 +240,31 @@ In each tab below, you can check the information for each cluster.
 <div id="cluster11" class="tabcontent active">
     <img src="https://costalab.ukaachen.de/open_data/PILOT/images/healthy_CM_cluster11.png" >
     <img src="https://costalab.ukaachen.de/open_data/PILOT/images/healthy_CM_cluster12.png" >
-    <img src="https://costalab.ukaachen.de/open_data/PILOT/images/healthy_CM_cluster13.png" >
 </div>
 
 <div id="cluster12" class="tabcontent">
     <img src="https://costalab.ukaachen.de/open_data/PILOT/images/healthy_CM_cluster21.png" >
     <img src="https://costalab.ukaachen.de/open_data/PILOT/images/healthy_CM_cluster22.png" >
-    <img src="https://costalab.ukaachen.de/open_data/PILOT/images/healthy_CM_cluster23.png" >
 </div>
 
 <div id="cluster13" class="tabcontent">
     <img src="https://costalab.ukaachen.de/open_data/PILOT/images/healthy_CM_cluster31.png" >
     <img src="https://costalab.ukaachen.de/open_data/PILOT/images/healthy_CM_cluster32.png" >
-    No GO information for cluster 3!
 </div>
 
 <div id="cluster14" class="tabcontent">
     <img src="https://costalab.ukaachen.de/open_data/PILOT/images/healthy_CM_cluster41.png" >
     <img src="https://costalab.ukaachen.de/open_data/PILOT/images/healthy_CM_cluster42.png" >
-    <img src="https://costalab.ukaachen.de/open_data/PILOT/images/healthy_CM_cluster43.png" >
 </div>
 
 <div id="cluster15" class="tabcontent">
     <img src="https://costalab.ukaachen.de/open_data/PILOT/images/healthy_CM_cluster51.png" >
     <img src="https://costalab.ukaachen.de/open_data/PILOT/images/healthy_CM_cluster52.png" >
-    <img src="https://costalab.ukaachen.de/open_data/PILOT/images/healthy_CM_cluster53.png" >
 </div>
 
 <div id="cluster16" class="tabcontent">
     <img src="https://costalab.ukaachen.de/open_data/PILOT/images/healthy_CM_cluster61.png" >
     <img src="https://costalab.ukaachen.de/open_data/PILOT/images/healthy_CM_cluster62.png" >
-    <img src="https://costalab.ukaachen.de/open_data/PILOT/images/healthy_CM_cluster63.png" >
 </div>
 
 

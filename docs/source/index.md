@@ -63,7 +63,7 @@ Myocardial_infarction
 ```{toctree}
 ---
 maxdepth: 2
-caption: Pathomics data Analysis
+caption: Multimodal Integration
 ---
 Combination_Kidney_IgAN
 ```

@@ -1,9 +1,10 @@
-### Trajectory Analysis of Kidney IgAN Data with PILOT
+### Trajectory Analysis and Integration of Modalities using Kidney IgAN (Pathomics) Data with PILOT
 
 <div class="alert alert-block alert-info">
 <b>PILOT</b>
 
 Welcome to the PILOT Package Tutorial for pathomics Data!
+With this tutorial, we learn not only how to analyze the Pathomics Data but also how to integrate multimodal data with PILOT. 
  
 You can find the pathomics data [here](https://github.com/CostaLab/PILOT/tree/main/Tutorial/Datasets).
 
@@ -15,7 +16,7 @@ import pilotpy as pl
 import scanpy as sc
 ```
 
-#### Kidney_IgAN Tubuli
+#### Kidney_IgAN Tubuli (first modality)
 
 ##### Reading Anndata
 <div class="alert alert-block alert-info">
@@ -93,7 +94,7 @@ pl.pl.trajectory(adata_T, colors = ['red','blue','orange'])
     
 
 
-#### Kidney_IgAN Glomeruli
+#### Kidney_IgAN Glomeruli (second modality)
 
 ##### Reading Anndata
 <div class="alert alert-block alert-info">
@@ -144,9 +145,9 @@ pl.pl.trajectory(adata_G, colors = ['red','blue','orange'])
     
 
 
-#### Combination:
+####  Integration of modalities:
 <div class="alert alert-block alert-info"> 
-Here, we combine the distances of samples. We get the sum of distances of samples based on Tubuli and Glomeruli distances.   
+Here, we integrate the distances from the first (Tubuli) and second (Glomeruli) modalities. We get the sum of the distances of samples.
 </div>
 
 

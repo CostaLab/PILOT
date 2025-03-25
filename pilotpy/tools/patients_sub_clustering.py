@@ -181,7 +181,7 @@ def compute_diff_expressions(adata,cell_type: str = None,
          cells=adata.uns[cell_type] 
     
     
-    
+    """
     import rpy2.robjects as robjects
     import rpy2.robjects.numpy2ri
     from rpy2.robjects import pandas2ri
@@ -239,7 +239,7 @@ def compute_diff_expressions(adata,cell_type: str = None,
     
 
 
-    
+    """
 def install_r_packages():
     """
     Install R packages using rpy2.
@@ -253,16 +253,6 @@ def install_r_packages():
         None
     """
     # Install R packages using rpy2
-    import rpy2.robjects as robjects
-
-    robjects.r('''
-    if (!requireNamespace("BiocManager", quietly = TRUE))
-        install.packages("BiocManager")
-    ''')
-
-    robjects.r('''
-    BiocManager::install("limma")
-    ''')
-   
+    print('Install rpy2 with conda')
 
    
