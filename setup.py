@@ -33,9 +33,7 @@ setup(
             "anndata>=0.11.4,<0.12.0", 
             "h5py>=3.14.0,<3.15.0",     
             "numba>=0.61.2,<0.62.0",    
-            "umap-learn>=0.5.9,<0.6.0",
-            "networkx>=3.5,<3.6",      
-            "igraph>=0.11.9,<0.12.0",   
+            "umap-learn>=0.5.9,<0.6.0", 
         ],
         packages=find_packages()
 )
