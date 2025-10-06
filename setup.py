@@ -30,9 +30,6 @@ setup(
             "gprofiler-official>=1.0.0,<1.1.0",
             "gseapy>=1.1.7",
             "anndata>=0.11.4,<0.12.0", 
-            "h5py>=3.14.0,<3.15.0",     
-            "numba>=0.61.2,<0.62.0",    
-            "umap-learn>=0.5.9,<0.6.0", 
         ],
         packages=find_packages()
 )
