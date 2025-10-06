@@ -28,7 +28,6 @@ setup(
             "elpigraph-python>=0.3.1,<0.4.0",
             "adjusttext>=0.8,<0.9",
             "gprofiler-official>=1.0.0,<1.1.0",
-            "rpy2>=3.5.11",
             "gseapy>=1.1.7",
             "anndata>=0.11.4,<0.12.0", 
             "h5py>=3.14.0,<3.15.0",     
