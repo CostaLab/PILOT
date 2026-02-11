@@ -38,7 +38,7 @@ clusters_col='cell_types',sample_col='sampleID',status='status',
                               metric='cosine',
                                regulizer=0.2,normalization=True,
                                regularized='unreg',reg=0.1,
-                               res=0.01,steper=0.01,data_type='scRNA',return_sil_ari=False):
+                               res=0.01,steper=0.01,data_type='scRNA',return_sil_ari=False,use_centroids=True):
     
     """
     Calculate the Wasserstein (W) distance among samples using PCA representation and clustering information.
@@ -69,6 +69,8 @@ clusters_col='cell_types',sample_col='sampleID',status='status',
         Stepper value for finding the best Leiden resolution, by default 0.01.
     data_type : str, optional
         Type of your data, e.g., 'scRNA' or 'pathomics', by default 'scRNA'.
+    use_centroids: str, optional
+        Use centriod in Cost function.
     return_sil_ari : bool, optional
         Whether to return ARI (Adjusted Rand Index) or Silhouette score for assessing W distance effects, by default False.
 
@@ -95,7 +97,7 @@ clusters_col=clusters_col,sample_col=sample_col,status=status)
     normalization=normalization)
     adata.uns['proportions'] = proportions
     
-    cost,cost_df= cost_matrix(annot,data,metric=metric)
+    cost,cost_df= cost_matrix(annot,data,metric=metric,use_centroids=use_centroids)
     adata.uns['cost'] = cost_df
     
     EMD,emd_df = wasserstein_d(proportions,cost/cost.max(),regularized=regularized,
@@ -255,7 +257,8 @@ def extract_data_anno_scRNA_from_h5ad(adata,emb_matrix='PCA',clusters_col='cell_
     data=adata.obsm[emb_matrix]  
     col_add=[]
     for i in range(1,adata.obsm[emb_matrix].shape[1]+1):
-        col_add.append('PCA_'+str(i))
+        #col_add.append('PCA_'+str(i))
+        col_add.append(adata.obsm[emb_matrix].columns[i])
     data=pd.DataFrame(data,columns=col_add) 
     data = data.reset_index(drop=True)
     annot=adata.obs[[clusters_col,sample_col,status]]
@@ -438,7 +441,7 @@ def Cluster_Representations(df, cell_col = 0, sample_col = 1,regulizer=0.2,norma
 
 
 
-def cost_matrix(annot,data,metric='cosine'):
+def cost_matrix(annot,data,metric='cosine',use_centroids=True):
     """
     Compute the cost matrix to find distances between clusters/cell-types.
 
@@ -452,8 +455,13 @@ def cost_matrix(annot,data,metric='cosine'):
         PCA representations.
     path : str
         Path for saving the cost matrix.
+
+    use_centroids: str, optional
+        Use centriod in Cost function.
+
     metric : str
         Metric for calculating the distances between centroids.
+    
 
     Returns
     -------
@@ -462,15 +470,20 @@ def cost_matrix(annot,data,metric='cosine'):
     cells = annot[annot.columns[0]].unique() # gets cells 
     centroids = []
 
-    for i in cells:
-        centroids.append(list(data[annot[annot.columns[0]] == i].median(axis=0))) #get the centriod of each cluster
+    if use_centroids:
+        for i in cells:
+            centroids.append(list(data[annot[annot.columns[0]] == i].median(axis=0))) 
+    else:
+        for i in cells:
+            #centroids.append(list(data[annot[annot.columns[0]] == i].median(axis=0))) #get the centriod of each cluster
+            centroids.append(list(data[annot[annot.columns[0]] == i].sum(axis=0)/(data[annot[annot.columns[0]] == i].sum(axis=0).sum())))
 
-    dis_t = scipy.spatial.distance.pdist(centroids, metric = metric) 
-    dis = scipy.spatial.distance.squareform(dis_t, force ='no', checks = True)
-    cost = pd.DataFrame.from_dict(dis).T
-    cost.columns=annot.cell_type.unique()
-    cost['cell_types']=annot.cell_type.unique()
-    cost=cost.set_index('cell_types')
+        dis_t = scipy.spatial.distance.pdist(centroids, metric = metric) 
+        dis = scipy.spatial.distance.squareform(dis_t, force ='no', checks = True)
+        cost = pd.DataFrame.from_dict(dis).T
+        cost.columns=annot.cell_type.unique()
+        cost['cell_types']=annot.cell_type.unique()
+        cost=cost.set_index('cell_types')
          
     return dis,cost
 
@@ -658,7 +671,7 @@ def cell_importance(adata,
                     save_as_pdf = True,
                     figsize = (12, 12),
                     col_cluster = True,
-                    row_cluster = False):
+                    row_cluster = False,path_to_results='Results_PILOT/plots'):
     """
     Order cells based on estimated time and visualize cell type importance.
 
@@ -697,6 +710,9 @@ def cell_importance(adata,
     row_cluster : bool, optional
         Whether to cluster rows in the heatmap, by default False.
 
+    path_to_results : str, optional
+        The path to save the results and plots.
+
     Returns
     -------
     None
@@ -706,6 +722,9 @@ def cell_importance(adata,
 
     
     path = path_to_results
+
+    if not os.path.exists(path):
+        os.makedirs(path)
     real_labels = adata.uns['real_labels']
     pseudotime = adata.uns['pseudotime']
     annot = adata.uns['annot']
@@ -1725,5 +1744,171 @@ clusters_col=clusters_col,sample_col=sample_col,status=status)
     adata.uns['cost'] = cost_df
     adata.uns['EMD'] =distances
     adata.uns['real_labels']=return_real_labels(annot)
-      
+
+
+def feature_importance(adata,
+                    feature_matrix,
+                    feature_names,
+                    width = 20,
+                    height = 35,
+                    xlim = 5,
+                    p_val = 1,
+                    plot_cell = True,
+                    point_size = 100,
+                    color_back = 'white',
+                    fontsize = 20,
+                    alpha = 1,
+                    cmap_proportions = 'viridis',
+                    cmap_heatmap = 'Blues',
+                    save_as_pdf = True,
+                    figsize = (12, 12),
+                    col_cluster = True,
+                    row_cluster = False, path='Results_PILOT/plots/'):
+    """
+    Order cells based on estimated time and visualize feature importance.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data matrix containing necessary data.
+    feature_matrix : str
+        name of the pd.DataFrame in the anndata uns slot containing the features to be analysed. Should be a dataframe of features x samples
+    feature_names : str
+        name of the list in the anndata uns slot containing the names of the features to be analysed (should correspond to feature_matrix)
+    width : int, optional
+        Width of the plot, by default 40.
+    height : int, optional
+        Height of the plot, by default 35.
+    xlim : int, optional
+        Limit for x-axis in the plot, by default 5.
+    p_val : float, optional
+        P-value for filtering the fitting models, by default 0.05.
+    plot_cell : bool, optional
+        Whether to plot the cell type importance, by default True.
+    point_size : int, optional
+        Size of points in the plot, by default 100.
+    color_back : str, optional
+        Background color of the plot, by default 'white'.
+    fontsize : int, optional
+        Font size for labels and annotations, by default 20.
+    alpha : float, optional
+        Transparency level for plotting, by default 1.
+    cmap_proportions : str, optional
+        Colormap for plotting proportions over time, by default 'viridis'.
+    cmap_heatmap : str, optional
+        Colormap for plotting heatmap, by default 'Blues_r'.
+    save_as_pdf : bool, optional
+        Whether to save the plot as PDF, by default False.
+    figsize : tuple, optional
+        Figure size of the heatmap (width, height) in inches, by default (12, 12).
+    col_cluster : bool, optional
+        Whether to cluster columns in the heatmap, by default True.
+    row_cluster : bool, optional
+        Whether to cluster rows in the heatmap, by default False.
+
+    path : str, optional
+        The path to save the results and plots.
+
+    Returns
+    -------
+    None
+        Visualizes and saves the cell type importance plot.
+     """
+
+   
+    if not os.path.exists(path):
+        os.makedirs(path)
+    real_labels = adata.uns['real_labels']
+    pseudotime = adata.uns['pseudotime']
+    annot = adata.uns['annot']
+    bins = adata.uns[feature_matrix]
+    embedding_diff = adata.uns['embedding']
+    cell_types_propo = bins
+    patients_id = bins.keys()
+    cell_types =adata.uns[feature_names]
+    emd = embedding_diff
+    labels = real_labels
+    emd_dataframe = pd.DataFrame({'sampleID': list(patients_id),
+                                  'pseudotime': pseudotime,
+                                  'lables': list(labels)}, dtype = object)
+    emd_dataframe_sort = emd_dataframe.sort_values('pseudotime', ascending = True) 
+    emd_dataframe_sort['pseudotime'] = np.arange(1, len(emd_dataframe) + 1, 1).tolist()
+    pathies_cell_proportions = pd.DataFrame.from_dict(bins).T
+    pathies_cell_proportions.columns = cell_types
+    
+    
+    pathies_cell_proportions.index.name = 'sampleID'
+
+    ### got error slice(None, None, None)
+    # df_join = pd.merge(emd_dataframe_sort['sampleID'], pathies_cell_proportions,
+    #                    how='inner', on = 'sampleID')
+    df_join = pathies_cell_proportions.loc[emd_dataframe_sort['sampleID']] ## same fix as before
+    #df_join = df_join.set_index('sampleID')
+    # Normalizing the proportions for heat map
+    normalized_df = (df_join - df_join.min()) / (df_join.max() - df_join.min())
+ 
+    #Saving Heat map based on sorte pseuduscores of the Trajectory 
+    
+    #heatmaps_df(normalized_df[cell_types], row_cluster=row_cluster,
+     #           col_cluster = col_cluster, cmap = cmap_heatmap, figsize = figsize) 
+    #Building a model based on Regression and pseuduscores 
+    pathies_cell_proportions['Time_score'] = list(emd_dataframe['pseudotime'])
+    pathies_cell_proportions = pathies_cell_proportions.sort_values('Time_score', ascending = True)
+    pathies_cell_proportions['Time_score'] = np.arange(1, len(emd_dataframe) + 1, 1).tolist()
+    pathies_cell_proportions = pathies_cell_proportions.reset_index()
+    RNA_data = pd.DataFrame()
+    RNA_data['label'] = pathies_cell_proportions['Time_score']
+    RNA_target = np.transpose(pathies_cell_proportions.iloc[:, 1:len(adata.uns['coloc_names']) + 1])
+    min_target = min(RNA_data['label'])
+    max_target = max(RNA_data['label'])
+    #sorted_best = fit_best_model_cell_types(RNA_target, RNA_data,min_target=min_target, max_target=max_target)
+    
+    
+    sorted_best = fit_best_model(RNA_target, RNA_data, model_type = 'LinearRegression',
+                                 max_iter_huber = 1, epsilon_huber = 1,
+                                 pval_thr = p_val, modify_r2 = False)
+    
+    if save_as_pdf:
+        suffix = 'Features_Report.pdf'
+    else:
+        suffix = 'Features_Report.png'
+    
+    if plot_cell:
+    
+        with plt.rc_context():
+                plot_best_matches_cell_types(RNA_target, RNA_data,pathies_cell_proportions,
+                                             sorted_best, "Cell Proportion", 
+                                             min_target = min_target,
+                                             max_target = max_target,
+                                             num = len(sorted_best.keys()),
+                                             width = width,
+                                             height = height,
+                                             xlim = xlim,
+                                             point_size = point_size,
+                                             color_back = color_back,
+                                             fontsize = fontsize,
+                                             alpha = alpha,
+                                             cmap = cmap_proportions)
+                plt.savefig(path + "/" + suffix)
+    
+    
+    cellnames = list(sorted_best.keys())
+    #return orders of samples based on the trejctory and selected cell-types
+    
+    
+    if not os.path.exists(path + '/Features_Report'):
+        os.makedirs(path + '/Features_Report')
+  
+    
+    save_data(sorted_best, 
+              ['Cell name', 'Expression pattern', 'Slope', 'Fitted function',
+               'Intercept', 'Treat', 'Treat2', 'adjusted P-value', 'R-squared',
+               'mod_rsquared_adj'], path + '/Cell_type_Report/', 'Cells_Importance',
+              p_val = p_val, pro = None)
+    
+    
+    
+    adata.uns[feature_matrix+'_names'] = cellnames
+    adata.uns[feature_matrix+'_orders'] = pathies_cell_proportions[['sampleID', 'Time_score']]
+
 
