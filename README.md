@@ -15,10 +15,9 @@ The easiest way to install PILOT and the required packages is using the followin
 ```terminal
 git clone https://github.com/CostaLab/PILOT.git
 cd PILOT
-conda create --name PILOT python=3.11.5 r-base
-conda activate PILOT
+conda create --name PILOT_dev python=3.11.5 r-base
+conda activate PILOT_dev
 pip install .
-conda install -c conda-forge rpy2
 ```
 Once you've completed these steps, you can proceed to run the tutorials and explore the features of PILOT. 
 When doing so, remember to move to the tutorial folder, as all the work will be performed there:
