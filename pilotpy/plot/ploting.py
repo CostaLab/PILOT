@@ -32,6 +32,8 @@ import elpigraph
 from scipy.stats import ttest_ind
 from matplotlib.font_manager import FontProperties
 from ..tools.Gene_cluster_specific_functions import *
+from matplotlib.offsetbox import (AnnotationBbox, DrawingArea, OffsetImage,
+                                  TextArea)
 
 
 
