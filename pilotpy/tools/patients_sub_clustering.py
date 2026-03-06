@@ -189,7 +189,7 @@ def compute_diff_expressions(adata,cell_type: str = None,
     pandas2ri.activate()
     
     # prepare data for R
-    proportions.index = proportions['sampIeD']
+    proportions.index = proportions['sampleID']
    
     if selected_genes is None:
         selected_genes = cells.iloc[:,1:-1].columns
@@ -197,7 +197,7 @@ def compute_diff_expressions(adata,cell_type: str = None,
     pred_labels = pd.DataFrame()
     pls = proportions.loc[cells['sampleID']]
     pred_labels['Predicted_Labels'] = pls[label_name]
-    pred_labels['sampleID'] = pls['sampIeD']
+    pred_labels['sampleID'] = pls['sampleID']
     
     # load R packages and data
     R=robjects.r
