@@ -83,11 +83,12 @@ def compute_diff_expressions(adata,
     Counts are aggregated into pseudobulk per sample filtered for lowly expressed genes,
     and analyzed using a negative binomial model. Log2 fold changes and adjusted p-values
     are computed using Wald tests. Optionally applies LFC shrinkage.
+    Note: This function requires RAW gene counts. s
 
     Parameters
     ----------
     adata : AnnData
-        Annotated data matrix.
+        Annotated data matrix.Requires storage of raw, non-normalised gene counts either in adata.X or adata.raw.X. 
     cell_type : str
         Specify cell type name to check its differential expression genes. The default is None.
     proportions : pd.DataFrame
