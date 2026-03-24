@@ -21,6 +21,9 @@ import textwrap as tw
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+from pydeseq2.dds import DeseqDataSet
+from pydeseq2.ds import DeseqStats
+
 import rpy2.robjects as robjects
 import rpy2.robjects.numpy2ri
 from rpy2.robjects import pandas2ri
@@ -92,7 +95,91 @@ def plot_cell_numbers(adata, proportion_df,
     handles = [plt.Rectangle((0,0),1,1, color=colors[label]) for label in labels]
     plt.legend(handles, labels, fontsize = 24)
     plt.show()
+
+# pydeseq
+def compute_pseudobulk_DE2(
+        cluster_counts: pd.DataFrame = None,
+        cluster_metadata: pd.DataFrame = None,
+        group1: str = "Tumor1",
+        group2: str = "Tumor1",
+        cluster_col: str = None,
+        n_cpus: int = 8):
     
+    """
+    Computes Differential Expression using PyDESeq2, mimicking the R DESeq2 pipeline with apeglm LFC shrinkage.
+    Performs Wald test for the contrast stage_group1_vs_group2 group2 as reference level).
+
+    Parameters
+    ----------
+    aggr_counts : pd.DataFrame
+        Pseudobulk counts matrix with rows = samples, columns = genes, non-negative integers. The default is None.
+    metadata : pd.DataFrame
+        Sample metadata with 'stage' column containing group1/group2 labels. The default is None.
+    group1 : str, optional
+        Name of experimental group (numerator of fold change). The default is "Tumor1".
+    group2 : str, optional
+        Name of reference/control group (denominator of fold change). The default is "Tumor2".
+    n_cpus : int, optional
+        Number of CPU cores for dispersion estimation and Wald tests. The default is 8.
+
+    Returns
+    -------
+    dict
+        Single key 'stage_{group1}_vs_{group2}' mapping to pandas DataFrame 
+        with columns: 'gene', 'log2FoldChange', 'pvalue', 'padj', etc.
+        Sorted by adjusted p-value (padj).
+
+
+    Note
+    ----
+    Expects raw integer counts (DESeq2-style normalization applied internally).
+    Sets explicit categorical reference: group2 < group1 for consistent 
+    contrast direction matching DESeq2 coefficient naming.
+    """
+
+    # Filter metadata and counts for two groups of interest
+    mask = cluster_metadata[cluster_col].isin([group1, group2])
+    my_cluster_metadata = cluster_metadata[mask].copy()
+    
+    # Ensure counts match filtered metadata
+    my_cluster_counts = cluster_counts.loc[my_cluster_metadata.index].copy()
+
+    my_cluster_metadata["stage"] = pd.Categorical(
+        my_cluster_metadata["stage"],
+        categories=[group2, group1],  # reference first
+        ordered=True,
+    )
+
+    # Initialize DeseqDataSet
+    try:
+        dds = DeseqDataSet(
+            counts=my_cluster_counts.astype(int),
+            metadata=my_cluster_metadata,
+            design_factors="stage", 
+            refit_cooks=True,
+            n_cpus=n_cpus
+        )
+
+        # Run DESeq2 pipeline
+        dds.deseq2()
+
+        # Compute results and apply LFC Shrinkage (apeglm)
+        stat_res = DeseqStats(dds, inference="apeglm", n_cpus=n_cpus)
+        
+        # Executes Wald test and applies shrinkage
+        stat_res.summary()
+
+        res_df = stat_res.results_df
+        res_df = res_df.reset_index().rename(columns={'index': 'gene'})
+        res_df = res_df.sort_values('padj')
+
+        return {f"stage_{group1}_vs_{group2}": res_df}
+
+    except Exception as e:
+        print(f"Error during DE analysis: {e}")
+        return None
+
+# R    
 def compute_pseudobulk_DE(
         cluster_counts: pd.DataFrame = None,
         cluster_metadata: pd.DataFrame = None,
@@ -157,7 +244,55 @@ def compute_pseudobulk_DE(
         return res
     except rpy2.rinterface_lib.embedded.RRuntimeError:
         return None
+
+# pydeseq
+def compute_pseudobulk_PCA2(
+        cluster_counts: pd.DataFrame = None,
+        cluster_metadata: pd.DataFrame = None):
+    """
+    Computes regularized log-transformed pseudobulk counts for PCA using PyDESeq2.
+    Replaces DESeq2's rlog() with PyDESeq2's equivalent regularized transformation.
     
+    Parameters
+    ----------
+    cluster_counts : pd.DataFrame
+        Pseudobulk counts matrix (rows = samples, columns = genes). The default is None.
+    cluster_metadata : pd.DataFrame  
+        Sample metadata with 'stage' column. The default is None.
+
+    Returns
+    -------
+    pd.DataFrame
+        Regularized log-transformed counts (genes x samples), suitable for PCA
+        Column names = sample names, row names = gene names
+    """
+    
+    try:
+        # Initialize DeseqDataSet (PyDESeq2 expects samples x genes)
+        dds = DeseqDataSet(
+            counts=cluster_counts.astype(int),
+            metadata=cluster_metadata,
+            design_factors="stage",
+            refit_cooks=True
+        )
+        dds.deseq2()
+
+        # Get regularized log-transformed counts 
+        rld_matrix = dds.rlog_norm()
+
+        rld_df = pd.DataFrame(
+            rld_matrix.T,  
+            index=rld_matrix.columns,  # genes as index
+            columns=rld_matrix.index   # samples as columns
+        )
+        
+        return rld_df
+        
+    except Exception as e:
+        print(f"Error during rlog computation: {e}")
+        return None
+
+# R    
 def compute_pseudobulk_PCA(
         cluster_counts: pd.DataFrame = None,
         cluster_metadata: pd.DataFrame = None):
@@ -503,6 +638,181 @@ def get_sig_genes(data, symbol, foldchange, p_value, cell_type,
 
     return data
 
+# pydeseq
+def get_pseudobulk_DE(adata: ad.AnnData,
+                      proportion_df: pd.DataFrame,
+                      cell_type: str,
+                      fc_thr: list,
+                      pv_thr: float = 0.05,
+                      celltype_col: str = "cell_types",
+                      sample_col: str = "sampleID",
+                      cluster_col: str = "Predicted_Labels",
+                      remove_samples: list = [],
+                      my_pal: dict = None,
+                      path_to_results: str = 'Results_PILOT/',
+                      figsize: tuple = (30, 15),
+                      num_gos: int = 10,
+                      fig_h: int = 6,
+                      fig_w: int = 4,
+                      sources: list = ['GO:CC', 'GO:PB', 'GO:MF'],
+                      fontsize: int = 14,
+                      load: bool = False
+                     ):
+    """
+    Pseudobulk differential expression analysis pipeline using PyDESeq2.
+    Aggregates single-cell counts to sample-level pseudobulk, performs PCA QC,
+    runs pairwise DE between clusters, volcano plots, and GO enrichment.
+    
+    Parameters
+    ----------
+    adata : ad.AnnData
+        Single-cell count matrix and metadata.
+    proportion_df : pd.DataFrame
+        Cell type proportions per sample (index = sampleID).
+    cell_type : str
+        Cell type/cluster for pseudobulk aggregation and DE.
+    fc_thr : list
+        Fold-change thresholds for volcano plots (one per cluster pair).
+    pv_thr : float, optional
+        Adjusted p-value threshold. The default is 0.05.
+    celltype_col : str, optional
+        Column name for cell types in adata.obs. The default is "cell_types".
+    sample_col : str, optional
+        Column name for sample IDs in adata.obs. The default is "sampleID".
+    cluster_col : str, optional
+        Column name for cluster labels in proportion_df. The default is "Predicted_Labels".
+    remove_samples : list, optional
+        Sample IDs to exclude from analysis. The default is [].
+    my_pal : dict, optional
+        Color palette for clusters. The default is None.
+    path_to_results : str, optional
+        Base directory for saving results. The default is 'Results_PILOT/'.
+    figsize : tuple, optional
+        Volcano plot figure size. The default is (30, 15).
+    num_gos : int, optional
+        Number of top GO terms to plot. The default is 10.
+    fig_h : int, optional
+        GO plot height. The default is 6.
+    fig_w : int, optional
+        GO plot width. The default is 4.
+    sources : list, optional
+        GO term sources. The default is ['GO:CC', 'GO:PB', 'GO:MF'].
+    fontsize : int, optional
+        Plot font size. The default is 14.
+    load : bool, optional
+        Load precomputed results instead of recomputing. The default is False.
+
+    Returns
+    -------
+    None
+        Saves PCA, DE results, volcano plots, and GO analyses to disk.
+
+    Notes
+    -----
+    - Uses PyDESeq2's rlog_norm() for PCA-ready normalized counts
+    - Performs all pairwise DE between unique clusters in proportion_df[cluster_col]
+    - Assumes raw counts in adata.X/layers (no normalization applied before aggregation)
+    - Saves results to: Results_PILOT/Diff_Expressions_Results/{cell_type}/pseudobulk/
+    """
+
+    # Color palette for clusters
+    n_clusters = np.unique(proportion_df[cluster_col])
+    if my_pal is None:
+        if len(n_clusters) == 3:
+            my_pal = dict(zip(n_clusters, ["tab:red", "skyblue", "tab:blue"]))
+        else:
+            my_pal = dict(zip(n_clusters, sns.color_palette("tab10", len(n_clusters))))
+
+    # Output dir
+    save_path = path_to_results + "/Diff_Expressions_Results/" + str(cell_type) + "/pseudobulk/"
+    log_pv_thr = -np.log10(pv_thr)
+
+    # Plot cell frequency QC
+    print("Plot cells frequency for each sample... ")
+    plot_cell_numbers(adata, proportion_df, cell_type=cell_type,
+                     cluster_col=cluster_col, celltype_col=celltype_col,
+                     sample_col=sample_col, my_pal=my_pal)
+    
+    # Aggregate to pseudobulk and compute rlog-normalized counts
+    if load == False:
+        print("Aggregating the counts and metadata to the sample level...")
+        counts_df = adata.to_df()
+        counts_df[[celltype_col, sample_col]] = adata.obs[[celltype_col, sample_col]].values
+        
+        aggr_counts = counts_df.groupby([celltype_col, sample_col]).sum()
+        cluster_counts = aggr_counts.loc[cell_type]
+        cluster_metadata = proportion_df.loc[cluster_counts.index.values]
+        cluster_metadata['stage'] = cluster_metadata[cluster_col].values
+    
+        # Remove unwanted samples
+        if remove_samples:
+            for sample in remove_samples:
+                cluster_metadata = cluster_metadata.drop(index=sample, errors='ignore')
+                cluster_counts = cluster_counts.drop(index=sample, errors='ignore')
+    
+        cluster_metadata = cluster_metadata.loc[cluster_counts.index]
+        cluster_counts = cluster_counts.loc[:, (cluster_counts != 0).any(axis=0)]
+    
+        print("Computing rlog-normalized counts using PyDESeq2...")
+        rld = compute_pseudobulk_PCA2(cluster_counts, cluster_metadata)
+    
+        if rld is not None:
+            if not os.path.exists(save_path):
+                os.makedirs(save_path)
+            rld.to_csv(save_path + "rld_PCA.csv")
+    else:
+        rld = pd.read_csv(save_path + "rld_PCA.csv", index_col=0)
+        
+    # PCA plot QC
+    deseq2_counts = rld.transpose()
+    print("Plot the first two principal components... ")
+    plotPCA_subgroups(proportion_df, deseq2_counts, cell_type, my_pal, cluster_col)
+
+    # Pairwise DE analysis
+    print("Performing the DE analysis... ")
+    j = 0
+    for groups in itertools.combinations(n_clusters, 2):
+        data = None
+        if load == False:
+            # Use adapted PyDESeq2 function1_adapted_to_function2
+            res = compute_pseudobulk_DE2(cluster_counts, cluster_metadata,
+                                       group1=groups[0],
+                                       group2=groups[1],
+                                       cluster_col=cluster_col)
+            
+            if res is not None:
+                # Extract single DataFrame 
+                data = list(res.values())[0]  
+
+                data = get_sig_genes(data, 'gene', 'log2FoldChange', 'padj', cell_type, 
+                                   groups[0], groups[1], fc_thr[j], fc_thr[j], log_pv_thr)
+                
+                data.to_csv(save_path + "/" + str(groups[1]) + "vs" + str(groups[0]) + "_DE.csv")
+        else:
+            data = pd.read_csv(save_path + "/" + str(groups[1]) + "vs" + str(groups[0]) + "_DE.csv", index_col=0)
+
+        # Plot results
+        if data is not None:
+            print("Plot volcano plot for " + str(groups[1]) + " vs " + str(groups[0]))
+            volcano_plot_ps(data, 'gene', 'log2FoldChange', 'padj', cell_type, 
+                          groups[0], groups[1], fc_thr[j], fc_thr[j], log_pv_thr, 
+                          figsize=figsize, output_path=save_path + "/",
+                          my_pal=my_pal, fontsize=fontsize)
+
+            # GO analysis for both groups
+            print("Plot GO analysis for " + str(groups[1]) + " vs " + str(groups[0]))
+            os.makedirs(save_path + "/" + str(groups[1]) + "vs" + str(groups[0]) + "/GOs/", exist_ok=True)
+            for group in [groups[0], groups[1]]:
+                gene_annotation_cell_type_subgroup(data, cell_type=cell_type, group=group,
+                                                 sources=sources, num_gos=num_gos,
+                                                 fig_h=fig_h, fig_w=fig_w, font_size=fontsize,
+                                                 path_to_results=save_path + "/" + str(groups[1]) + "vs" + str(groups[0]) + "/GOs/",
+                                                 my_pal=my_pal)
+        j += 1
+
+
+
+# R
 def get_pseudobulk_DE(adata: ad.AnnData,
                       proportion_df: pd.DataFrame,
                       cell_type: str,
