@@ -7,7 +7,7 @@ Although clinical applications represent the next challenge in single-cell genom
 ![plot](./img/plot.png)
 
 
-Current version for PILOT is 2.0.6
+Current version for PILOT is 2.0.7
 
 ## Installation
 The easiest way to install PILOT and the required packages is using the following way:
@@ -15,10 +15,9 @@ The easiest way to install PILOT and the required packages is using the followin
 ```terminal
 git clone https://github.com/CostaLab/PILOT.git
 cd PILOT
-conda create --name PILOT python=3.11.5 r-base
+conda create --name PILOT python=3.14.3 
 conda activate PILOT
 pip install .
-conda install -c conda-forge rpy2
 ```
 Once you've completed these steps, you can proceed to run the tutorials and explore the features of PILOT. 
 When doing so, remember to move to the tutorial folder, as all the work will be performed there:
@@ -49,7 +48,6 @@ You can access the used data sets by PILOT in Part 1 [![DOI](https://zenodo.org/
   publisher={Nature Publishing Group UK London}
 }
 ```
-
 
 
 

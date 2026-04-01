@@ -137,7 +137,7 @@ def calculate_sparsity(data):
         float: The sparsity of the input data as a decimal value between 0 and 1, where 0 indicates no sparsity (dense) and 1 indicates full sparsity (completely empty).
     """
     non_zero = np.count_nonzero(data)
-    total_val = np.product(data.shape)
+    total_val = np.prod(data.shape)
     sparsity = (total_val - non_zero) / total_val
     return(sparsity)
 
