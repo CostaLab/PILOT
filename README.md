@@ -1,4 +1,4 @@
-# PILOT  <img src="img/logo.png" align="right" width="300" />
+# PILOT  <img src="img/logo.png" align="right" width="300" />  ([Paper](https://link.springer.com/article/10.1038/s44320-023-00003-8))
 
 [![GitHub license](https://img.shields.io/github/license/CostaLab/PILOT.svg)](https://github.com/CostaLab/PILOT?tab=MIT-1-ov-file#MIT-1-ov-file)
 
