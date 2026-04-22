@@ -2,10 +2,13 @@ from setuptools import find_packages, setup
 
 setup(
     name='pilotpy',
-    version='2.0.8',
+    version='2.0.9',
     author='Mehdi Joodaki',
     author_email='judakimehdi@gmail.com',
     url='https://github.com/CostaLab/PILOT',
+    description="PatIent Level analysis with Optimal Transport (PILOT)",
+    long_description=open("README.md", encoding="utf-8").read(),
+    long_description_content_type="text/markdown",
     python_requires='>=3.9',
     install_requires=[
             "cycler",
