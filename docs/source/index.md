@@ -17,7 +17,7 @@
 Follow these steps to install and set up PILOT:
 
 ```bash
-conda create --name PILOT python=3.14.3
+conda create --name PILOT python
 conda activate PILOT
 pip install pilotpy
 ```
