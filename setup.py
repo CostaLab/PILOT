@@ -2,11 +2,11 @@ from setuptools import find_packages, setup
 
 setup(
     name='pilotpy',
-    version='2.0.7',
+    version='2.0.8',
     author='Mehdi Joodaki',
     author_email='judakimehdi@gmail.com',
     url='https://github.com/CostaLab/PILOT',
-    python_requires='>=3.14.3',
+    python_requires='>=3.9',
     install_requires=[
             "cycler",
             "joypy",

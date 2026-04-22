@@ -7,13 +7,13 @@ Although clinical applications represent the next challenge in single-cell genom
 ![plot](./img/plot.png)
 
 
-Current version for PILOT is 2.0.7
+Current version for PILOT is 2.0.8
 
 ## Installation
 The easiest way to install PILOT and the required packages is using the following way:
 
 ```terminal
-conda create --name PILOT python=3.14.3 
+conda create --name PILOT python
 conda activate PILOT
 pip install pilotpy
 ```

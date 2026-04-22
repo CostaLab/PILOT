@@ -9,3 +9,10 @@
 
 */cells/*
 
+__pycache__/
+
+build/
+dist/
+.venv/
+.env
+.pytest_cache/
