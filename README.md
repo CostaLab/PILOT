@@ -13,8 +13,6 @@ Current version for PILOT is 2.0.9
 The easiest way to install PILOT and the required packages is using the following way:
 
 ```terminal
-conda create --name PILOT python
-conda activate PILOT
 pip install pilotpy
 ```
 Once you've completed these steps, you can proceed to run the tutorials and explore the features of PILOT. 
