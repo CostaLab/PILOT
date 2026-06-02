@@ -560,7 +560,7 @@ def Clustering(EMD, df, category = 'status', sample_col=1,res = 0.01,metric ='co
     while flag == True:
         adata = sc.AnnData(EMD)
         sc.pp.neighbors(adata, metric=metric)
-        sc.tl.leiden(adata, resolution = res)
+        sc.tl.leiden(adata, resolution = res,metric=metric)
         labels = np.array(adata.obs.leiden)
         if len(df.status.unique()) > len(np.unique(labels)):
 
