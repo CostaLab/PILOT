@@ -556,11 +556,12 @@ def Clustering(EMD, df, category = 'status', sample_col=1,res = 0.01,metric ='co
     n_clust = len(df[category].unique())
     
     flag = True
+    n_nb = min(15, EMD.shape[0] - 1) 
     inc = steper
     while flag == True:
         adata = sc.AnnData(EMD)
-        sc.pp.neighbors(adata, metric=metric)
-        sc.tl.leiden(adata, resolution = res,metric=metric)
+        sc.pp.neighbors(adata,n_neighbors=n_nb, use_rep='X', metric=metric)
+        sc.tl.leiden(adata, resolution = res)
         labels = np.array(adata.obs.leiden)
         if len(df.status.unique()) > len(np.unique(labels)):
 
