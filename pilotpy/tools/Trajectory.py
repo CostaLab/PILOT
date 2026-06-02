@@ -9,7 +9,7 @@ import pydiffmap
 from sklearn import metrics
 from pydiffmap import diffusion_map
 from sklearn.neighbors import NearestCentroid
-from sklearn.metrics.cluster import rand_score
+from sklearn.metrics import adjusted_rand_score,rand_score
 from scipy.spatial import distance
 from sknetwork.clustering import Louvain
 from sklearn.preprocessing import label_binarize
@@ -575,17 +575,13 @@ def Clustering(EMD, df, category = 'status', sample_col=1,res = 0.01,metric ='co
             flag = False
             labels = labels.astype(int)
 
-    
-    #print("Cluster labels: ", df[category].unique())
-    
     true_labels = []
     for i in range(len(samples)):
         a = condition[df[df.columns[sample_col]] == samples[i]].unique()
         true_labels.append(a[0])
     
-    S = rand_score(true_labels, labels)
-    #print("ARI: ", S)
-    return labels, S, true_labels;
+    ari = adjusted_rand_score(true_labels, labels)
+    return labels, ari, true_labels;
 
 
 
