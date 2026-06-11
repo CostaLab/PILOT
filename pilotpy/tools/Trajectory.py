@@ -257,8 +257,11 @@ def extract_data_anno_scRNA_from_h5ad(adata,emb_matrix='PCA',clusters_col='cell_
     global path_to_results
     data=adata.obsm[emb_matrix]  
     col_add=[]
-    for i in range(1,adata.obsm[emb_matrix].shape[1]+1):
-        col_add.append('PCA_'+str(i))
+    #for i in range(1,adata.obsm[emb_matrix].shape[1]+1):
+     #   col_add.append('PCA_'+str(i))
+
+    for i in range(adata.obsm[emb_matrix].shape[1]):
+        col_add.append(adata.obsm[emb_matrix].columns[i])
     data=pd.DataFrame(data,columns=col_add) 
     data = data.reset_index(drop=True)
     annot=adata.obs[[clusters_col,sample_col,status]]
