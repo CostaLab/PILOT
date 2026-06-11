@@ -7,7 +7,7 @@ Although clinical applications represent the next challenge in single-cell genom
 ![plot](./img/plot.png)
 
 
-Current version for PILOT is 2.0.13
+Current version for PILOT is 2.0.14
 
 ## Installation
 The easiest way to install PILOT and the required packages is using the following way:
