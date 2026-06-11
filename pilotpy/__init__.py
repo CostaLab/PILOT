@@ -1,4 +1,4 @@
-__version__ = "2.0.12"
+__version__ = "2.0.13"
 __author__ = 'Mehdi Joodaki'
 __credits__ = 'Institute for Computational Genomics'
 

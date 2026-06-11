@@ -2465,3 +2465,70 @@ def plot_stats_by_pattern(cluster_names: list = None,
                 plt.show()
                 plt.close()
 
+
+
+
+
+
+def create_sample_grid(df, pattern, image_dir=' figures/', output_path="Results_PILOT/plots/sample_grid_cores.png",zoom=0.1,num_rows = 10):
+    """
+    Create a grid of sample images based on ordering in a DataFrame.
+    
+    Args:
+        df: DataFrame containing at least:
+            - 'sampleID': unique sample identifiers
+            - 'order': numerical ordering for sorting
+        image_dir: Directory containing images (named as {sampleID}.png)
+        output_path: Where to save the resulting grid
+    """
+    # Sort samples by the specified order
+    sorted_df = df.sort_values('Time_score')
+    sample_names = sorted_df['sampleID'].tolist()
+    
+    # Calculate grid dimensions (10 rows, auto columns)
+    num_samples = len(sample_names)
+    num_rows = num_rows
+    num_cols = math.ceil(num_samples / num_rows)
+    
+    # Prepare figure
+    fig, axes = plt.subplots(num_rows, num_cols, 
+                           figsize=(num_cols * 2, num_rows * 2))
+    axes = axes.flatten()
+    
+    # Image loading function
+    def get_image(path, zoom=zoom):
+        if os.path.exists(path):
+            return OffsetImage(plt.imread(path), zoom=zoom)
+        return None
+    
+    # Plot each sample
+    for i, sample in enumerate(sample_names):
+        img_path = os.path.join(image_dir, f"show_{sample}_{pattern}.png")
+        ax = axes[i]
+        
+        # Add image if exists
+        img = get_image(img_path)
+        if img:
+            ab = AnnotationBbox(img, (0.5, 0.5), 
+                              frameon=False, 
+                              box_alignment=(0.5, 0.5))
+            ax.add_artist(ab)
+        
+        # Minimal labeling
+        ax.set_title(sample, fontsize=6)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.axis('off')
+    
+    # Hide unused subplots
+    for i in range(num_samples, len(axes)):
+        axes[i].axis('off')
+    
+    
+    
+    plt.tight_layout()
+    fig.canvas.draw()  # Force render
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.show()
+    plt.close()
+    print(f"Saved grid to {output_path}")
