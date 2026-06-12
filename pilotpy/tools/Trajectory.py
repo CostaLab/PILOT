@@ -480,12 +480,12 @@ def cost_matrix(annot,data,metric='cosine',use_centroids=True):
         for i in cells:
             centroids.append(list(data[annot[annot.columns[0]] == i].sum(axis=0)/(data[annot[annot.columns[0]] == i].sum(axis=0).sum())))
 
-        dis_t = scipy.spatial.distance.pdist(centroids, metric = metric) 
-        dis = scipy.spatial.distance.squareform(dis_t, force ='no', checks = True)
-        cost = pd.DataFrame.from_dict(dis).T
-        cost.columns=annot.cell_type.unique()
-        cost['cell_types']=annot.cell_type.unique()
-        cost=cost.set_index('cell_types')
+    dis_t = scipy.spatial.distance.pdist(centroids, metric = metric) 
+    dis = scipy.spatial.distance.squareform(dis_t, force ='no', checks = True)
+    cost = pd.DataFrame.from_dict(dis).T
+    cost.columns=annot.cell_type.unique()
+    cost['cell_types']=annot.cell_type.unique()
+    cost=cost.set_index('cell_types')
          
     return dis,cost
 
