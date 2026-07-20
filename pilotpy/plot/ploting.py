@@ -294,8 +294,7 @@ def fit_pricipla_graph(adata,NumNodes=20,source_node=0,show_text=True,Do_PCA=Fal
     adata.uns['pseudotime']=pseudotime
     
 
-def clustering_emd(adata,res=0.3,metric='cosine',groupby_col='Leiden',swap_axes=False,cmap="Blues_r",dendrogram=True,show_gene_labels=True,var_group_rotation=45,figsize=[12,12],save=False,sorter_leiden=None):
-    
+def clustering_emd(adata,res=0.3,metric="cosine",groupby_col="Leiden",swap_axes=False,cmap="Blues_r",dendrogram=True,show_gene_labels=True,var_group_rotation=45,figsize=[12,12],save=False,sorter_leiden=None,use_rep="X"):
     """
     Perform clustering and visualization of EMD (Earth Mover's Distance) data in AnnData object.
 
@@ -306,9 +305,9 @@ def clustering_emd(adata,res=0.3,metric='cosine',groupby_col='Leiden',swap_axes=
     res : float, optional
         Resolution parameter for Leiden clustering. Default is 0.3.
     metric : str, optional
-        Distance metric for clustering. Default is 'cosine'.
+        Distance metric for clustering. Default is "cosine".
     groupby_col : str, optional
-        Grouping variable for plotting. 'Leiden' groups by predicted clusters, 'status' groups by real labels. Default is 'Leiden'.
+        Grouping variable for plotting. "Leiden" groups by predicted clusters, "status" groups by real labels. Default is "Leiden".
     swap_axes : bool, optional
         Swap the axes in the heatmap. Default is False.
     cmap : str, optional
@@ -325,59 +324,91 @@ def clustering_emd(adata,res=0.3,metric='cosine',groupby_col='Leiden',swap_axes=
         Save the heatmap figure. Default is False.
     sorter_leiden : list or None, optional
         Custom order for Leiden clusters. If not provided, the default order is used.
+    use_rep: str or None, data passed to sc.pp.neighbors and sc.tl.dendrogram.
+            "X" (default) clusters on adata.X as is.
+            "PCA" computes a PCA first and clusters on the principal components.
+             None mirrors scanpy's automatic choice: adata.X if it has at most
+             50 columns, calculates the PCA otherwise. The 50 columns (features)
+             comes from sc.settings.N_PCS.
 
     Returns
     -------
     proportion_df : pd.DataFrame
         DataFrame containing proportions of sub-clusters in each sample.
     """
-    
-    EMD=adata.uns['EMD']
-    proportions=adata.uns['proportions']
-    annot=adata.uns['annot']
-    real_labels=adata.uns['real_labels']
-    
+
+    EMD=adata.uns["EMD"]
+    proportions=adata.uns["proportions"]
+    annot=adata.uns["annot"]
+    real_labels=adata.uns["real_labels"]
+
     EMD_df=pd.DataFrame(EMD,columns=proportions.keys())
-    EMD_df['sampleID']=proportions.keys()
-    EMD_df['status']=list(real_labels)
-    
-    
+    EMD_df["sampleID"]=proportions.keys()
+    EMD_df["status"]=list(real_labels)
+
+    # Get the dimensions of the EMD matrix.
+    n_vars = EMD.shape[1]
+    # Checking what we should do with the data.
+    if use_rep == "X":
+        # We use it as is. No PCA.
+        rep = "X"
+    elif use_rep == "PCA":
+        # We calculate the PCA irrespective of the number of columns.
+        rep = "X_pca"
+    elif use_rep is None:
+        # We calculate the PCA if the number of columns is >50, otherwise we
+        # use the EMD data as is. This is the original behaviour.
+        rep = "X" if n_vars <= 50 else "X_pca"
+    else:
+        raise ValueError(f"use_rep must be 'X', 'PCA' or None. Given: {use_rep}")
+
     adata_emd = sc.AnnData(EMD)
-    sc.pp.neighbors(adata_emd, metric=metric)
+    if rep == "X_pca":
+        sc.pp.pca(adata_emd)
+
+    sc.pp.neighbors(adata_emd, metric=metric, use_rep=rep)
     sc.tl.leiden(adata_emd, resolution = res)
     predicted_labels = np.array(adata_emd.obs.leiden)
-    Silhouette = Sil_computing(EMD/EMD.max(), predicted_labels,metric=metric)
-    
+    # Silhouette = Sil_computing(EMD/EMD.max(), predicted_labels,metric=metric)
+
     proportion_df=pd.DataFrame(proportions)
     proportion_df=proportion_df.T
     proportion_df.columns=annot.cell_type.unique()
-    
-    proportion_df['Predicted_Labels']=predicted_labels
-    proportion_df['sampleID']=list(proportions.keys())
-    
-    EMD_df['Leiden']=predicted_labels
-    if groupby_col=='status':
+
+    proportion_df["Predicted_Labels"]=predicted_labels
+    proportion_df["sampleID"]=list(proportions.keys())
+
+    EMD_df["Leiden"]=predicted_labels
+    if groupby_col=="status":
         sorter=np.unique(real_labels)
-        EMD_df['status'] = EMD_df.status.astype("category")
-        EMD_df['status'] = EMD_df['status'].cat.set_categories(sorter)
+        EMD_df["status"] = EMD_df.status.astype("category")
+        EMD_df["status"] = EMD_df["status"].cat.set_categories(sorter)
         EMD_df=EMD_df.sort_values(["status"])
-    elif groupby_col=='Leiden':
-        if sorter_leiden==None:
+    elif groupby_col=="Leiden":
+        if sorter_leiden is None:
             sorter=EMD_df.Leiden.unique()
         else:
             sorter=sorter_leiden
-        EMD_df['Leiden'] = EMD_df.Leiden.astype("category")
-        EMD_df['Leiden'] = EMD_df['Leiden'].cat.set_categories(sorter)
+
+        EMD_df["Leiden"] = EMD_df.Leiden.astype("category")
+        EMD_df["Leiden"] = EMD_df["Leiden"].cat.set_categories(sorter)
         EMD_df=EMD_df.sort_values(["Leiden"])
+
     obs = pd.DataFrame()
-    obs['sampleID']=EMD_df.sampleID.astype(str)
-    obs['status']=EMD_df.status.astype(str)
-    obs['Leiden']=EMD_df.Leiden.astype(str)
+    obs["sampleID"]=EMD_df.sampleID.astype(str)
+    obs["status"]=EMD_df.status.astype(str)
+    obs["Leiden"]=EMD_df.Leiden.astype(str)
     df_genes = pd.DataFrame(index = EMD_df.columns[0:EMD_df.shape[0]])
-    adata_emd = anndata.AnnData(X = EMD_df[ EMD_df.columns[0:EMD_df.shape[0]]].values, var =df_genes, obs = obs )
+    adata_emd = anndata.AnnData(X = EMD_df[ EMD_df.columns[0:EMD_df.shape[0]]].values, var=df_genes, obs=obs )
+    adata_emd.obs[groupby_col] = adata_emd.obs[groupby_col].astype("category")
+    if dendrogram:
+        if rep == "X_pca":
+            sc.pp.pca(adata_emd)
+
+        sc.tl.dendrogram(adata_emd, groupby=groupby_col, use_rep=rep)
     sc.pl.heatmap(adata_emd,adata_emd.obs.sampleID,groupby=[groupby_col],swap_axes=swap_axes,cmap=cmap,dendrogram=dendrogram,show_gene_labels=show_gene_labels,var_group_rotation=var_group_rotation,figsize=figsize,save=save)
     return proportion_df
-    
+
 
 def Sil_computing(EMD, real_labels, metric='cosine'):
     """
@@ -402,22 +433,28 @@ def Sil_computing(EMD, real_labels, metric='cosine'):
     return Silhouette
 
 
-def select_best_sil(adata,resolutions=[],marker='o',figsize=(10,10),facecolor="white",metric='cosine',path=None,start=0.2,step=0.1,end=2):
+def select_best_sil(adata,marker="o",figsize=(10,10),facecolor="white",metric="cosine",path=None,start=0.2,step=0.1,end=2,use_rep="X"):
     """
     Parameters
     ----------
     adata : adata,
-    EMD : W distance,
-    path_to_results:str, path to save the plot
-    resolutions: list,a list of your desire resulotions
-    marker : str, optional (default='o')
+    marker : str, optional (default="o")
             Marker style for data points in the plot.
     figsize : tuple, optional
         Figure size (width, height) in inches. Default is (10, 10).
     facecolor : str, optional
-        Background color of the saved plot image. Default is 'white'.
-
-    metric: str, metric for leiden clustering and calculating sil. 
+        Background color of the saved plot image. Default is "white".
+    metric: str, metric for leiden clustering and calculating sil.
+    path: str, the location were the images should be saved.
+    start: float or int, starting resolution for the leiden algorithm. Default 0.2.
+    step: float or int, step resolution for the leiden algorithm. Default 0.1.
+    end: float or int, final resolution for the leiden algorithm. Default 2.
+    use_rep: str or None, data passed to sc.pp.neighbors.
+            "X" (default) clusters on adata.X as is.
+            "PCA" computes a PCA first and clusters on the principal components.
+             None mirrors scanpy's automatic choice: adata.X if it has at most
+             50 columns, calculates the PCA otherwise. The 50 columns (features)
+             comes from sc.settings.N_PCS.
 
     Returns
     -------
@@ -425,58 +462,80 @@ def select_best_sil(adata,resolutions=[],marker='o',figsize=(10,10),facecolor="w
     plot Silhouette Score vs. Resolution to figure out the best sil.
     plot Silhouette Score vs. Number of clusters.
     """
-    
-    resolutions = [start + step * i for i in range(int((end - start) / step) + 1)]
+
+    resolutions = np.linspace(start, end, int(round((end - start) / step)) + 1)
     # Create a list to store the Silhouette Scores
     best_res=start
-    best_sil=0
-    if path==None:
-        result_path=Path('Results_PILOT/plots')
+    best_sil=float("-inf")
+    if path is None:
+        result_path=Path("Results_PILOT/plots")
         result_path.mkdir(parents=True, exist_ok=True)
     else:
         result_path=Path(path)
+
     sil_scores = []
     number_of_clusters=[]
-    EMD=adata.uns['EMD']
+    EMD=adata.uns["EMD"]
+
+    # Get the dimensions of the EMD matrix.
+    n_vars = EMD.shape[1]
+    # Checking what we should do with the data.
+    if use_rep == "X":
+        # We use it as is. No PCA.
+        rep = "X"
+    elif use_rep == "PCA":
+        # We calculate the PCA irrespective of the number of columns.
+        rep = "X_pca"
+    elif use_rep is None:
+        # We calculate the PCA if the number of columns is >50, otherwise we
+        # use the EMD data as is. This is the original behaviour.
+        rep = "X" if n_vars <= 50 else "X_pca"
+    else:
+        raise ValueError(f"use_rep must be 'X', 'PCA' or None. Given: {use_rep}")
+
+    adata_emd = sc.AnnData(EMD)
+    if rep == "X_pca":
+        sc.pp.pca(adata_emd)
+
+    sc.pp.neighbors(adata_emd, metric=metric, use_rep=rep)
+
     # Define the range of resolutions/number of clusters to test
     # Loop through the resolutions and calculate the Silhouette Score for each
     for resolution in resolutions:
-        # Cluster the data using Louvain clustering at the specified resolution
-        adata_emd = sc.AnnData(EMD)
-        sc.pp.neighbors(adata_emd, metric=metric)
+        # Cluster the data using Leiden clustering at the specified resolution
         sc.tl.leiden(adata_emd, resolution = resolution)
         # Calculate the Silhouette Score
         predicted_labels = np.array(adata_emd.obs.leiden)
-        
-        Silhouette = metrics.silhouette_score(EMD, predicted_labels, metric =metric)
+
+        Silhouette = metrics.silhouette_score(EMD, predicted_labels, metric=metric)
         if float(Silhouette) > best_sil:
             best_sil=Silhouette
             best_res=resolution
-            
 
         # Append the Silhouette Score to the list
         sil_scores.append(Silhouette)
         number_of_clusters.append(len(np.unique(predicted_labels)))
-    adata.uns['best_res']=best_res
+
+    best_res = float(resolution)
+    adata.uns["best_res"]=best_res
     # Plot the Silhouette Scores against the resolutions
     plt.figure(figsize = figsize,facecolor=facecolor)
     plt.plot(resolutions, sil_scores, marker=marker)
-    plt.xlabel('Resolution')
-    plt.ylabel('Silhouette Score')
-    plt.title('Silhouette Score vs. Resolution')
-    plt.savefig(result_path / 'Silhouette score VS resolution.pdf')
+    plt.xlabel("Resolution")
+    plt.ylabel("Silhouette Score")
+    plt.title("Silhouette Score vs. Resolution")
+    plt.savefig(result_path / "Silhouette_score_VS_resolution.pdf")
     plt.show()
-    
-    
+
     # Plot the Silhouette Scores against the resolutions
     plt.figure(figsize = figsize,facecolor=facecolor)
     plt.plot(resolutions, number_of_clusters, marker=marker)
-    plt.xlabel('Resolution')
-    plt.ylabel('Number of Clusters')
-    plt.title('Number of Clusters vs. Resolution')
-    plt.savefig(result_path / 'Number of clusters VS resolution.pdf')
+    plt.xlabel("Resolution")
+    plt.ylabel("Number of Clusters")
+    plt.title("Number of Clusters vs. Resolution")
+    plt.savefig(result_path / "Number_of_clusters_VS_resolution.pdf")
     plt.show()
-    
+
 
 def cell_type_diff_two_sub_patient_groups(proportions: pd.DataFrame = None,
                                           cell_types: list = None,
