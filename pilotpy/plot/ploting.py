@@ -480,7 +480,7 @@ def select_best_sil(adata,resolutions=[],marker='o',figsize=(10,10),facecolor="w
 
 def cell_type_diff_two_sub_patient_groups(proportions: pd.DataFrame = None,
                                           cell_types: list = None,
-                                          labels:str = 'Predicted_Labels',
+                                          labels: str = 'Predicted_Labels',
                                           group1: str = 'Tumor 1',
                                           group2: str = 'Tumor 2',
                                           pval_thr: float = 0.05,
@@ -525,8 +525,8 @@ def cell_type_diff_two_sub_patient_groups(proportions: pd.DataFrame = None,
     
         
      
-    group1_proportions = proportions[proportions['Predicted_Labels'] == group1]
-    group2_proportions = proportions[proportions['Predicted_Labels'] == group2]
+    group1_proportions = proportions[proportions[labels] == group1]
+    group2_proportions = proportions[proportions[labels] == group2]
     
     stats_group12 = []
     scores_group12 = []
