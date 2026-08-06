@@ -516,8 +516,7 @@ def select_best_sil(adata,marker="o",figsize=(10,10),facecolor="white",metric="c
         sil_scores.append(Silhouette)
         number_of_clusters.append(len(np.unique(predicted_labels)))
 
-    best_res = float(resolution)
-    adata.uns["best_res"]=best_res
+    adata.uns["best_res"]=float(best_res)
     # Plot the Silhouette Scores against the resolutions
     plt.figure(figsize = figsize,facecolor=facecolor)
     plt.plot(resolutions, sil_scores, marker=marker)
