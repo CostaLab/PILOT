@@ -1637,6 +1637,7 @@ def correlation_numeric_with_clustering(
     
     Output:
     - Results DataFrame: Contains the feature, ANOVA F-statistic, and ANOVA p-value for each specified numeric variable.
+                         Number_Groups refers to the number of clusters, i.e. most likely Predicted_Labels.
     - The DataFrame is sorted by the specified 'sort_column'.
     
     Example:
