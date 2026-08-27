@@ -1494,8 +1494,8 @@ def correlation_numeric_with_trajectory(adata, sample_col='sampleID', features=[
             'Feature': feature,
             'Spearman_Correlation': spearman_corr,
             'Spearman_PValue': float(spearman_p_value),
-           # 'Kendall_Correlation': kendall_corr,
-          #  'Kendall_PValue': kendall_p_value
+            # 'Kendall_Correlation': kendall_corr,
+            # 'Kendall_PValue': kendall_p_value
         })
        
     df_results = pd.DataFrame(results_list)
@@ -1506,119 +1506,231 @@ def correlation_numeric_with_trajectory(adata, sample_col='sampleID', features=[
 
 
 
-def correlation_categorical_with_clustering(adata, proportion_df, sample_col='sampleID', features=[],sort_column='ChiSquared_PValue'):
+def correlation_categorical_with_clustering(
+    adata,
+    proportion_df,
+    sample_col="sampleID",
+    features=[],
+    sort_column="ChiSquared_P_Value"):
     """
     Calculate the correlation of categorical variables with clustering results.
-
+    
     Parameters:
     adata (AnnData): Input AnnData object containing clinical data and clustering results.
     proportion_df (DataFrame): DataFrame containing predicted cluster labels.
+                               This DataFrame must contain 'sampleID' and 'Predicted_Labels'.
     sample_col (str): Name of the column in the AnnData object that contains sample IDs. Default is 'sampleID'.
     features (list): List of categorical variables to be correlated with clustering results.
-    sort_column (str): Column by which the results DataFrame should be sorted. Default is 'ChiSquared_PValue'.
-
+    sort_column (str): Column by which the results DataFrame should be sorted. Default is 'ChiSquared_P_Value'.
+                       Has to be either: Feature, ChiSquared_Statistic, ChiSquared_P_Value, Number_Groups, Number_Levels
+    
     Returns:
     df_results_sorted (DataFrame): Sorted DataFrame containing correlation results with clustering data.
-
+    
     Output:
     - Results DataFrame: Contains the feature, Chi-squared statistic, and Chi-squared p-value for each specified categorical variable.
     - The DataFrame is sorted by the specified 'sort_column'.
-
+    
     Example:
     correlation_results = correlation_categorical_with_clustering(adata, proportion_df, sample_col='sampleID', 
-                                                                 features=['Gender', 'Treatment'], sort_column='ChiSquared_PValue')
+                                                                 features=['Gender', 'Treatment'], sort_column='ChiSquared_P_Value')
     """
-
+    allowed_sorter_columns = {"Feature", "ChiSquared_Statistic", "ChiSquared_P_Value", "Number_Samples", "Number_Groups", "Number_Levels", }
+    if sort_column not in allowed_sorter_columns:
+        raise KeyError("Your sort_column is not in the allowed list of values.")
+    
+    # Did we supply a feature or forgot it?
+    if len(features) == 0:
+        raise KeyError("Your feature set has length 0. Did you forget to set it?")
+    
+    # We check if the required columns are present. If not, we fail.
+    required = {"sampleID", "Predicted_Labels"}
+    missing = required - set(proportion_df.columns)
+    if missing:
+        raise KeyError(f"proportion_df is missing required columns: {missing}")
+    
+    # Checking if the features are present in adata.
+    if isinstance(features, str):
+        features = [features]
+    
+    features = list(features)
+    required_features = {sample_col, *features}
+    missing = required_features - set(adata.obs.columns)
+    if missing:
+        raise KeyError(f"adata.obs is missing required columns: {missing}")
+    
     results_list = []
-    proportion_df = proportion_df[['sampleID', 'Predicted_Labels']]
+    proportion_df = proportion_df[["sampleID", "Predicted_Labels"]]
     for feature in features:
-        clinical_data = adata.obs[[sample_col, feature]].rename(columns={sample_col: 'sampleID'})
-        merged_data = proportion_df.merge(clinical_data, on='sampleID', how='left')
-        unique_merged_data = merged_data.drop_duplicates(subset='sampleID')
-
+        clinical_data = adata.obs[[sample_col, feature]].rename(columns={sample_col: "sampleID"})
+        merged_data = proportion_df.merge(clinical_data, on="sampleID", how="left")
+        unique_merged_data = merged_data.dropna()
+        unique_merged_data = unique_merged_data.drop_duplicates(subset="sampleID")
+        
         # Detect and remove non-numeric values
         numeric_values = detect_numeric_values(unique_merged_data[feature])
-        unique_merged_data = unique_merged_data[~unique_merged_data[feature].isin(numeric_values)]
-
-        # Convert 'Lieden' column to string
-        unique_merged_data['Predicted_Labels'] = unique_merged_data['Predicted_Labels'].astype(str)
-
-        # Create a contingency table
-        contingency_table = pd.crosstab(unique_merged_data['Predicted_Labels'], unique_merged_data[feature])
-
-        # Chi-squared Test of Independence
-        chi2_stat, chi2_p_value, _, _ = chi2_contingency(contingency_table)
-
-        results_list.append({
-            'Feature': feature,
-            'ChiSquared_Statistic': chi2_stat,
-            'ChiSquared_PValue':float(chi2_p_value),
-        })
-
+        unique_merged_data = unique_merged_data[~unique_merged_data[feature].isin(numeric_values)].copy()
+        
+        # Convert 'Leiden' column to string
+        unique_merged_data["Predicted_Labels"] = unique_merged_data["Predicted_Labels"].astype(str)
+        
+        # Drop unused categories.
+        if isinstance(unique_merged_data[feature].dtype, pd.CategoricalDtype):
+            unique_merged_data[feature] = unique_merged_data[feature].cat.remove_unused_categories()
+        
+        # Create a contingency table.
+        contingency_table = pd.crosstab(unique_merged_data["Predicted_Labels"], unique_merged_data[feature])
+        # We remove rows/columns that are always 0. 
+        contingency_table = contingency_table.loc[contingency_table.sum(axis=1) > 0, contingency_table.sum(axis=0) > 0]
+        
+        # We get how many groups we have left. Since we need at least a 2x2 matrix.
+        number_groups0 = contingency_table.shape[0]
+        number_groups1 = contingency_table.shape[1]
+        
+        # A chi-squared test needs at least two clusters and two feature levels.
+        if number_groups0 < 2 or number_groups1 < 2:
+            results_list.append({
+                "Feature": feature,
+                "ChiSquared_Statistic": np.nan,
+                "ChiSquared_P_Value": np.nan,
+                "Number_Samples": unique_merged_data.shape[0],
+                "Number_Groups": number_groups0,
+                "Number_Levels": number_groups1,
+            })
+        else:
+            chi2_stat, chi2_p_value, _, _ = chi2_contingency(contingency_table)
+            results_list.append({
+                "Feature": feature,
+                "ChiSquared_Statistic": chi2_stat,
+                "ChiSquared_P_Value": float(chi2_p_value),
+                "Number_Samples": unique_merged_data.shape[0],
+                "Number_Groups": number_groups0,
+                "Number_Levels": number_groups1,
+            })
+    
     df_results = pd.DataFrame(results_list)
-    df_results = df_results[df_results['ChiSquared_PValue'].astype(float)< 0.05]
+    # df_results = df_results[df_results["ChiSquared_P_Value"].astype(float) < 0.05]
     df_results_sorted = df_results.sort_values(by=sort_column)
     return df_results_sorted
 
-def correlation_numeric_with_clustering(adata, proportion_df, sample_col='sampleID', features=[],sort_column='ANOVA_P_Value'):
-    
+
+def correlation_numeric_with_clustering(
+    adata,
+    proportion_df,
+    sample_col="sampleID",
+    features=[],
+    sort_column="ANOVA_P_Value"):
     """
     Calculate the correlation of numeric variables with clustering results.
-
+    
     Parameters:
-    adata (AnnData): Input AnnData object containing clinical data and clustering results.
-    proportion_df (DataFrame): DataFrame containing predicted cluster labels.
-    sample_col (str): Name of the column in the AnnData object that contains sample IDs. Default is 'sampleID'.
-    features (list): List of numeric variables to be correlated with clustering results.
-    sort_column (str): Column by which the results DataFrame should be sorted. Default is 'ANOVA_P_Value'.
-
+    -- adata (AnnData): Input AnnData object containing clinical data and clustering results.
+    -- proportion_df (DataFrame): DataFrame containing predicted cluster labels.
+                                  This DataFrame must contain 'sampleID' and 'Predicted_Labels'.
+    -- sample_col (str): Name of the column in the AnnData object that contains sample IDs. Default is 'sampleID'.
+    -- features (list): List of numeric variables to be correlated with clustering results.
+    -- sort_column (str): Column by which the results DataFrame should be sorted. Default is 'ANOVA_P_Value'.
+                          Has to be either: Feature, ANOVA_F_Statistic, ANOVA_P_Value, Number_Samples, Number_Groups, Number_Sufficient_Groups
+    
     Returns:
-    df_results_sorted (DataFrame): Sorted DataFrame containing correlation results with clustering data.
-
+    -- df_results_sorted (DataFrame): Sorted DataFrame containing correlation results with clustering data.
+    
     Output:
     - Results DataFrame: Contains the feature, ANOVA F-statistic, and ANOVA p-value for each specified numeric variable.
+                         Number_Groups refers to the number of clusters, i.e. most likely Predicted_Labels.
     - The DataFrame is sorted by the specified 'sort_column'.
-
+    
     Example:
     correlation_results = correlation_numeric_with_clustering(adata, proportion_df, sample_col='sampleID',
                                                              features=['Age', 'BMI'], sort_column='ANOVA_P_Value')
     """
+    allowed_sorter_columns = {"Feature", "ANOVA_F_Statistic", "ANOVA_P_Value", "Number_Samples", "Number_Groups", "Number_Sufficient_Groups"}
+    if sort_column not in allowed_sorter_columns:
+        raise KeyError("Your sort_column is not in the allowed list of values.")
+    
+    # Did we supply a feature or forgot it?
+    if len(features) == 0:
+        raise KeyError("Your feature set has length 0. Did you forget to set it?")
+    
+    # We check if the required columns are present. If not, we fail.
+    required = {"sampleID", "Predicted_Labels"}
+    missing = required - set(proportion_df.columns)
+    if missing:
+        raise KeyError(f"proportion_df is missing required columns: {missing}")
+    
+    # Checking if the features are present in adata.
+    if isinstance(features, str):
+        features = [features]
+    
+    features = list(features)
+    required_features = {sample_col, *features}
+    missing = required_features - set(adata.obs.columns)
+    if missing:
+        raise KeyError(f"adata.obs is missing required columns: {missing}")
+    
     results_list = []
-    proportion_df = proportion_df[['sampleID', 'Predicted_Labels']]
-
+    proportion_df = proportion_df[["sampleID", "Predicted_Labels"]]
     for feature in features:
-        clinical_data = adata.obs[[sample_col, feature]].rename(columns={sample_col: 'sampleID'})
-        merged_data = proportion_df.merge(clinical_data, on='sampleID', how='left')
-        unique_merged_data = merged_data.drop_duplicates(subset='sampleID')
-
+        clinical_data = adata.obs[[sample_col, feature]].rename(columns={sample_col: "sampleID"})
+        
+        merged_data = proportion_df.merge(clinical_data, on="sampleID", how="left")
+        unique_merged_data = merged_data.dropna()
+        unique_merged_data = unique_merged_data.drop_duplicates(subset="sampleID")
+        
         # Detect and remove non-numeric values
         values_to_remove = detect_values_to_remove(unique_merged_data[feature])
-        unique_merged_data = unique_merged_data[~unique_merged_data[feature].isin(list(np.unique(values_to_remove)))]
-
-        # Convert 'Lieden' column to string
-        unique_merged_data['Predicted_Labels'] = unique_merged_data['Predicted_Labels'].astype(str)
-
+        unique_merged_data = unique_merged_data[~unique_merged_data[feature].isin(list(np.unique(values_to_remove)))].copy()
+        
+        # Convert 'Leiden' column to string
+        unique_merged_data["Predicted_Labels"] = unique_merged_data["Predicted_Labels"].astype(str)
+        
+        # Ensuring that the feature is actually numeric.
+        unique_merged_data[feature] = pd.to_numeric(unique_merged_data[feature])
+        # In case to_numeric has produced NAs, we remove them here too.
+        unique_merged_data = unique_merged_data.dropna(subset=[feature])
+        
         # Separate data into groups based on clusters
-        groups = [unique_merged_data[unique_merged_data['Predicted_Labels'] == group][feature].values for group in unique_merged_data['Predicted_Labels'].unique()]
-
-        # ANOVA test
-        anova_result = f_oneway(*groups)
-
-        # Kruskal-Wallis H-test
-        kruskal_result = kruskal(*groups)
-
-        results_list.append({
-            'Feature': feature,
-            'ANOVA_F_Statistic': anova_result.statistic,
-            'ANOVA_P_Value': float(anova_result.pvalue),
-           # 'Kruskal_Wallis_H_Statistic': kruskal_result.statistic,
-           # 'Kruskal_Wallis_P_Value': kruskal_result.pvalue,
-        })
-
+        groups = [unique_merged_data[unique_merged_data["Predicted_Labels"] == group][feature].values for group in unique_merged_data["Predicted_Labels"].unique()]
+        
+        # Checking if the number of samples is large enough for a test.
+        sample_size_check = [observation for observation in groups if len(observation) >= 2]
+        # If we have only 1 group, we cannot make a comparison.
+        # If only have groups with 1 observation, we can also make now comparison.
+        if len(groups) < 2 or len(sample_size_check) < 2:
+            results_list.append({
+                "Feature": feature,
+                "ANOVA_F_Statistic": np.nan,
+                "ANOVA_P_Value": np.nan,
+                # "Kruskal_Wallis_H_Statistic": np.nan,
+                # "Kruskal_Wallis_P_Value": np.nan,
+                "Number_Samples": unique_merged_data.shape[0],
+                "Number_Groups": len(groups),
+                "Number_Sufficient_Groups": len(sample_size_check),
+            })
+        else:
+            # ANOVA test
+            anova_result = f_oneway(*groups)
+            
+            # Kruskal-Wallis H-test
+            # kruskal_result = kruskal(*groups)
+            
+            results_list.append({
+                "Feature": feature,
+                "ANOVA_F_Statistic": anova_result.statistic,
+                "ANOVA_P_Value": float(anova_result.pvalue),
+                # "Kruskal_Wallis_H_Statistic": kruskal_result.statistic,
+                # "Kruskal_Wallis_P_Value": kruskal_result.pvalue,
+                "Number_Samples": unique_merged_data.shape[0],
+                "Number_Groups": len(groups),
+                "Number_Sufficient_Groups": len(sample_size_check),
+            })
+    
     df_results = pd.DataFrame(results_list)
-    df_results = df_results[df_results['ANOVA_P_Value'].astype(float)< 0.05]
+    # df_results = df_results[df_results["ANOVA_P_Value"].astype(float) < 0.05]
+    # df_results = df_results[df_results["Kruskal_Wallis_P_Value"].astype(float) < 0.05]
     df_results_sorted = df_results.sort_values(by=sort_column)
     return df_results_sorted
+
 
 
 def clinical_variables_corr_sub_clusters(adata,sorter_order=None,size_fig=(12,12),col_cluster=False, row_cluster=False,cmap="Blues_r", yticklabels=False, xticklabels=False,sample_col='donor_id',feature='sex',
