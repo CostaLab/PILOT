@@ -1183,15 +1183,13 @@ def gene_cluster_differentiation(adata,cellnames=[],sort=['Expression pattern', 
                                        end=end)
 
 
-    
-    
 def morphological_features_importance(data,name_cell='All',col='Time_score',genes_index=[],p_value=0.05,max_iter_huber=100,epsilon_huber=1.35,x_lim=135,width=20,height=8,store_data=True,genes_interesting=[],modify_r2 = False,model_type = 
 'HuberRegressor',fontsize=10,alpha=0.5,cmap='viridis',color_back=None,save_as_pdf=False,plot_genes=True,path=None):
     
     
     """
     Perform importance analysis for morphological features.
-
+    
     Parameters
     ----------
     data : pandas DataFrame
@@ -1236,19 +1234,16 @@ def morphological_features_importance(data,name_cell='All',col='Time_score',gene
         Whether to plot the gene importance analysis, by default True.
     path : str, optional
         Path to store the analysis results and plots, by default None.
-
+    
     Returns
     -------
     None.
     Performs gene importance analysis for morphological features based on specified parameters and saves the results.
     """
     
-   
-   
     if path==None:
         path='Results_PILOT/'
         
-       
     RNA_data = pd.DataFrame()
     RNA_data['label'] = data[col]
     print(f"Name of Cluster : \033[1m{name_cell}\033[0m")
@@ -1265,14 +1260,12 @@ def morphological_features_importance(data,name_cell='All',col='Time_score',gene
     #%%% fit best models for RNA data
 
     sorted_best =fit_best_model(RNA_target, RNA_data, model_type,max_iter_huber,epsilon_huber,p_value,modify_r2)
-    
- 
-        
-    
-    
+
+
     #%%% plot RNA data
     if not os.path.exists(path+'/Markers'):
         os.makedirs(path+'/Markers')
+    
     if not os.path.exists(path+'/Markers/'+name_cell):
             os.makedirs(path+'/Markers/'+name_cell)
     
@@ -1283,38 +1276,27 @@ def morphological_features_importance(data,name_cell='All',col='Time_score',gene
     
     pro=cal_proportions(data) #calculate sparsity  
     if store_data:
-    
-        
         save_data(sorted_best, 
                    ['Gene ID', 'Expression pattern', 'Slope', 'Fitted function', 'Intercept', 'Treat', 'Treat2', 'adjusted P-value', 'R-squared','mod_rsquared_adj'],
                        path+'/Markers/',name_cell,p_val=p_value,pro=pro)
-        
-        
-       
+    
     if plot_genes:
         with plt.rc_context():
             plot_best_matches(RNA_target, RNA_data,data, sorted_best, "Gene expression",plot_color='tab:orange',num=len(sorted_best.keys()),x_lim=x_lim,width=width,height=height,fontsize=fontsize,alpha=alpha,cmap=cmap,color_back=color_back)
             plt.savefig(path+'/Markers/'+name_cell+'/'+'Morphological_ranking for cell type '+name_cell+suffix)
-
         
         if len(genes_interesting):
             print(" Plots for interesting Morphological features: ")
             filtered_dict = {k:v for (k,v) in sorted_best.items() if k in genes_interesting}
             with plt.rc_context():
-
-
                 plot_best_matches(RNA_target, RNA_data,data, filtered_dict, "Gene expression",             plot_color='tab:orange',num=len(filtered_dict.keys()),width=width,height=height,x_lim=x_lim,fontsize=fontsize,alpha=alpha,cmap=cmap,color_back=color_back)
                 plt.savefig(path+'/Markers/'+name_cell+'/'+'Interesting Morphological_features_ranking for cell type '+name_cell+'.png')
-
-                
-
-                
 
 
 def norm_morphological_features(path=None,column_names=[],name_cell=None):
     """
     Normalize morphological features.
-
+    
     Parameters
     ----------
     path : str, optional
@@ -1323,7 +1305,7 @@ def norm_morphological_features(path=None,column_names=[],name_cell=None):
         List of column names representing morphological features, by default [].
     name_cell : str, optional
         Name of the cell or cluster for which to normalize features, by default None.
-
+    
     Returns
     -------
     data : pandas DataFrame
@@ -1336,12 +1318,12 @@ def norm_morphological_features(path=None,column_names=[],name_cell=None):
             data[col]=np.log(data[col]+1)
             
     return data
-                
-             
+
+
 def results_gene_cluster_differentiation(cluster_name=None,sort_columns=['pvalue'],ascending=[True],threshold=0.5,p_value=0.01):
     """
     Retrieve and sort gene cluster statistics based on specified criteria.
-
+    
     Parameters:
         cluster_name : str, optional
             The name of the gene cluster to retrieve statistics for. Default is None.
@@ -1353,7 +1335,7 @@ def results_gene_cluster_differentiation(cluster_name=None,sort_columns=['pvalue
              Select genes with fold changes higher than the defined threshold. Default is 0.5.
         p_value: float, optional
                Select genes with the Wald test p-value less than the defined one. Default is 0.01.
-
+    
     Returns:
         pandas.DataFrame
             A sorted dataframe containing gene cluster statistics based on the specified criteria.
@@ -1366,144 +1348,202 @@ def results_gene_cluster_differentiation(cluster_name=None,sort_columns=['pvalue
     df['pvalue']=df['pvalue'].astype(float)
     df=df[df['pvalue'] < p_value]
     df_sorted = df.sort_values(by=sort_columns, ascending=ascending)
- 
+    
     return df_sorted[['gene','cluster','waldStat','pvalue','FC','Expression pattern','fit-pvalue','fit-mod-rsquared']]  
 
 
 def detect_numeric_values(series):
+    """
+    This function is used to detect numerical values.
+    These values are then removed for association and correlation purposes,
+    if we call it in the categorical functions. The actual removal is done
+    by the calling function.
+    """
     numeric_values = []
-
     for value in series:
+        if pd.isna(value):
+            continue
+        
+        if isinstance(value, (bool, np.bool_)):
+            continue
+        
         try:
-            # Try to convert the value to numeric
-            float_value = float(value)
-            # If conversion succeeds, it's numeric, so add it to the list
-            numeric_values.append(float_value)
-        except ValueError:
-            # If conversion fails, it's not numeric, so continue to the next value
-            pass
-
+            float(value)
+        except (TypeError, ValueError):
+            continue
+        
+        numeric_values.append(value)
+    
     return numeric_values
 
 
-def correlation_categorical_with_trajectory(adata, sample_col='sampleID', features=[],sort_column='ANOVA_PValue'):
+def correlation_categorical_with_trajectory(
+    adata, 
+    sample_col="sampleID", 
+    features=[],
+    sort_column="ANOVA_PValue"):
     """
     Calculate the correlation of categorical variables with trajectory information.
-
+    
     Parameters:
     adata (AnnData): Input AnnData object containing trajectory and clinical data.
     sample_col (str): Name of the column in the AnnData object that contains sample IDs. Default is 'sampleID'.
     features (list): List of categorical variables to be correlated with trajectory data.
     sort_column (str): Column by which the results DataFrame should be sorted. Default is 'ANOVA_PValue'.
-
+    
     Returns:
     df_results_sorted (DataFrame): Sorted DataFrame containing correlation results with trajectory data.
-
+    
     Output:
     - Results DataFrame: Contains the feature, ANOVA F-statistic, and ANOVA p-value for each specified categorical variable.
     - The DataFrame is sorted by the specified 'sort_column'.
-
+    
     Example:
-    correlation_results = correlation_categorical_with_trajectory(adata, sample_col='sampleID', features=['Gender', 'Treatment'],
-                                                                sort_column='ANOVA_PValue')
+    correlation_results = correlation_categorical_with_trajectory(adata, sample_col='sampleID', features=['Gender', 'Treatment'], sort_column='ANOVA_PValue')
     """
     results_list = []
-    orders=adata.uns['orders']
+    orders=adata.uns["orders"]
     for feature in features:
-        clinical_data = adata.obs[[sample_col, feature]].rename(columns={sample_col: 'sampleID'})
-        merged_data = orders.merge(clinical_data, on='sampleID', how='left')
-        unique_merged_data = merged_data.drop_duplicates(subset='sampleID')
-
+        clinical_data = adata.obs[[sample_col, feature]].rename(columns={sample_col: "sampleID"})
+        merged_data = orders.merge(clinical_data, on="sampleID", how="left")
+        unique_merged_data = merged_data.drop_duplicates(subset="sampleID")
+        
         # Detect and remove non-numeric values
         numeric_values = detect_numeric_values(unique_merged_data[feature])
         unique_merged_data = unique_merged_data[~unique_merged_data[feature].isin(numeric_values)]
-        unique_merged_data = unique_merged_data.dropna(subset=['Time_score', feature])
+        unique_merged_data = unique_merged_data.dropna(subset=["Time_score", feature])
         
         # Perform ANOVA
-        anova_stat, anova_p_value = f_oneway(*[group['Time_score'] for name, group in unique_merged_data.groupby(feature)])
-
+        anova_stat, anova_p_value = f_oneway(*[group["Time_score"] for name, group in unique_merged_data.groupby(feature)])
+        
         # Perform Kruskal-Wallis H-test
-        kruskal_stat, kruskal_p_value = kruskal(*[group['Time_score'] for name, group in unique_merged_data.groupby(feature)])
+        # kruskal_stat, kruskal_p_value = kruskal(*[group["Time_score"] for name, group in unique_merged_data.groupby(feature)])
         
         results_list.append({
-            'Feature': feature,
-            'ANOVA_FStatistic': anova_stat,
-            'ANOVA_PValue': float(anova_p_value),
+            "Feature": feature,
+            "ANOVA_FStatistic": anova_stat,
+            "ANOVA_PValue": float(anova_p_value),
            # 'KruskalWallisH_Statistic': kruskal_stat,
            # 'KruskalWallisH_PValue': kruskal_p_value
         })
-
+    
     df_results = pd.DataFrame(results_list)
-    df_results = df_results[df_results['ANOVA_PValue'].astype(float)< 0.05]
+    # df_results = df_results[df_results["ANOVA_PValue"].astype(float)< 0.05]
     df_results_sorted = df_results.sort_values(by=sort_column)
     return df_results_sorted
 
 
 
 def detect_values_to_remove(series):
+    """
+    This function is used to detect non-numerical values.
+    These values are then removed for association and correlation purposes,
+    if we call it in the numerical functions. The actual removal is done
+    by the calling function.
+    """
     values_to_remove = []
-
     for value in series:
+        if pd.isna(value):
+            continue
+        
         try:
-            # Try to convert the value to numeric
             float(value)
-        except ValueError:
-            # If conversion fails, add the value to the list
+        except (TypeError, ValueError):
+            # If conversion fails, add the value to the list.
             values_to_remove.append(value)
-
+    
     return values_to_remove
 
-def correlation_numeric_with_trajectory(adata, sample_col='sampleID', features=[],sort_column='Spearman_PValue'):
+
+def correlation_numeric_with_trajectory(
+    adata,
+    sample_col="sampleID",
+    features=[],
+    sort_column="Spearman_PValue"):
     """
     Calculate the correlation of numeric variables with trajectory information.
-
+    
     Parameters:
-    adata (AnnData): Input AnnData object containing trajectory and clinical data.
-    sample_col (str): Name of the column in the AnnData object that contains sample IDs. Default is 'sampleID'.
-    features (list): List of numeric variables to be correlated with trajectory data.
-    sort_column (str): Column by which the results DataFrame should be sorted. Default is 'Spearman_PValue'.
-
+    -- adata (AnnData): Input AnnData object containing trajectory and clinical data.
+    -- sample_col (str): Name of the column in adata.obs that contains sample IDs.
+    -- features (list): List of numeric variables to be correlated with the trajectory.
+    -- sort_column (str): Column to sort by. Has to be either: Feature,
+       Spearman_Correlation, Spearman_PValue,
+       Number_Samples.
+    
     Returns:
-    df_results_sorted (DataFrame): Sorted DataFrame containing correlation results with trajectory data.
-
-    Output:
-    - Results DataFrame: Contains the feature, Spearman correlation coefficient, and Spearman p-value for each specified numeric variable.
-    - The DataFrame is sorted by the specified 'sort_column'.
-
-    Example:
-    correlation_results = correlation_numeric_with_trajectory(adata, sample_col='sampleID', features=['Age', 'BMI'],
-                                                             sort_column='Spearman_PValue')
+    -- df_results_sorted (DataFrame): Sorted results. Features that could not be
+       tested are returned with NaN statistics rather than being dropped.
     """
+    allowed_sorter_columns = {"Feature", "Spearman_Correlation", "Spearman_PValue", "Number_Samples"}
+    if sort_column not in allowed_sorter_columns:
+        raise KeyError("Your sort_column is not in the allowed list of values.")
+    
+    # Did we supply a feature or forgot it?
+    if len(features) == 0:
+        raise KeyError("Your feature set has length 0. Did you forget to set it?")
+    
+    if isinstance(features, str):
+        features = [features]
+    
+    features = list(features)
+    required_features = {sample_col, *features}
+    missing = required_features - set(adata.obs.columns)
+    if missing:
+        raise KeyError(f"adata.obs is missing required columns: {missing}")
+    
+    orders = adata.uns["orders"]
+    if "Time_score" not in orders.columns:
+        raise KeyError("adata.uns['orders'] is missing the Time_score column.")
+    
     results_list = []
-    orders=adata.uns['orders']
     for feature in features:
-        clinical_data = adata.obs[[sample_col, feature]].rename(columns={sample_col: 'sampleID'})
-        merged_data = orders.merge(clinical_data, on='sampleID', how='left')
-        unique_merged_data = merged_data.drop_duplicates(subset='sampleID')
-        values_to_remove = np.unique(detect_values_to_remove(unique_merged_data[feature]))
-        unique_merged_data=unique_merged_data[~unique_merged_data[feature].isin(values_to_remove)]
-        time_score = unique_merged_data['Time_score']
-        test_feature = unique_merged_data[feature]
-        spearman_corr, spearman_p_value = spearmanr(time_score, test_feature)
-
-        # Calculate Kendall's Tau
-        kendall_corr, kendall_p_value = kendalltau(time_score, test_feature)
-
-        # Append results to list
+        clinical_data = adata.obs[[sample_col, feature]].rename(columns={sample_col: "sampleID"})
+        # Casting out of Categorical, otherwise pd.to_numeric below fails.
+        clinical_data[feature] = clinical_data[feature].astype(object)
+        
+        merged_data = orders.merge(clinical_data, on="sampleID", how="left")
+        
+        # Detect and remove non-numeric values.
+        values_to_remove = detect_values_to_remove(merged_data[feature])
+        merged_data = merged_data[~merged_data[feature].isin(set(values_to_remove))].copy()
+        
+        # Ensuring that the feature is actually numeric.
+        merged_data[feature] = pd.to_numeric(merged_data[feature], errors="coerce")
+        
+        # Dropping missing values before de-duplicating, so a sample is not lost
+        # just because its first cell happened to carry the NaN.
+        merged_data = merged_data.dropna(subset=["Time_score", feature])
+        unique_merged_data = merged_data.drop_duplicates(subset="sampleID")
+        
+        time_score = unique_merged_data["Time_score"].to_numpy(dtype=float)
+        test_feature = unique_merged_data[feature].to_numpy(dtype=float)
+        number_samples = len(unique_merged_data)
+        
+        spearman_corr = spearman_p_value = np.nan
+        # kendall_corr = kendall_p_value = np.nan
+        
+        # A rank correlation needs at least 3 samples and variation in both groups.
+        enough_samples = number_samples >= 3
+        has_variation = np.ptp(time_score) > 0 and np.ptp(test_feature) > 0
+        
+        if enough_samples and has_variation:
+            spearman_corr, spearman_p_value = spearmanr(time_score, test_feature)
+            # kendall_corr, kendall_p_value = kendalltau(time_score, test_feature)
+        
         results_list.append({
-            'Feature': feature,
-            'Spearman_Correlation': spearman_corr,
-            'Spearman_PValue': float(spearman_p_value),
-            # 'Kendall_Correlation': kendall_corr,
-            # 'Kendall_PValue': kendall_p_value
+            "Feature": feature,
+            "Spearman_Correlation": spearman_corr,
+            "Spearman_PValue": float(spearman_p_value),
+            # "Kendall_Correlation": kendall_corr,
+            # "Kendall_PValue": float(kendall_p_value),
+            "Number_Samples": number_samples,
         })
-       
+    
     df_results = pd.DataFrame(results_list)
-    df_results = df_results[df_results['Spearman_PValue'].astype(float)< 0.05]
-    df_results_sorted = df_results.sort_values(by=sort_column)
+    # df_results = df_results[df_results["Spearman_PValue"].astype(float) < 0.05]
+    df_results_sorted = df_results.sort_values(by=sort_column, na_position="last")
     return df_results_sorted
-
-
 
 
 def correlation_categorical_with_clustering(
@@ -1637,7 +1677,6 @@ def correlation_numeric_with_clustering(
     
     Output:
     - Results DataFrame: Contains the feature, ANOVA F-statistic, and ANOVA p-value for each specified numeric variable.
-                         Number_Groups refers to the number of clusters, i.e. most likely Predicted_Labels.
     - The DataFrame is sorted by the specified 'sort_column'.
     
     Example:
@@ -1679,7 +1718,7 @@ def correlation_numeric_with_clustering(
         
         # Detect and remove non-numeric values
         values_to_remove = detect_values_to_remove(unique_merged_data[feature])
-        unique_merged_data = unique_merged_data[~unique_merged_data[feature].isin(list(np.unique(values_to_remove)))].copy()
+        unique_merged_data = unique_merged_data[~unique_merged_data[feature].isin(set(values_to_remove))].copy()
         
         # Convert 'Leiden' column to string
         unique_merged_data["Predicted_Labels"] = unique_merged_data["Predicted_Labels"].astype(str)
@@ -1733,12 +1772,26 @@ def correlation_numeric_with_clustering(
 
 
 
-def clinical_variables_corr_sub_clusters(adata,sorter_order=None,size_fig=(12,12),col_cluster=False, row_cluster=False,cmap="Blues_r", yticklabels=False, xticklabels=False,sample_col='donor_id',feature='sex',
-                                         figsize_legend=(2, 2),legend_font_size=8,proportion_df=None,save_figures=False):
+def clinical_variables_corr_sub_clusters(
+    adata,
+    sorter_order=None,
+    size_fig=(12,12),
+    col_cluster=False,
+    row_cluster=False,
+    cmap="Blues_r",
+    yticklabels=False,
+    xticklabels=False,
+    sample_col="donor_id",
+    feature="sex",
+    figsize_legend=(2, 2),
+    legend_font_size=8,
+    proportion_df=None,
+    save_figures=False,
+    path_to_results="Results_PILOT/plots"):
     
     """
     Visualize and analyze the correlation between clinical variables and sub-clusters within an AnnData object.
-
+    
     Parameters:
     adata (AnnData): Input AnnData object containing expression data and clinical information.
     sorter_order (list or None): Order in which sub-cluster groups should be displayed. If not provided, the default order is used.
@@ -1752,60 +1805,58 @@ def clinical_variables_corr_sub_clusters(adata,sorter_order=None,size_fig=(12,12
     feature (str): Name of the column in the AnnData object that contains the clinical variable of interest.
     figsize_legend (tuple): Size of the legend figure. Default is (2, 2).
     legend_font_size (int): Font size for the legend. Default is 8.
-    proportion_df (DataFrame or None): DataFrame containing predicted labels for sub-cluster groups. If provided, it will be used to create the 'Lieden' column in the output clustermap.
+    proportion_df (DataFrame or None): DataFrame containing predicted labels for sub-cluster groups. If provided, it will be used to create the 'Leiden' column in the output clustermap.
     save_figures (bool): Whether to save clustermap and legend as PDF files. Default is False.
-
+    
     Returns:
     None
     """
-    #EMD_df['Lieden_Label'] =EMD_df['Lieden'].astype(str)+'_'+EMD_df['group'].astype(str)
-    EMD_df=pd.DataFrame(adata.uns['EMD'],columns=adata.uns['proportions'].keys())
-    EMD_df['sampleID']=adata.uns['proportions'].keys()
+    EMD_df = pd.DataFrame(adata.uns["EMD"], columns=adata.uns["proportions"].keys())
+    EMD_df["sampleID"] = adata.uns["proportions"].keys()
     # Convert the 'obs' slot into a DataFrame
     obs_df = pd.DataFrame(adata.obs)
     # Use drop_duplicates to get unique samples and their 'Sex' data
     obs_df = pd.DataFrame(adata.obs)
-    unique_features =list( obs_df[[sample_col, feature]].drop_duplicates(subset=sample_col)[feature])
-    EMD_df['group']=unique_features
-    EMD_df['Lieden']=list(proportion_df['Predicted_Labels'])
+    unique_features = list(obs_df[[sample_col, feature]].drop_duplicates(subset=sample_col)[feature])
+    EMD_df["group"] = unique_features
+    EMD_df["Leiden"] = list(proportion_df["Predicted_Labels"])
     sorter=sorter_order
-    EMD_df['Lieden'] = EMD_df.Lieden.astype("category")
-    EMD_df['Lieden'] = EMD_df['Lieden'].cat.set_categories(sorter)
-    EMD_df=EMD_df.sort_values(["Lieden"])
+    EMD_df["Leiden"] = EMD_df.Leiden.astype("category")
+    EMD_df["Leiden"] = EMD_df["Leiden"].cat.set_categories(sorter)
+    EMD_df=EMD_df.sort_values(["Leiden"])
     obs = pd.DataFrame()
-    import anndata
-    obs['sampleID']=EMD_df.sampleID.astype(str)
-    obs['Lables']=EMD_df.group.astype(str)
-    obs['Lieden']=EMD_df.Lieden.astype(str)
+    obs["sampleID"] = EMD_df.sampleID.astype(str)
+    obs["Lables"] = EMD_df.group.astype(str)
+    obs["Leiden"] = EMD_df.Leiden.astype(str)
     df_genes = pd.DataFrame(index = EMD_df.columns[0:EMD_df.shape[0]])
-    adata_clustering = anndata.AnnData(X = EMD_df[ EMD_df.columns[0:EMD_df.shape[0]]].values, var =df_genes, obs = obs )
-    color_palette = sns.color_palette("husl", len(EMD_df['group'].unique()))
+    adata_clustering = anndata.AnnData(X = EMD_df[ EMD_df.columns[0:EMD_df.shape[0]]].values, var=df_genes, obs=obs)
+    color_palette = sns.color_palette("husl", len(EMD_df["group"].unique()))
     # Create a dictionary to map unique values to colors
-    lut = {value: color for value, color in zip(EMD_df['group'].unique(), color_palette)}
+    lut = {value: color for value, color in zip(EMD_df["group"].unique(), color_palette)}
     # Map colors to the 'group' column
-    row_colors = EMD_df['group'].map(lut)
-   
-
+    row_colors = EMD_df["group"].map(lut)
+    
     handles = [Patch(facecolor=lut[name]) for name in lut]
     
     legend_fig = plt.figure(figsize=figsize_legend)  # Adjust the figure size as needed
     legend_font_size = legend_font_size  # Adjust the font size as needed
-
+    
     # Adjust the font size for the legend
-    plt.legend(handles, lut, title='Groups', loc='best', fontsize=legend_font_size)  # Adjust the fontsize here
-
+    plt.legend(handles, lut, title="Groups", loc="best", fontsize=legend_font_size)  # Adjust the fontsize here
+    
     # Remove unnecessary axes
-    plt.axis('off')
+    plt.axis("off")
     plt.gca().xaxis.set_major_locator(plt.NullLocator())
     plt.gca().yaxis.set_major_locator(plt.NullLocator())
-        # Save the legend as a separate PDF
+    # Save the legend as a separate PDF
     if save_figures:
-        with PdfPages('legend.pdf') as pdf:
+        os.makedirs(path_to_results, exist_ok=True)
+        with PdfPages(f"{path_to_results}/legend_{feature}.pdf") as pdf:
             pdf.savefig(legend_fig)
+    
     clustermap=sns.clustermap(EMD_df[adata_clustering.obs.sampleID],figsize=size_fig,col_cluster=col_cluster, row_cluster=row_cluster,cmap=cmap, yticklabels=yticklabels, xticklabels=xticklabels,tree_kws=dict(linewidths=2),row_colors=row_colors)
     if save_figures:
-        clustermap.savefig("heatmap.pdf")
-
+        clustermap.savefig(f"{path_to_results}/heatmap_{feature}.pdf")
 
 
 def Precomputed_distance(adata,distances,cost_df,features_matrix,emb_matrix='X_PCA',
