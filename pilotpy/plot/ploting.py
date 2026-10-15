@@ -32,8 +32,6 @@ from ..tools.Gene_cluster_specific_functions import *
 warnings.filterwarnings('ignore')
 
 
-
-
 def trajectory(adata,
                n_evecs = 2, 
                epsilon =1, 
@@ -154,8 +152,405 @@ def trajectory(adata,
     
     
     adata.uns['embedding']=embedding
+
+
+def trajectory_calculation(
+    adata,
+    n_evecs=2, 
+    epsilon=1, 
+    alpha=0.5,
+    knn=64,):
+    """
+    Find trajectories using Diffusion Maps.
+    The function 'trajectory' does both the calculation and the plotting.
+    This leads to a new trajectory every time a plot is generated.
+    This function only calculates the trajectory.
+    The plotting is then done using 'trajectory_plotting'.
     
-   
+    Changes the input adata object.
+    
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data matrix with the sample-by-sample EMD distance matrix
+        stored in 'adata.uns["EMD"]'.
+    n_evecs : int, optional
+        Number of diffusion eigenvectors (embedding dimensions) to compute,
+        by default 2. Must be at least 2 for plotting.
+    epsilon : float or str, optional
+        Kernel bandwidth, either a fixed value or the name of an automatic
+        selection method supported by pydiffmap (e.g. 'bgh'), by default 1.
+    alpha : float, optional
+        Exponent of the density normalization in the diffusion map,
+        by default 0.5.
+    knn : int, optional
+        Number of nearest neighbors used to construct the kernel,
+        by default 64.
+    
+    Returns
+    -------
+    None
+        The adata object is modified in place.
+    
+    """
+    EMD=adata.uns["EMD"]/adata.uns["EMD"].max()   
+    mydmap = diffusion_map.DiffusionMap.from_sklearn(n_evecs=n_evecs, 
+                                                     epsilon=epsilon, 
+                                                     alpha=alpha, 
+                                                     k=knn)
+    embedding = mydmap.fit_transform(EMD)
+    adata.uns["embedding"] = embedding
+
+
+def trajectory_plotting(
+    adata,
+    sample_col=1, 
+    clusters="status",
+    label_act=False,
+    colors=["#377eb8","#ff7f00","#e41a1c"],
+    location_labels="best", 
+    figsize=(12,12),
+    font_size=24,
+    axes_line_width=1,
+    axes_color="black",
+    facecolor="white",
+    point_size=100,
+    fontsize_legend=24,
+    alpha_trans=1,
+    plot_path = "Results_PILOT/plots",
+    plot_title = "Trajectory of the disease progression",):
+    """
+    Plot trajectory so it stays the same.
+    The function 'trajectory' does both the calculation and the plotting.
+    This leads to a new trajectory every time a plot is generated.
+    This function only plots the trajectory.
+    The calculation is done using 'trajectory_calculation'.
+    
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data matrix with the embedding in adata.uns['embedding']
+        (computed by 'trajectory_calculation') and the sample annotation
+        table in adata.uns['annot'].
+    sample_col : int, optional
+        Position of the sample ID column in adata.uns['annot'], used to
+        reduce the table to one row per sample, by default 1.
+    clusters : str, optional
+        Column of adata.uns['annot'] whose categories define the point
+        colors and legend entries, by default "status".
+    label_act : bool, optional
+        If True, write each sample's ID next to its point, by default False.
+    colors : list of str, optional
+        Colors assigned to the categories of 'clusters' in order of
+        appearance. Colors repeat if there are more categories than colors.
+    location_labels : str, optional
+        Legend position, any value accepted by matplotlib 'loc'
+        (e.g. 'best', 'upper right'), by default 'best'.
+    figsize : tuple of float, optional
+        Figure width and height in inches, by default (12, 12).
+    font_size : int, optional
+        Base font size for title, tick labels and sample labels,
+        by default 24.
+    axes_line_width : float, optional
+        Line width of the axes frame, by default 1.
+    axes_color : str, optional
+        Color of the axes frame, by default 'black'.
+    facecolor : str, optional
+        Background color of the plotting area, by default 'white'.
+    point_size : float, optional
+        Marker size, by default 100.
+    fontsize_legend : int, optional
+        Font size of the legend entries, by default 24.
+    alpha_trans : float, optional
+        Marker opacity between 0 (transparent) and 1 (opaque), by default 1.
+    plot_path : str or Path, optional
+        Directory where the figure is saved, created if it does not exist,
+        by default 'Results_PILOT/plots'.
+    plot_title : str, optional
+        Plot title, also used as the file name ('<plot_title>.png'),
+        by default 'Trajectory of the disease progression'.
+    
+    """
+    plot_path=Path(plot_path)    
+    plot_path.mkdir(parents=True, exist_ok=True)
+    
+    embedding = adata.uns["embedding"]
+    df=adata.uns["annot"]
+    custom_cycler = (cycler(color=colors))
+    sample_name = df.columns[sample_col]
+    df = df.drop_duplicates(subset=[sample_name])
+    
+    sample_order = list(adata.uns["proportions"].keys())
+    pos = pd.Index(df[sample_name]).get_indexer(sample_order)
+    if (pos == -1).any():
+        missing = [s for s, p in zip(sample_order, pos) if p == -1]
+        raise ValueError(f"Samples missing from adata.uns['annot']: {missing}")
+    
+    df = df.iloc[pos]
+    
+    if len(df) != embedding.shape[0]:
+        raise ValueError(f"{len(df)} samples vs {embedding.shape[0]} embedding rows")
+    
+    rc = {
+        "font.size": font_size,
+        "axes.edgecolor": axes_color,
+        "axes.linewidth": axes_line_width,
+    }
+    with plt.rc_context(rc):
+        fig = plt.figure(figsize=figsize)
+        ax = plt.gca()
+        ax.set(facecolor=facecolor)
+        ax.set_prop_cycle(custom_cycler)
+        
+        for category in df[clusters].unique():
+            aux = np.array(df[clusters] == category)
+            group_data = embedding[aux]
+            ax.scatter(group_data[:,0],group_data[:,1], alpha=alpha_trans, label=category, s=point_size) 
+            
+            if label_act == True:
+                names = np.array(df[df[clusters] == category][sample_name])
+                k = 0
+                for txt in names:
+                    ax.annotate(txt, (group_data[k,0], group_data[k,1]),fontsize=font_size)
+                    k=k+1
+        
+        ax.legend(loc=location_labels, fontsize=fontsize_legend)
+        plt.title(plot_title)
+        plt.savefig(plot_path / f"{plot_title}.png", bbox_inches="tight")
+        plt.show()
+    
+    plt.close(fig)
+
+
+def plot_trajectory_continuous(
+    adata,
+    obs_key,
+    out_file,
+    sample_col="sampleID",
+    title=None,
+    label=None,
+    cmap="viridis",
+    na_color="lightgrey",
+    figsize=(8, 8),
+    dpi=300,
+    point_size=100,
+    alpha=1,
+    font_size=16,
+    vmin=None,
+    vmax=None,):
+    """
+    Scatter the sample-level embedding coloured by a variable from adata.obs.
+    
+    The cell-level column is collapsed to one value per sample and reordered
+    to match the embedding rows.
+    
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data matrix with the embedding in adata.uns['embedding'],
+        the sample order in adata.uns['proportions'] and cell-level
+        metadata in adata.obs.
+    obs_key : str
+        Column of adata.obs holding the value to color by. Must be
+        constant within each sample. Non-numeric values are treated as missing.
+    out_file : str or Path
+        Output path; the extension sets the format (e.g. '.png', '.pdf').
+        Parent directories are created if they do not exist.
+    sample_col : str, optional
+        Column of adata.obs identifying the sample, by default 'sampleID'.
+    title : str, optional
+        Plot title. No title is shown if None (default).
+    label : str, optional
+        Colorbar label. Uses 'obs_key' if None (default).
+    cmap : str or Colormap, optional
+        Colormap for the values, by default 'viridis'.
+    na_color : str, optional
+        Color for samples without a numeric value, by default 'lightgrey'.
+    figsize : tuple of float, optional
+        Figure width and height in inches, by default (8, 8).
+    dpi : int, optional
+        Resolution of the saved figure, mainly relevant for raster formats
+        such as PNG, by default 300.
+    point_size : float, optional
+        Marker size, by default 100.
+    alpha : float, optional
+        Marker opacity between 0 (transparent) and 1 (opaque), by default 1.
+    font_size : int, optional
+        Base font size for title, tick labels, legend and colorbar label,
+        by default 16.
+    vmin, vmax : float, optional
+        Lower and upper limits of the color scale. Taken from the data
+        if None (default).
+    
+    """
+    out_file = Path(out_file)
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+    
+    embedding = adata.uns["embedding"]
+    sample_order = list(adata.uns["proportions"].keys())
+    
+    if len(sample_order) != embedding.shape[0]:
+        raise ValueError(f"{len(sample_order)} samples vs {embedding.shape[0]} embedding rows")
+    
+    grouped = adata.obs.groupby(sample_col, observed=True)[obs_key]
+    
+    n_unique = grouped.nunique(dropna=True)
+    if (n_unique > 1).any():
+        bad = list(n_unique[n_unique > 1].index)
+        raise ValueError(f"{obs_key} is not constant within these samples: {bad}")
+    
+    values = grouped.first().reindex(sample_order)
+    
+    values = pd.to_numeric(values, errors="coerce").to_numpy(dtype=float)
+    na = np.isnan(values)
+    if na.all():
+        raise ValueError(f"No sample has a numeric value for {obs_key}")
+    
+    if na.any():
+        na_samples = [s for s, m in zip(sample_order, na) if m]
+        print(f"{na.sum()} of {len(values)} samples have no numeric {obs_key}: {na_samples}")
+    
+    with plt.rc_context({"font.size": font_size}):
+        fig, ax = plt.subplots(figsize=figsize)
+        
+        if na.any():
+            ax.scatter(embedding[na, 0], embedding[na, 1],
+                       c=na_color, s=point_size, alpha=alpha, label="NA")
+            ax.legend(loc="best", fontsize=font_size)
+        
+        sc = ax.scatter(embedding[~na, 0], embedding[~na, 1],
+                        c=values[~na], cmap=cmap, s=point_size,
+                        alpha=alpha, vmin=vmin, vmax=vmax)
+        
+        cbar = fig.colorbar(sc, ax=ax)
+        cbar.set_label(label or obs_key, fontsize=font_size)
+        
+        if title:
+            ax.set_title(title)
+        
+        fig.savefig(out_file, dpi=dpi, bbox_inches="tight")
+        plt.show()
+    
+    plt.close(fig)
+
+
+def cell_importance_plot(
+    adata,
+    xlim=5,
+    p_val=1,
+    point_size=100,
+    color_back="white",
+    fontsize=20,
+    alpha=1,
+    cmap_proportions="viridis",
+    save_as_pdf=False,
+    save_path=None,
+    figsize_single=(6, 5),
+    dpi=300):
+    """
+    Order cells based on estimated time and visualize cell type importance.
+    
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data matrix containing necessary data.
+    xlim : int, optional
+        Limit for x-axis in the plot, by default 5.
+    p_val : float, optional
+        P-value for filtering the fitting models, by default 0.05.
+    point_size : int, optional
+        Size of points in the plot, by default 100.
+    color_back : str, optional
+        Background color of the plot, by default 'white'.
+    fontsize : int, optional
+        Font size for labels and annotations, by default 20.
+    alpha : float, optional
+        Transparency level for plotting, by default 1.
+    cmap_proportions : str, optional
+        Colormap for plotting proportions over time, by default 'viridis'.
+    save_as_pdf : bool, optional
+        Whether to save the plot as PDF, by default False.
+    save_path : str or None, optional
+        Output folder for the cell-type plots. If None,
+        falls back to the global `path_to_results`.
+    figsize_single : tuple, optional
+        Figure size (width, height) in inches for each individual
+        cell-type plot, by default (6, 5).
+    dpi : int, optional
+        Resolution for the saved PNGs, by default 300.
+    
+    Returns
+    -------
+    None
+        Visualizes and saves the cell type importance plot.
+     """
+    path = path_to_results if save_path is None else str(save_path)
+    os.makedirs(path, exist_ok = True)
+    real_labels = adata.uns["real_labels"]
+    pseudotime = adata.uns["pseudotime"]
+    annot = adata.uns["annot"]
+    bins = adata.uns["proportions"]
+    patients_id = bins.keys()
+    cell_types = annot["cell_type"].unique()
+    labels = real_labels
+    emd_dataframe = pd.DataFrame({"sampleID": list(patients_id),
+                                  "pseudotime": pseudotime,
+                                  "lables": list(labels)}, dtype = object)
+    pathies_cell_proportions = pd.DataFrame.from_dict(bins).T
+    pathies_cell_proportions.columns = cell_types
+    
+    pathies_cell_proportions.index.name = "sampleID"
+    
+    #Building a model based on Regression and pseuduscores 
+    pathies_cell_proportions["Time_score"] = list(emd_dataframe["pseudotime"])
+    pathies_cell_proportions = pathies_cell_proportions.sort_values("Time_score", ascending = True)
+    pathies_cell_proportions["Time_score"] = np.arange(1, len(emd_dataframe) + 1, 1).tolist()
+    pathies_cell_proportions = pathies_cell_proportions.reset_index()
+    RNA_data = pd.DataFrame()
+    RNA_data["label"] = pathies_cell_proportions["Time_score"]
+    RNA_target = np.transpose(pathies_cell_proportions.iloc[:, 1:len(annot.cell_type.unique()) + 1])
+    min_target = min(RNA_data["label"])
+    max_target = max(RNA_data["label"])
+    
+    sorted_best = pl.tl.fit_best_model(
+        RNA_target,
+        RNA_data,
+        model_type="LinearRegression",
+        max_iter_huber=1,
+        epsilon_huber=1,
+        pval_thr=p_val,
+        modify_r2=False)
+    
+    ext = "pdf" if save_as_pdf else "png"
+    cell_plots_path = os.path.join(path, "Cell_types_importance")
+    os.makedirs(cell_plots_path, exist_ok = True)
+    
+    for cell_name in sorted_best.keys():
+        single_best = {cell_name: sorted_best[cell_name]}
+        fname = re.sub(r"[^\w\-.]+", "_", str(cell_name)).strip("_")
+        
+        with plt.rc_context():
+            pl.pl.plot_best_matches_cell_types(
+                RNA_target, 
+                RNA_data,
+                pathies_cell_proportions,
+                single_best, 
+                "Cell Proportion",
+                min_target=min_target,
+                max_target=max_target,
+                num=1,
+                width=figsize_single[0],
+                height=figsize_single[1],
+                xlim=xlim,
+                point_size=point_size,
+                color_back=color_back,
+                fontsize=fontsize,
+                alpha=alpha,
+                cmap=cmap_proportions)
+            plt.savefig(os.path.join(cell_plots_path, f"{fname}.{ext}"), dpi=dpi, bbox_inches="tight")
+        plt.close("all")
+
+
 def heatmaps(adata,figsize=(12,12),col_cluster=True,row_cluster=True,cmap='Blues_r',font_scale=2):
     
     """
@@ -294,10 +689,24 @@ def fit_pricipla_graph(adata,NumNodes=20,source_node=0,show_text=True,Do_PCA=Fal
     adata.uns['pseudotime']=pseudotime
     
 
-def clustering_emd(adata,res=0.3,metric="cosine",groupby_col="Leiden",swap_axes=False,cmap="Blues_r",dendrogram=True,show_gene_labels=True,var_group_rotation=45,figsize=[12,12],save=False,sorter_leiden=None,use_rep="X"):
+def clustering_emd(
+    adata,
+    res=0.3,
+    metric="cosine",
+    groupby_col="Leiden",
+    swap_axes=False,
+    cmap="Blues_r",
+    dendrogram=True,
+    show_gene_labels=True,
+    var_group_rotation=45,
+    figsize=[12,12],
+    save=False,
+    sorter_leiden=None,
+    use_rep="X",
+    order_file=None):
     """
     Perform clustering and visualization of EMD (Earth Mover's Distance) data in AnnData object.
-
+    
     Parameters
     ----------
     adata : AnnData
@@ -330,22 +739,23 @@ def clustering_emd(adata,res=0.3,metric="cosine",groupby_col="Leiden",swap_axes=
              None mirrors scanpy's automatic choice: adata.X if it has at most
              50 columns, calculates the PCA otherwise. The 50 columns (features)
              comes from sc.settings.N_PCS.
-
+    order_file: Path where the row/column order should be saved. Default: None
+    
     Returns
     -------
     proportion_df : pd.DataFrame
         DataFrame containing proportions of sub-clusters in each sample.
     """
-
-    EMD=adata.uns["EMD"]
-    proportions=adata.uns["proportions"]
-    annot=adata.uns["annot"]
-    real_labels=adata.uns["real_labels"]
-
-    EMD_df=pd.DataFrame(EMD,columns=proportions.keys())
-    EMD_df["sampleID"]=proportions.keys()
-    EMD_df["status"]=list(real_labels)
-
+    
+    EMD = adata.uns["EMD"]
+    proportions = adata.uns["proportions"]
+    annot = adata.uns["annot"]
+    real_labels = adata.uns["real_labels"]
+    
+    EMD_df = pd.DataFrame(EMD,columns=proportions.keys())
+    EMD_df["sampleID"] = proportions.keys()
+    EMD_df["status"] = list(real_labels)
+    
     # Get the dimensions of the EMD matrix.
     n_vars = EMD.shape[1]
     # Checking what we should do with the data.
@@ -361,52 +771,62 @@ def clustering_emd(adata,res=0.3,metric="cosine",groupby_col="Leiden",swap_axes=
         rep = "X" if n_vars <= 50 else "X_pca"
     else:
         raise ValueError(f"use_rep must be 'X', 'PCA' or None. Given: {use_rep}")
-
+    
     adata_emd = sc.AnnData(EMD)
     if rep == "X_pca":
         sc.pp.pca(adata_emd)
-
+    
     sc.pp.neighbors(adata_emd, metric=metric, use_rep=rep)
-    sc.tl.leiden(adata_emd, resolution = res)
+    sc.tl.leiden(adata_emd, resolution=res)
     predicted_labels = np.array(adata_emd.obs.leiden)
-    # Silhouette = Sil_computing(EMD/EMD.max(), predicted_labels,metric=metric)
-
-    proportion_df=pd.DataFrame(proportions)
-    proportion_df=proportion_df.T
-    proportion_df.columns=annot.cell_type.unique()
-
-    proportion_df["Predicted_Labels"]=predicted_labels
-    proportion_df["sampleID"]=list(proportions.keys())
-
-    EMD_df["Leiden"]=predicted_labels
-    if groupby_col=="status":
+    
+    proportion_df = pd.DataFrame(proportions)
+    proportion_df = proportion_df.T
+    proportion_df.columns = annot.cell_type.unique()
+    
+    proportion_df["Predicted_Labels"] = predicted_labels
+    proportion_df["sampleID"] = list(proportions.keys())
+    
+    EMD_df["Leiden"] = predicted_labels
+    if groupby_col == "status":
         sorter=np.unique(real_labels)
         EMD_df["status"] = EMD_df.status.astype("category")
         EMD_df["status"] = EMD_df["status"].cat.set_categories(sorter)
-        EMD_df=EMD_df.sort_values(["status"])
-    elif groupby_col=="Leiden":
+        EMD_df = EMD_df.sort_values(["status"])
+    elif groupby_col == "Leiden":
         if sorter_leiden is None:
-            sorter=EMD_df.Leiden.unique()
+            sorter = EMD_df.Leiden.unique()
         else:
             sorter=sorter_leiden
-
+        
         EMD_df["Leiden"] = EMD_df.Leiden.astype("category")
         EMD_df["Leiden"] = EMD_df["Leiden"].cat.set_categories(sorter)
-        EMD_df=EMD_df.sort_values(["Leiden"])
-
+        EMD_df = EMD_df.sort_values(["Leiden"])
+    
     obs = pd.DataFrame()
-    obs["sampleID"]=EMD_df.sampleID.astype(str)
-    obs["status"]=EMD_df.status.astype(str)
-    obs["Leiden"]=EMD_df.Leiden.astype(str)
+    obs["sampleID"] = EMD_df.sampleID.astype(str)
+    obs["status"] = EMD_df.status.astype(str)
+    obs["Leiden"] = EMD_df.Leiden.astype(str)
     df_genes = pd.DataFrame(index = EMD_df.columns[0:EMD_df.shape[0]])
     adata_emd = anndata.AnnData(X = EMD_df[ EMD_df.columns[0:EMD_df.shape[0]]].values, var=df_genes, obs=obs )
     adata_emd.obs[groupby_col] = adata_emd.obs[groupby_col].astype("category")
     if dendrogram:
         if rep == "X_pca":
             sc.pp.pca(adata_emd)
-
+        
         sc.tl.dendrogram(adata_emd, groupby=groupby_col, use_rep=rep)
-    sc.pl.heatmap(adata_emd,adata_emd.obs.sampleID,groupby=[groupby_col],swap_axes=swap_axes,cmap=cmap,dendrogram=dendrogram,show_gene_labels=show_gene_labels,var_group_rotation=var_group_rotation,figsize=figsize,save=save)
+    
+    if order_file is not None:
+        col_order = list(adata_emd.obs.sampleID)
+        if dendrogram:
+            cats = list(adata_emd.uns[f"dendrogram_{groupby_col}"]["categories_ordered"])
+        else:
+            cats = list(adata_emd.obs[groupby_col].cat.categories)
+        row_order = [s for c in cats
+                     for s in adata_emd.obs.sampleID[adata_emd.obs[groupby_col] == c]]
+        pd.DataFrame({"row_order": row_order, "col_order": col_order}).to_csv(order_file, index=False)
+    
+    sc.pl.heatmap(adata_emd, adata_emd.obs.sampleID,groupby=[groupby_col],swap_axes=swap_axes,cmap=cmap,dendrogram=dendrogram,show_gene_labels=show_gene_labels,var_group_rotation=var_group_rotation,figsize=figsize,save=save)
     return proportion_df
 
 
@@ -536,163 +956,273 @@ def select_best_sil(adata,marker="o",figsize=(10,10),facecolor="white",metric="c
     plt.show()
 
 
-def cell_type_diff_two_sub_patient_groups(proportions: pd.DataFrame = None,
-                                          cell_types: list = None,
-                                          labels: str = 'Predicted_Labels',
-                                          group1: str = 'Tumor 1',
-                                          group2: str = 'Tumor 2',
-                                          pval_thr: float = 0.05,
-                                          figsize: tuple = (15, 4),
-                                          file_path: str = None,fontsize:int = 24):
-    """
-    
-
-    Parameters
-    ----------
-    proportions : pd.DataFrame, optional
-        cell types proportion in each samples. The default is None.
-    cell_types : list, optional
-        number of cell types to be considered. The default is None.
-    labels : str, optional
-        name of the column containing the labels of patient sub-groups. The default is 'Predicted_Labels'.
-    group1 : str, optional
-        Name of the first patients sub-group to check the differentiations. The default is 'Tumor 1'.
-    group2 : str, optional
-        Name of the second patients sub-group to check the differentiations. The default is 'Tumor 2'.
-    pval_thr : float, optional
-        P-value threshold. The default is 0.05.
-    figsize : tuple, optional
-        Determine the figure size. The default is (15, 4).
-    file_path : str, optional
-        Determine the path to store the figure. The default is None.
-    fontsize:int, the size of the font
-    Returns
-    -------
-    None.
-    Plot the statistical scores showing the how significant each cell type 
-    differentiated in each patients sub-group (filter based on p-value threshold)
-    Save table of statisical information of all cell types,
-    sorted by their p-value and statistic score
-
-    """
-    if file_path==None:
-        plot_path=Path('Results_PILOT/plots')
+def cell_type_diff_two_sub_patient_groups(
+    proportions: pd.DataFrame = None,
+    cell_types: list = None,
+    labels: str = "Predicted_Labels",
+    group1: str = "Tumor 1",
+    group2: str = "Tumor 2",
+    pval_thr: float = 0.05,
+    figsize: tuple = (15, 4),
+    file_path: str = None,fontsize:int = 24):
+    if file_path == None:
+        plot_path = Path("Results_PILOT/plots")
         plot_path.mkdir(parents=True, exist_ok=True)
     else:
         plot_path=Path(file_path)
     
-        
-     
     group1_proportions = proportions[proportions[labels] == group1]
     group2_proportions = proportions[proportions[labels] == group2]
     
     stats_group12 = []
     scores_group12 = []
     # using Welch’s t-test to detect the statistically significant difference
-    ## between group 1 and group 2
+    # between group 1 and group 2
     for cell_type in cell_types:
-        ttest_result = ttest_ind(group1_proportions[cell_type],
-                                 group2_proportions[cell_type], equal_var = False)
+        ttest_result = ttest_ind(group1_proportions[cell_type], group2_proportions[cell_type], equal_var=False)
         scores_group12.append(ttest_result[0])
         stats_group12.append(ttest_result[1])
-        
+    
     # adjust the p-values
-    stats_group12 = multipletests(list(stats_group12), method='fdr_bh')[1]
-
+    stats_group12 = multipletests(list(stats_group12), method="fdr_bh")[1]
+    
     stats_bar_group12 = pd.DataFrame()
-    stats_bar_group12['cell_type'] = cell_types
-    stats_bar_group12['adjPval'] = stats_group12
-    stats_bar_group12['-logPval'] = -np.log(stats_group12)
-    stats_bar_group12['score'] = scores_group12
+    stats_bar_group12["cell_type"] = cell_types
+    stats_bar_group12["adjPval"] = stats_group12
+    stats_bar_group12["-logPval"] = -np.log(stats_group12)
+    stats_bar_group12["score"] = scores_group12
     
     # sort the data based on p-value and statistic score
-    stats_bar_group12 = stats_bar_group12.sort_values(by = ['score', '-logPval'],
-                                                      ascending = [False, False])
+    stats_bar_group12 = stats_bar_group12.sort_values(by=["score", "-logPval"], ascending=[False, False])
     
     # save the table of statistical differentiation of two groups
-    ## as positive score shows cell types statistically significant on the first group
-    ## and negative scrore shows cell types statistically significant on the second group
+    # as positive score shows cell types statistically significant on the first group
+    # and negative scrore shows cell types statistically significant on the second group
     
-    diff_result_path = Path('Results_PILOT/Diff_Expressions_Results')
+    diff_result_path = Path("Results_PILOT/Diff_Expressions_Results")
     diff_result_path.mkdir(parents=True, exist_ok=True)
-    stats_bar_group12.to_csv(diff_result_path / f"Cell_type_diff_{group1}_vs_{group2}.csv",
-                             header = True, index = None)
+    stats_bar_group12.to_csv(diff_result_path / f"Celltype_diff_{group1}_vs_{group2}.csv", header=True, index=None)
     
     # filter data based on a p-value threshold
-    stats_bar_group12 = stats_bar_group12[stats_bar_group12['adjPval'] < pval_thr]
-    
+    stats_bar_group12 = stats_bar_group12[stats_bar_group12["adjPval"] < pval_thr]
     
     fig, ax = plt.subplots(figsize = figsize)
-    plot_hor_vs_vert(stats_bar_group12, 1, x = 'score', y = 'cell_type', c = 'type',
-                     xlabel = 'statistic score', ylabel = None,
-                     rotation = None, tick_bottom = True, tick_left = False,
-                     title = f"Cell type rank {group1} vs {group2}",fontsize=fontsize)
+    pl.pl.plot_hor_vs_vert(stats_bar_group12, 1, x="score", y="cell_type", c="type",
+                           xlabel="statistic score", ylabel=None,
+                           rotation=None, tick_bottom=True, tick_left=False,
+                           title=f"Celltype rank {group1} vs {group2}", fontsize=fontsize)
     fig.tight_layout()
-    plt.savefig(plot_path / f"Cell type diff {group1} VS {group2}.pdf",
-                          facecolor = 'white')
-    
-   
-def plot_cell_types_distributions(proportions: pd.DataFrame = None,
-                                  cell_types: list = None,
-                                  labels:str = 'Predicted_Labels',
-                                  file_path: str = None,
-                                  figsize: tuple = (15, 7),
-                                  label_order=None,
-                                  label_colors=None,
-                                  fontsize=24,rotation = 45):
-    """
-    
+    plt.savefig(plot_path / f"Celltype_diff_{group1}_VS_{group2}.png", facecolor="white")
+    return stats_bar_group12
 
-    Parameters
-    ----------
-    proportions : pd.DataFrame, optional
-        cell types proportion in each samples. The default is None.
-    cell_types : list, optional
-        number of cell types to be considered. The default is None.
-    labels : str, optional
-        name of the column containing the labels of patient sub-groups. The default is 'Predicted_Labels'.
-    file_path : str, optional
-        determine the path to store the figure. The default is None.
-    figsize : tuple, optional
-        determine the figure size. The default is (15, 7).
-    label_order: list, order of lables
-    label_colors: list, color of lables based
-    fontsize:int, size of fonts
-    rotation:int, rotation
-    Returns
-    -------
-    None.
-    Save of the plot cell types distribution in each patients sub-groups
 
+def plot_numeric_with_trajectory(
+    adata,
+    feature,
+    sample_col="sampleID",
+    ax=None,
+    figsize=(7, 6),
+    annotate_stats=True,
+    fit_line=True,
+    fit_color="firebrick",
+    point_color="steelblue",
+    point_size=60,
+    alpha=1,
+    font_size=14,
+    title=None,
+    xlabel="Time score",
+    ylabel=None,
+    pos_text_x=0.03,
+    pos_text_y=0.97):
     """
+    Scatter one numeric variable against the trajectory Time_score.
     
-    if file_path==None:
-        plot_path=Path('Results_PILOT/plots')
-        plot_path.mkdir(parents=True, exist_ok=True)
+    Uses the same preparation as correlation_numeric_with_trajectory, so the
+    points shown are exactly the samples that entered the correlation.
+    
+    Parameters:
+    -- adata (AnnData): Input AnnData object containing trajectory and clinical data.
+    -- feature (str): Single numeric variable to plot. Not a list.
+    -- sample_col (str): Name of the column in adata.obs that contains sample IDs.
+    -- ax (matplotlib Axes or None): Draw into an existing axes. A new figure is
+       created when None.
+    -- annotate_stats (bool): Print Spearman rho, p-value and n in the corner.
+    -- fit_line (bool): Overlay a least-squares line. Purely descriptive; the
+       reported statistic is a rank correlation, not a linear fit.
+    -- title, xlabel, ylabel (str or None): Axis text. Defaults derive from the
+       feature name.
+    
+    Returns:
+    -- fig, ax: The figure and axes, for further modification and saving.
+       Nothing is written to disk.
+    """
+    if not isinstance(feature, str):
+        raise TypeError(f"feature must be a single column name, got {type(feature).__name__}.")
+    
+    missing = {sample_col, feature} - set(adata.obs.columns)
+    if missing:
+        raise KeyError(f"adata.obs is missing required columns: {missing}")
+    
+    if "orders" not in adata.uns:
+        raise KeyError("adata.uns is missing 'orders'. Run the cell importance step first.")
+    
+    orders = adata.uns["orders"]
+    if "Time_score" not in orders.columns:
+        raise KeyError("adata.uns['orders'] is missing the Time_score column.")
+    
+    clinical_data = adata.obs[[sample_col, feature]].rename(columns={sample_col: "sampleID"})
+    # Casting out of Categorical, otherwise pd.to_numeric below fails.
+    clinical_data[feature] = clinical_data[feature].astype(object)
+    
+    merged_data = orders.merge(clinical_data, on="sampleID", how="left")
+    
+    # Detect and remove non-numeric values.
+    values_to_remove = detect_values_to_remove(merged_data[feature])
+    merged_data = merged_data[~merged_data[feature].isin(set(values_to_remove))].copy()
+    
+    # Ensuring that the feature is actually numeric.
+    merged_data[feature] = pd.to_numeric(merged_data[feature], errors="coerce")
+    
+    # Dropping missing values before de-duplicating, so a sample is not lost
+    # just because its first cell happened to carry the NaN.
+    merged_data = merged_data.dropna(subset=["Time_score", feature])
+    unique_merged_data = merged_data.drop_duplicates(subset="sampleID")
+    
+    time_score = unique_merged_data["Time_score"].to_numpy(dtype=float)
+    test_feature = unique_merged_data[feature].to_numpy(dtype=float)
+    number_samples = len(unique_merged_data)
+    
+    if number_samples == 0:
+        raise ValueError(
+            f"No samples left for '{feature}' after removing non-numeric and "
+            f"missing values. Nothing to plot."
+        )
+    
+    spearman_corr = spearman_p_value = np.nan
+    enough_samples = number_samples >= 3
+    has_variation = np.ptp(time_score) > 0 and np.ptp(test_feature) > 0
+    if enough_samples and has_variation:
+        spearman_corr, spearman_p_value = spearmanr(time_score, test_feature)
+    
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
     else:
-        plot_path=file_path
+        fig = ax.get_figure()
     
-    col_names = list(cell_types)
-    col_names.append(labels)
-    df_long = pd.melt(proportions.loc[:,col_names], labels)
+    ax.scatter(time_score, test_feature, s=point_size, alpha=alpha,
+               color=point_color, edgecolors="none")
     
-    if label_order:
-        df_long['Predicted_Labels'] = df_long.Predicted_Labels.astype("category")
-        sorter=label_order
-        df_long['Predicted_Labels'] = df_long['Predicted_Labels'].cat.set_categories(sorter)
-        df_long=df_long.sort_values(["Predicted_Labels"])
-
+    # A straight line needs two distinct x values to be defined.
+    if fit_line and number_samples >= 2 and np.ptp(time_score) > 0:
+        slope, intercept = np.polyfit(time_score, test_feature, 1)
+        x_line = np.array([time_score.min(), time_score.max()])
+        ax.plot(x_line, slope * x_line + intercept, color=fit_color, linewidth=2)
     
-    fig = plt.figure(figsize = figsize)
-    sns.boxplot(x = "variable", hue = labels, y = "value", data = df_long,palette=label_colors)
-    plt.ylabel("Cell proportions", fontsize = fontsize)
-    plt.xlabel("")
-    plt.xticks(fontsize = fontsize, rotation = rotation, ha = 'right', rotation_mode = 'anchor')
-    plt.legend(fontsize = fontsize)
+    if annotate_stats:
+        if np.isnan(spearman_corr):
+            stats_text = f"n = {number_samples}\nnot testable"
+        else:
+            p_text = "p < 0.001" if spearman_p_value < 0.001 else f"p = {spearman_p_value:.3f}"
+            stats_text = f"rho = {spearman_corr:.2f}\n{p_text}\nn = {number_samples}"
+        
+        ax.text(pos_text_x, pos_text_y, stats_text, transform=ax.transAxes,
+                va="top", ha="left", fontsize=font_size,
+                bbox=dict(boxstyle="round", facecolor="white", alpha=0.8, edgecolor="lightgrey"))
+    
+    ax.set_xlabel(xlabel, fontsize=font_size)
+    ax.set_ylabel(ylabel if ylabel is not None else feature, fontsize=font_size)
+    ax.set_title(title if title is not None else f"{feature} along the trajectory",
+                 fontsize=font_size)
+    ax.tick_params(labelsize=font_size)
+    
     fig.tight_layout()
-    plt.savefig(plot_path / "Cell types - distributions.pdf",
-                          facecolor = 'white')
+    return fig, ax
+
+
+def plot_cell_types_distributions(
+    proportions: pd.DataFrame = None,
+    cell_types: list = None,
+    plot_name: str = None,
+    labels: str = "Predicted_Labels",
+    file_path: str = None,
+    figsize: tuple = (15, 7),
+    label_order=None,
+    label_colors=None,
+    fontsize=24,
+    rotation=45):
+    """
+    Boxplot of cell type proportions, split by group.
+    
+    Parameters:
+    proportions (DataFrame): Cell type proportions per sample, plus the label column.
+    cell_types (list): Columns of proportions to plot.
+    plot_name (str): File name for the saved figure. Required. An extension is
+                     added if none is given.
+    labels (str): Column of `proportions` holding the group assignment.
+    file_path (str or Path): Output directory. Default 'Results_PILOT/plots'.
+    label_order (list or None): Groups to plot, in the order given. If None, all
+                                groups are plotted in sorted order.
+    label_colors (dict, list, str or None): Passed to seaborn as `palette`. A dict
+                                keyed by group label is safest, since it stays
+                                correct when `label_order` selects a subset.
+    """
+    if plot_name is None:
+        raise ValueError("plot_name is required; there is no default file name.")
+    
+    # Checking if the labels and cell types are present.
+    required = {labels, *cell_types}
+    missing = required - set(proportions.columns)
+    if missing:
+        raise KeyError(f"proportions is missing the columns: {missing}")
+    
+    present = set(map(str, proportions[labels].dropna().unique()))
+    
+    if label_order is not None:
+        unknown = {g for g in label_order if str(g) not in present}
+        if unknown:
+            raise ValueError(
+                f"label_order has groups not in {labels}: {unknown}. "
+                f"We have: {sorted(present)}"
+            )
+        
+        label_order = [str(x) for x in label_order]
+        if len(label_order) == 0:
+            raise ValueError("label_order is empty; nothing would be plotted.")
+        
+    else:
+        label_order = sorted(present)
+    
+    plot_path = Path("Results_PILOT/plots") if file_path is None else Path(file_path)
+    plot_path.mkdir(parents=True, exist_ok=True)
+    
+    # Keeping the label column last so pd.melt uses it as the id variable.
+    col_names = [c for c in cell_types if c != labels] + [labels]
+    df_long = pd.melt(proportions.loc[:, col_names], labels)
+    df_long[labels] = df_long[labels].astype(str)
+    
+    # Restricting to the requested groups. When label_order was not given this
+    # keeps everything, since label_order is then all present groups.
+    df_long = df_long[df_long[labels].isin(label_order)].copy()
+    df_long[labels] = pd.Categorical(df_long[labels], categories=label_order, ordered=True)
+    df_long = df_long.sort_values(labels)
+    
+    fig = plt.figure(figsize=figsize)
+    ax = plt.gca()
+    sns.boxplot(x="variable", hue=labels, y="value", data=df_long, palette=label_colors, ax=ax)
+    ax.set_ylabel("Cell proportions", fontsize=fontsize)
+    ax.set_xlabel("")
+    ax.tick_params(axis="x", labelsize=fontsize)
+    plt.setp(ax.get_xticklabels(), rotation=rotation, ha="right", rotation_mode="anchor")
+    ax.legend(title=labels, fontsize=fontsize)
+    fig.tight_layout()
+    
+    out_file = Path(plot_name)
+    if not out_file.suffix:
+        out_file = out_file.with_suffix(".png")
+    
+    fig.savefig(plot_path / out_file.name, facecolor="white")
     plt.show()
+    plt.close(fig)
 
 
 def gene_annotation_cell_type_subgroup(
@@ -1937,7 +2467,7 @@ def plot_6_best(target, data, sorted_best, scale_name, plot_color):
             ax = plt.subplot(3, 3, k)
             ax.scatter(x, tf, c = tf, alpha = 0.5, cmap='RdBu', norm=colors.CenteredNorm(), )
             ax.axis(xmin=min(x),xmax=max(x))
-
+            
             ax.plot(np.linspace(min(x),max(x)), curve, c = plot_color)
             ax.set_title(re.sub('.*?:', '', tf_name))
             if(k % 3 == 1):
@@ -1956,7 +2486,7 @@ def plot_hor_vs_vert(data, subplot, x, y, c, xlabel, ylabel, rotation,
     
     '''
     Plot horizontal and vertical bar charts using Seaborn.
-
+    
     Parameters:
         data : pandas.DataFrame
             The input DataFrame containing the data to be plotted.
@@ -1982,13 +2512,13 @@ def plot_hor_vs_vert(data, subplot, x, y, c, xlabel, ylabel, rotation,
             The title of the plot.
         fontsize : int, optional
             The font size for title, labels, and ticks (default is 24).
-
+    
     Returns:
         None
     '''
     ax=plt.subplot(1,2,subplot)
     cols = ['tab:red' if x >= 0 else 'tab:blue' for x in data[x]]
-
+    
     sns.barplot(x=x, y=y, data=data, ci=None, palette=cols)
     plt.title(title, fontsize=fontsize, fontweight = 'bold')
     plt.xlabel(xlabel, fontsize=fontsize)
@@ -2016,7 +2546,7 @@ def map_color(
     Assigns color categories, point shapes, and sizes for volcano plot visualization.
     It also identifies "important" genes for specialized shape mapping and calculates point sizes based 
     on significance.
-
+    
     Parameters
     ----------
     df : pd.DataFrame
@@ -2055,27 +2585,35 @@ def map_color(
         if not sig:
             if fc >= fc_thrr:
                 return "higher"
+            
             if fc <= -fc_thrr:
                 return "lower"
+            
             return "no"
+        
         if fc >= fc_thrr:
             if fc > 2 * fc_thrr:
                 return "very higher"
+            
             return "higher"
+        
         if fc <= -fc_thrr:
             if fc < -2 * fc_thrr:
                 return "very lower"
+            
             return "lower"
+        
         return "mix"
-
+    
     def map_shape(symbol):
         if symbol in selected_labels_all:
             return "important"
+        
         return "not"
-
+    
     # Map color
     df["color"] = df.apply(lambda r: map_color(r, fc_thrr=fc_thr, pv_thrr=pv_thr), axis=1)
-
+    
     # Use my_pal if provided, else default palette
     if my_pal is not None and feature1 in my_pal and feature2 in my_pal:
         color1 = my_pal[feature1]
@@ -2096,11 +2634,11 @@ def map_color(
                 "#1f77b4",            # very lower
                 "#1F77B47D"           # lower (semi‑transparent)
             ]
-
+    
     # Map shape and baseMean
     df["shape"] = df["symbol"].map(map_shape)
     df["baseMean"] = df["nlog10"] * 10
-
+    
     return df, hue_order, palette
 
 
@@ -2113,21 +2651,17 @@ def volcano_plot(
     scores=None,                  # Series/array mode (provide scores, foldchanges, p_values)
     foldchanges=None,
     p_values=None,
-
     # context
     cell_type=None,
     feature1=None,
     feature2=None,
-
     # thresholds
     fc_thr=1.0,
     pv_thr=1.0,                   # on -log10 scale
-
     # labeling
     label_mode="topN",            # "all" or "topN"
     n_p=5,
     n_n=5,
-
     my_pal=None,                  # optional dict {feature: color}, otherwise use default palette
     hue_order=None,
     palette=None,
@@ -2215,8 +2749,6 @@ def volcano_plot(
     save_csv : bool, optional
         Whether to save CSV files of significant genes per feature (used when output_path is not None).
     """
-
-
     # Build DataFrame (log2FoldChange, nlog10, symbol)
     # ------------------------------------------------------------------
     if data is not None:
@@ -2235,36 +2767,38 @@ def volcano_plot(
             "nlog10": -np.log10(np.asarray(p_values)),
             "symbol": np.asarray(scores.index)
         })
-
+    
     df.replace([np.inf, -np.inf], np.nan, inplace=True)
     df.dropna(subset=["nlog10"], how="all", inplace=True)
-
+    
     # Significance masks, CSV export
     # ------------------------------------------------------------------
     sig_mask = (np.abs(df["log2FoldChange"]) >= fc_thr) & (df["nlog10"] >= pv_thr)
     selected_labels_all = df.loc[sig_mask, "symbol"].values
-
+    
     group1_mask = (df["log2FoldChange"] <= -fc_thr) & (df["nlog10"] >= pv_thr)
     group2_mask = (df["log2FoldChange"] >=  fc_thr) & (df["nlog10"] >= pv_thr)
-
+    
     group1_selected = df.loc[group1_mask, "symbol"].values
     group2_selected = df.loc[group2_mask, "symbol"].values
-
+    
     if output_path is not None and save_csv:
         if cell_type is None:
             cell_type = "NA"
+        
         if feature1 is None:
             feature1 = "group1"
+        
         if feature2 is None:
             feature2 = "group2"
-
+        
         pd.DataFrame(group1_selected, columns=["symbol"]).to_csv(
             Path(output_path) / f"Significant_genes_{cell_type}_{feature1}.csv", index=False
         )
         pd.DataFrame(group2_selected, columns=["symbol"]).to_csv(
             Path(output_path) / f"Significant_genes_{cell_type}_{feature2}.csv", index=False
         )
-
+    
     # Color mapping
     df, hue_order, palette = map_color(
         df=df,
@@ -2277,8 +2811,7 @@ def volcano_plot(
         hue_order=None,      # or pass a custom one if needed
         palette=None
     )
-
-
+    
     # Label selection
     # ------------------------------------------------------------------
     if label_mode == "all":
@@ -2292,12 +2825,12 @@ def volcano_plot(
         subset_labels = np.concatenate([pos_df["symbol"].values, neg_df["symbol"].values])
     else:
         raise ValueError("label_mode must be 'all' or 'topN'.")
-
+    
     # Plotting
     # ------------------------------------------------------------------
     plt.figure(figsize=figsize, frameon=False, dpi=dpi)
     plt.style.use("default")
-
+    
     ax = sns.scatterplot(
         data=df,
         x="log2FoldChange",
@@ -2311,12 +2844,12 @@ def volcano_plot(
         size="baseMean",
         sizes=(40, 800)
     )
-
+    
     # Lines
     ax.axhline(pv_thr, zorder=0, c="k", lw=2, ls="--")
     ax.axvline(fc_thr,  zorder=0, c="k", lw=2, ls="--")
     ax.axvline(-fc_thr, zorder=0, c="k", lw=2, ls="--")
-
+    
     # Labels
     texts = []
     for i in range(len(df)):
@@ -2346,16 +2879,17 @@ def volcano_plot(
     if texts:
         #adjust_text(texts, arrowprops=dict(arrowstyle="->", color='black', lw=1))
         adjust_text(texts)
-        
+    
     # Legend
     if feature1 is None:
         feature1 = "group1"
+    
     if feature2 is None:
         feature2 = "group2"
-
+    
     col_pos = palette[1] if len(palette) > 1 else "#d62a2b"
     col_neg = palette[-1] if len(palette) > 1 else "#1f77b4"
-
+    
     custom_lines = [
         Line2D([0], [0], marker=marker, color=marker_edge_color,
                markerfacecolor=col_pos, markersize=markersize_legend),
@@ -2370,7 +2904,7 @@ def volcano_plot(
         frameon=False,
         prop={"weight": font_weight_legend, "size": size_legend},
     )
-
+    
     # Axis styling
     for axis in ["bottom", "left"]:
         ax.spines[axis].set_linewidth(2)
@@ -2378,13 +2912,13 @@ def volcano_plot(
     ax.spines["right"].set_visible(False)
     ax.tick_params(width=2)
     ax.set_ylim(bottom=0)
-
+    
     plt.title(f"Expression Score\n{feature1} - {feature2}", fontsize=font_size)
     plt.xticks(size=font_size, weight="bold")
     plt.yticks(size=font_size, weight="bold")
     plt.xlabel("$log_{2}$ (Fold Change)", size=font_size)
     plt.ylabel("-$log_{10}$ (P-value)", size=font_size)
-
+    
     # Save
     if output_path is not None:
         plt.savefig(
@@ -2393,7 +2927,7 @@ def volcano_plot(
             bbox_inches="tight",
             facecolor="white",
         )
-
+    
     plt.show()
 
 
@@ -2440,27 +2974,24 @@ def plot_stats_by_pattern(cluster_names: list = None,
                 ascending=[True]).groupby('Expression pattern').head(4)
         expression_patterns = np.unique(sort_my_data['Expression pattern'])
         if(len(expression_patterns)):
-
+            
             n_col = 4
             n_row = len(expression_patterns)
             n_px = 10
-
-            plt.rcParams["figure.facecolor"] = 'w'
             
-                
+            plt.rcParams["figure.facecolor"] = 'w'
+                            
             #plt.figure(figsize=(80, 80))
             #f, axs = plt.subplots(n_row, n_col, figsize=(16, 8))
             plt.figure(figsize=(80, 80))  # Set the overall figure size
-
+            
             # Adjust the size of individual subplots
             subplot_width = 8  # Choose an appropriate value
             subplot_height = 6  # Choose an appropriate value
-
+            
             f, axs = plt.subplots(n_row, n_col, figsize=(n_col * subplot_width, n_row * subplot_height))
             axs = np.atleast_2d(axs)
            
-          
-
             p = 0
             for pattern in expression_patterns:
                 pattern_stats = sort_my_data[sort_my_data['Expression pattern'] == pattern]
@@ -2470,20 +3001,20 @@ def plot_stats_by_pattern(cluster_names: list = None,
                     gene_name = row['gene']
                     WT_x, WT_tf, WT_curve, KO_x, KO_tf, KO_curve = get_two_tables(gene_name, cluster_n, gene_dict,
                                                                                   file_name, pline, path_to_results)
-
+                    
                     if(KO_x is not None):
                         axs[p, k].scatter([x+0.2 for x in KO_x], KO_tf, alpha = 0.2, c = "tab:gray")
+                    
                     axs[p, k].scatter(WT_x, WT_tf, alpha = 0.5, c = WT_tf, cmap = 'viridis',
                               norm = colors.CenteredNorm(np.mean(WT_tf)))
-
                     axs[p, k].axis(xmin = min(WT_x), xmax = max(WT_x))
-
                     if(KO_x is not None):
                         axs[p, k].plot(np.linspace(min(WT_x),max(WT_x)), KO_curve,
                                        c = "dimgray", linewidth = 4.0)
+                    
                     axs[p, k].plot(np.linspace(min(WT_x),max(WT_x)), WT_curve,
                                    c = "tab:orange", linewidth = 4.0)
-
+                    
                     axs[p, k].set_title(gene_name, size = font_size, weight = 'bold')
                     if( k == 0):
                         plt.rcParams.update({'font.size': font_size-4})
@@ -2494,7 +3025,7 @@ def plot_stats_by_pattern(cluster_names: list = None,
                     plt.rcParams.update({'font.size': font_size})
                     for item in (axs[p, k].get_xticklabels() + axs[p, k].get_yticklabels()):
                         item.set_fontsize(font_size)
-
+                    
                     plt.text(.01, .99, 'p-value = %.2e ' % + Decimal(str(row['pvalue'])),
                              ha = 'left', va = 'top',
                              transform=axs[p, k].transAxes, size = font_size)
@@ -2507,25 +3038,21 @@ def plot_stats_by_pattern(cluster_names: list = None,
             plt.subplots_adjust(wspace = 0.5, hspace = 0.7)
             
             if create_new_plot_folder:
-                if not os.path.exists(path_to_results+'/plot_genes_for_'+str(cluster)+'/'):  
+                if not os.path.exists(path_to_results+'/plot_genes_for_'+str(cluster)+'/'):
                     os.makedirs(path_to_results+'/plot_genes_for_'+str(cluster)+'/')
-            
+                
                 save_path = path_to_results+'/plot_genes_for_'+str(cluster)+'/'+str(cluster) + ".png"
                 plt.savefig(save_path)
                 plt.close()
             else:   
-                if not os.path.exists(path_to_results+'/plots_gene_cluster_differentiation/'):  
-                        os.makedirs(path_to_results+'/plots_gene_cluster_differentiation/')
-
+                if not os.path.exists(path_to_results+'/plots_gene_cluster_differentiation/'):
+                    os.makedirs(path_to_results+'/plots_gene_cluster_differentiation/')
+                
                 save_path = path_to_results+'/plots_gene_cluster_differentiation/'+str(cluster) + ".png"
                 plt.savefig(save_path)
                 print('Plot for '+str(cluster))
                 plt.show()
                 plt.close()
-
-
-
-
 
 
 def create_sample_grid(df, pattern, image_dir=' figures/', output_path="Results_PILOT/plots/sample_grid_cores.png",zoom=0.1,num_rows = 10):
@@ -2581,8 +3108,6 @@ def create_sample_grid(df, pattern, image_dir=' figures/', output_path="Results_
     # Hide unused subplots
     for i in range(num_samples, len(axes)):
         axes[i].axis('off')
-    
-    
     
     plt.tight_layout()
     fig.canvas.draw()  # Force render
