@@ -2020,3 +2020,187 @@ def feature_importance(adata,
     adata.uns[feature_matrix+'_orders'] = pathies_cell_proportions[['sampleID', 'Time_score']]
 
 
+
+def format_test(dictionary, column_names,name,p_val,pro):
+    """
+    Generate a table from a dictionary of gene data and save it along with associated files.
+
+    Parameters:
+        dictionary (dict): A dictionary containing gene data.
+        column_names (list): A list of column names for the table.
+        save_path (str): The path where the data and associated files will be saved.
+        name (str): The name for the saved files and folder.
+        p_val (float): The threshold for the adjusted p-value for significance.
+        pro (pd.DataFrame): A Pandas DataFrame containing additional protein-related data.
+        gprofil (bool): If True, perform GProfiler analysis and save the results.
+
+    Returns:
+        mat_df (pd.DataFrame): A Pandas DataFrame containing the formatted table of gene data.
+    """
+    all_motifs = np.array(list(dictionary.keys()))
+    all_motifs = all_motifs.reshape(all_motifs.shape[0],1)
+    
+    all_patterns = np.array([i[2] for i in list(dictionary.values())])
+    all_patterns = all_patterns.reshape(all_patterns.shape[0],1)
+    
+    
+    all_slopes = np.array([i[3] for i in list(dictionary.values())])
+    all_slopes = all_slopes.reshape(all_slopes.shape[0],1)
+    
+    mat = np.append(all_motifs, all_patterns, axis = 1)
+    mat = np.append(mat, all_slopes, axis = 1)
+
+    tmp = [i[1] for i in list(dictionary.values())]
+    
+    all_func_types = np.array([i[0] for i in list(dictionary.values())])
+    all_func_types = all_func_types.reshape(len(dictionary.keys()),1)
+    mat = np.append(mat, all_func_types, axis = 1)
+
+    stats = pd.Series([i['params'] for i in [i[1] for i in list(dictionary.values())] ])
+    df = pd.DataFrame(stats.values.tolist(), index=stats.index)
+
+    # intercept1
+    stats = np.array(df.iloc[:,0])
+    stats = stats.reshape(stats.shape[0],1)
+    mat = np.append(mat, stats, axis = 1)
+
+    # feature2
+    stats = np.array(df.iloc[:,1])
+    stats = stats.reshape(stats.shape[0],1)
+    mat = np.append(mat, stats, axis = 1)
+   
+
+    # feature3
+    if(df.shape[1]>=3):   
+        stats = np.array(df.iloc[:,2])
+        stats = stats.reshape(stats.shape[0],1)
+        mat = np.append(mat, stats, axis = 1)
+    else:
+        r=column_names.pop(-4)   
+    # compute adjusted p-values
+    all_pvals = np.array([i[4] for i in list(dictionary.values())])
+    all_pvals = smf.multitest.multipletests(list(all_pvals), method='fdr_bh')[1]
+    all_pvals = all_pvals.reshape(all_pvals.shape[0],1)
+    mat = np.append(mat, all_pvals, axis = 1)
+    
+    stats = np.array([i['rsquared_adj'] for i in tmp])
+    stats = stats.reshape(stats.shape[0],1)
+    mat = np.append(mat, stats, axis = 1)
+    
+    
+    stats = np.array([i['mod_rsquared_adj'] for i in tmp])
+    stats = stats.reshape(stats.shape[0],1)
+    mat = np.append(mat, stats, axis = 1)
+    mat_df = pd.DataFrame(mat ,columns=column_names)
+    return mat_df
+
+def feature_to_trajectory(adata, features = 'proportions',p_val=1, param_pseudotime='nonparametric'):
+    """
+        Returns the fitted model for each cell type and the corresponding data.
+    
+        Parameters
+        ----------
+        adata : AnnData
+            Annotated data matrix containing necessary data.
+        features : str, optional
+            The type of features to use for the trajectory analysis.
+        p_val : float, optional
+            P-value for filtering the fitting models, by default 0.05.
+        param_pseudotime : str, optional
+            The parameter to use for pseudotime, by default 'pps'.
+        Returns
+        -------
+        -- RNA_target (DataFrame): DataFrame containing the gene expression data for each sample.
+        -- RNA_data (DataFrame): DataFrame containing the pseudotime labels for each sample.
+        -- pathies_cell_proportions (DataFrame): DataFrame containing the cell type proportions for each sample.
+        -- sorted_best (dict): Dictionary containing the best fitting models for each cell type.
+        -- formatted_results (DataFrame): DataFrame containing the formatted results for each cell type.
+    """
+    labels = adata.uns['real_labels']
+    pseudotime = adata.uns['pseudotime']
+    annot = adata.uns['annot']
+    cell_types_propo = adata.uns[features]
+    emd = adata.uns['embedding']
+    patients_id = cell_types_propo.keys()
+    cell_types = annot['cell_type'].unique()
+    emd_dataframe = pd.DataFrame({'sampleID': list(patients_id),
+                                  'pseudotime': pseudotime,
+                                  'lables': list(labels)}, dtype = object)
+    emd_dataframe_sort = emd_dataframe.sort_values('pseudotime', ascending = True) 
+    emd_dataframe_sort['pseudotime'] = np.arange(1, len(emd_dataframe) + 1, 1).tolist()
+    pathies_cell_proportions = pd.DataFrame.from_dict(cell_types_propo).T
+    pathies_cell_proportions.columns = cell_types
+    pathies_cell_proportions.index.name = 'sampleID'
+    pathies_cell_proportions['Time_score'] = list(emd_dataframe['pseudotime'])
+    pathies_cell_proportions = pathies_cell_proportions.sort_values('Time_score', ascending = True)
+    if param_pseudotime == 'nonparametric':
+        pathies_cell_proportions['Time_score'] = np.arange(1, len(emd_dataframe) + 1, 1).tolist()
+    pathies_cell_proportions = pathies_cell_proportions.reset_index()
+    RNA_data = pd.DataFrame()
+    RNA_data['label'] = pathies_cell_proportions['Time_score']
+    RNA_target = np.transpose(pathies_cell_proportions.iloc[:, 1:len(annot.cell_type.unique()) + 1])
+    min_target = min(RNA_data['label'])
+    max_target = max(RNA_data['label'])
+    #sorted_best = fit_best_model_cell_types(RNA_target, RNA_data,min_target=min_target, max_target=max_target)
+    sorted_best = fit_best_model(RNA_target, RNA_data, model_type = 'LinearRegression',
+                                 max_iter_huber = 1, epsilon_huber = 1,
+                                 pval_thr = p_val, modify_r2 = False)
+    return  RNA_target, RNA_data, pathies_cell_proportions, sorted_best, format_test(sorted_best, 
+              ['Features', 'Expression pattern', 'Slope', 'Fitted function',
+               'Intercept', 'Treat', 'Treat2', 'adjusted P-value', 'R-squared',
+               'mod_rsquared_adj'], 'Cells_Importance',
+              p_val = p_val, pro = None)
+
+def plot_selected_feature(adata, features=None, filter_fn=None, custom_matrix=None,nonparametric=True):
+    """
+        Plot selected features based on the provided criteria.
+        
+        Parameters
+        ----------
+        adata : AnnData
+            Annotated data matrix containing necessary data.
+        features : list, optional
+            List of features to plot. If None, all features will be considered.
+        filter_fn : function, optional
+            A function to filter features based on specific criteria. If None, no filtering will be applied
+        custom_matrix : pd.DataFrame, optional
+            A custom matrix to use for plotting.    
+        nonparametric : bool, optional
+            Whether to use nonparametric pseudotime. Default is True.
+        Returns
+        -------
+        -- fig : matplotlib.figure.Figure
+            The generated plot figure for the selected features.
+    """
+    if custom_matrix is not None:
+        adata.uns['custom_matrix'] = custom_matrix
+    if 'features_plot' not in adata.uns.keys():
+        adata.uns['features_plot'] = feature_to_trajectory(adata,
+                                                                features="proportions" if custom_matrix is None else "custom_matrix",
+                                                                p_val=1, 
+                                                                param_pseudotime='nonparametric' if nonparametric else 'parametric')
+    if features is not None and filter_fn is None:
+        seldict={}
+        for k,v in adata.uns['features_plot'][3].items():
+            if k in features:
+                seldict[k]=v
+    elif filter_fn is not None:
+        msk = filter_fn(adata.uns['features_plot'][4])
+        relevant = np.unique(msk.Features)
+        seldict={}
+        for k,v in adata.uns['features_plot'][3].items():
+            if k in relevant:
+                seldict[k]=v
+    fig = plot_best_matches_cell_types(adata.uns['features_plot'][0],adata.uns['features_plot'][1],adata.uns['features_plot'][2],seldict, "Cell Proportion", 
+                                            min_target = min(adata.uns['features_plot'][1]['label']),
+                                            max_target = max(adata.uns['features_plot'][1]['label']),
+                                            num = len(seldict.keys()),
+                                            width = 20,
+                                            height = 5,
+                                            xlim = 5,
+                                            point_size = 100,
+                                            color_back = 'white',
+                                            fontsize = 15,
+                                            alpha = 1,
+                                            cmap = 'viridis')
+    return fig

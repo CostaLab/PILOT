@@ -2522,11 +2522,7 @@ def plot_stats_by_pattern(cluster_names: list = None,
                 print('Plot for '+str(cluster))
                 plt.show()
                 plt.close()
-
-
-
-
-
+ 
 
 def create_sample_grid(df, pattern, image_dir=' figures/', output_path="Results_PILOT/plots/sample_grid_cores.png",zoom=0.1,num_rows = 10):
     """
