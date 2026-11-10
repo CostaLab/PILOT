@@ -232,17 +232,16 @@ def extract_annot_expression(adata,columns=['cell_type_original','patient_region
 
 
 
-
-
-def extract_data_anno_scRNA_from_h5ad(adata,emb_matrix='PCA',clusters_col='cell_type',sample_col='sampleID',status='status'):
+def extract_data_anno_scRNA_from_h5ad(adata, emb_matrix='PCA', clusters_col='cell_type', sample_col='sampleID', status='status'):
     """
     This function extracts the needed inputs for PILOT(pathomics)
     Parameters
     ----------
     adata : AnnData
         Loaded AnnData object containing the data.
-    emb_matrix : numpy.ndarray
-        PCA representation of data (variable).
+    emb_matrix : str
+        Key in adata.obsm that holds the embedding (e.g. PCA). The stored
+        embedding can be a numpy.ndarray or a pandas.DataFrame.
     clusters_col : str
         Column name in the observation level of 'adata' that represents cell types or clustering.
     sample_col : str
@@ -251,27 +250,32 @@ def extract_data_anno_scRNA_from_h5ad(adata,emb_matrix='PCA',clusters_col='cell_
         Column name in the observation level of 'adata' that represents status or disease, e.g., control/case.
     Returns
     -------
-    AnnData
-        Annotated data matrix with extracted annotations and processed expression data.
+    data : pandas.DataFrame
+        Embedding with one row per cell and one column per component.
+    annot : pandas.DataFrame
+        Annotation with columns 'cell_type', 'sampleID' and 'status'.
     """
     global path_to_results
-    data=adata.obsm[emb_matrix]  
-    col_add=[]
-    #for i in range(1,adata.obsm[emb_matrix].shape[1]+1):
-     #   col_add.append('PCA_'+str(i))
 
-    for i in range(adata.obsm[emb_matrix].shape[1]):
-        col_add.append(adata.obsm[emb_matrix].columns[i])
-    data=pd.DataFrame(data,columns=col_add) 
+    data = adata.obsm[emb_matrix]
+
+    if isinstance(data, pd.DataFrame):
+        # pandas: keep the existing column names
+        col_add = list(data.columns)
+    else:
+        # numpy array: create the column names ourselves
+        col_add = ['PCA_' + str(i + 1) for i in range(data.shape[1])]
+
+    data = pd.DataFrame(data, columns=col_add)
     data = data.reset_index(drop=True)
-    annot=adata.obs[[clusters_col,sample_col,status]]
-    annot.columns=['cell_type','sampleID','status']
-    annot = annot.reset_index(drop=True) 
-    path_to_results=set_path_for_results()
-    
-    return data,annot
 
+    annot = adata.obs[[clusters_col, sample_col, status]]
+    annot.columns = ['cell_type', 'sampleID', 'status']
+    annot = annot.reset_index(drop=True)
 
+    path_to_results = set_path_for_results()
+
+    return data, annot
 
 def extract_data_anno_pathomics_from_h5ad(adata,var_names=[],clusters_col='Cell_type',sample_col='sampleID',status='status'):
     """
