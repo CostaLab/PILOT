@@ -230,8 +230,6 @@ def extract_annot_expression(adata,columns=['cell_type_original','patient_region
                 annot.columns=['cell_types','sampleID','status']                          
     return data,annot    
 
-
-
 def extract_data_anno_scRNA_from_h5ad(adata, emb_matrix='PCA', clusters_col='cell_type', sample_col='sampleID', status='status'):
     """
     This function extracts the needed inputs for PILOT(pathomics)
@@ -276,6 +274,7 @@ def extract_data_anno_scRNA_from_h5ad(adata, emb_matrix='PCA', clusters_col='cel
     path_to_results = set_path_for_results()
 
     return data, annot
+
 
 def extract_data_anno_pathomics_from_h5ad(adata,var_names=[],clusters_col='Cell_type',sample_col='sampleID',status='status'):
     """
