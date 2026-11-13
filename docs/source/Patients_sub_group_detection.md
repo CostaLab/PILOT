@@ -1,7 +1,5 @@
 ### Patients sub-group detection by PILOT
 
-
-
 <div class="alert alert-block alert-info">
 <b>PILOT</b>
 
@@ -11,14 +9,12 @@ In this tutorial, we are using single-cell data from pancreatic ductal adenocarc
 
 </div>
 
-
 ```python
 import pilotpy as pl
 import scanpy as sc
 ```
 
 ##### Reading Anndata
-
 
 ```python
 adata = sc.read_h5ad('Datasets/PDAC.h5ad')
@@ -41,72 +37,73 @@ Use the following parameters to configure PILOT for your analysis (Setting Param
        
 </div>
 
-
 ```python
 pl.tl.wasserstein_distance(
     adata,
-    emb_matrix='X_pca',
-    clusters_col='cell_types',
-    sample_col='sampleID',
-    status='status'
+    emb_matrix = 'X_pca',
+    clusters_col = 'cell_types',
+    sample_col = 'sampleID',
+    status = 'status'
     )
 ```
 
-##### Ploting the Cost matrix and the Wasserstein distance:
-<div class="alert alert-block alert-info"> 
- Here we show the heatmaps of the Cost matrix (cells) and Wasserstein distance (samples). At this point, you should have a 'Results_PILOT' folder inside the folder where you are running your analysis, which includes all the plots created by PILOT. To plot only one of them, use `pl.pl.heatmap_cost(adata)` or `pl.pl.heatmap_wasserstein(adata)`. The size of the heatmaps follows the number of cell types and samples; it can be changed with `figsize`.
+##### Cost matrix:
+<div class="alert alert-block alert-info">
+The cost matrix shows how different the cell types are from each other (the distance between the cell types). PILOT uses it as the cost of moving cells from one cell type to another when it compares two samples. Dark blue means similar cell types.
+
+At this point, you should have a 'Results_PILOT' folder inside the folder where you are running your analysis, which includes all the plots created by PILOT.
 </div>
 
-
 ```python
-pl.pl.heatmaps(adata)
+pl.pl.heatmap_cost(adata)
 ```
 
+![png](Patients_sub_group_detection_files/v2_0_20_cell08_1.png)
 
-    
-![png](Patients_sub_group_detection_files/Patients_sub_group_detection_8_0.png)
-    
+##### Wasserstein distance:
+<div class="alert alert-block alert-info">
+The Wasserstein distance shows how different the samples (patients) are. It compares the cell type proportions of two samples, using the cost matrix above. Dark blue means similar samples. The rows and columns are clustered, so similar samples are placed next to each other.
+</div>
 
+```python
+pl.pl.heatmap_wasserstein(adata)
+```
 
-
-    
-![png](Patients_sub_group_detection_files/Patients_sub_group_detection_8_1.png)
-    
-
+![png](Patients_sub_group_detection_files/v2_0_20_cell10_1.png)
 
 ##### Trajectory:
-<div class="alert alert-block alert-info"> 
- Here we show the Diffusion map of Wasserstein distance. In the upcoming trajectory analysis, the labels "T" stands for Tumor and "N" stands for the Normal.
-The colors are chosen automatically from the number of groups, so there is no need to give them. Useful options:
+<div class="alert alert-block alert-info">
+Here we show the diffusion map of the Wasserstein distances (the trajectory). In the upcoming trajectory analysis, the labels "T" stands for Tumor and "N" stands for the Normal.
 
-- `legend_order`: order of the groups in the legend, e.g. the control group first.
-- `colors`: your own colors, as a list or a dict, e.g. `{'control': 'blue'}`.
-- `location_labels` and `legend_bbox`: position of the legend, e.g. `location_labels = 'upper left', legend_bbox = (1.02, 1)` puts it outside the plot.
-- `clusters`: color the samples by another sample-level column of `adata.obs` (e.g. `clusters = 'sex'`), without computing the trajectory again.
-- `point_size`, `figsize`, `font_size`, `plot_titel`, `label_act` (show the sample names).
+Each point is a sample, colored by its status. The parameters that change the trajectory are:
 
-The trajectory is computed once and saved in the object. Running `pl.pl.trajectory` again (e.g. with other colors) gives the same picture. It is computed again only when the Wasserstein distance or the diffusion map parameters (`knn`, `epsilon`, `alpha`, `n_evecs`) change.
+- `epsilon` (default 1): width of the kernel. Small values link each sample only to its most similar samples; large values give a smoother trajectory. `epsilon = 'bgh'` chooses it automatically.
+- `alpha` (default 0.5, between 0 and 1): with 1, groups with many samples do not dominate the trajectory.
+- `n_neighbors` (default 64): number of neighbor samples used for each sample. It only has an effect when it is smaller than the number of samples.
+- `n_evecs` (default 2): number of diffusion components.
+
+The other parameters only change the look of the plot (colors, legend, point size, ...). Run `pl.pl.trajectory?` or press Shift+Tab in Jupyter to see all parameters.
 </div>
 
-
 ```python
-pl.pl.trajectory(adata, legend_order = ['normal', 'pdac'])
+pl.pl.trajectory(adata)
 ```
 
-
-    
-![png](Patients_sub_group_detection_files/Patients_sub_group_detection_10_0.png)
-    
-
+![png](Patients_sub_group_detection_files/v2_0_20_cell12_1.png)
 
 ##### UMAP of the samples:
 <div class="alert alert-block alert-info">
-PILOT can also show the samples (patients) in a UMAP computed from the Wasserstein distances. The colors are the same as in the trajectory, so both plots can be compared directly. The same legend options as in `pl.pl.trajectory` can be used.
+PILOT can also show the samples in a UMAP computed from the Wasserstein distances. Important parameters:
+
+- `n_neighbors` (default 15, or fewer for small cohorts): small values keep the local structure, large values the global structure.
+- `min_dist` (default 0.5): how close the points can be to each other.
 </div>
 
 ```python
-pl.pl.umap_samples(adata, legend_order = ['normal', 'pdac'])
+pl.pl.umap_samples(adata)
 ```
+
+![png](Patients_sub_group_detection_files/v2_0_20_cell14_1.png)
 
 ##### In this section, we should find the optimal number of clusters. 
 <div class="alert alert-block alert-info"> 

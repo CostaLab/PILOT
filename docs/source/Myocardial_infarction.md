@@ -9,14 +9,12 @@ Here we show the whole process for applying PILOT to scRNA data using Myocardial
 
 </div>
 
-
 ```python
 import pilotpy as pl
 import scanpy as sc
 ```
 
 ##### Reading Anndata
-
 
 ```python
 adata = sc.read_h5ad('Datasets/myocardial_infarction.h5ad')
@@ -39,7 +37,6 @@ Use the following parameters to configure PILOT for your analysis (Setting Param
        
 </div>
 
-
 ```python
 pl.tl.wasserstein_distance(
     adata,
@@ -50,105 +47,145 @@ pl.tl.wasserstein_distance(
     )
 ```
 
-##### Ploting the Cost matrix and the Wasserstein distance:
-<div class="alert alert-block alert-info"> 
-Here we show the heatmaps of Cost matrix (cells) and Wasserstein distance (samples). At this point, you should have a 'Results_PILOT' folder inside the folder where you are running your analysis, which includes all the plots created by PILOT. To plot only one of them, use `pl.pl.heatmap_cost(adata)` or `pl.pl.heatmap_wasserstein(adata)`. The size of the heatmaps follows the number of cell types and samples; it can be changed with `figsize`.
+##### Cost matrix:
+<div class="alert alert-block alert-info">
+The cost matrix shows how different the cell types are from each other (the distance between the cell types). PILOT uses it as the cost of moving cells from one cell type to another when it compares two samples. Dark blue means similar cell types.
+
+At this point, you should have a 'Results_PILOT' folder inside the folder where you are running your analysis, which includes all the plots created by PILOT.
 </div>
 
-
 ```python
-pl.pl.heatmaps(adata)
+pl.pl.heatmap_cost(adata)
 ```
 
+![png](Myocardial_infarction_files/v2_0_20_cell08_1.png)
 
-    
-![png](Myocardial_infarction_files/v2_0_19_heatmap_cost.png)
-    
+##### Wasserstein distance:
+<div class="alert alert-block alert-info">
+The Wasserstein distance shows how different the samples (patients) are. It compares the cell type proportions of two samples, using the cost matrix above. Dark blue means similar samples. The rows and columns are clustered, so similar samples are placed next to each other.
+</div>
 
+```python
+pl.pl.heatmap_wasserstein(adata)
+```
 
-
-    
-![png](Myocardial_infarction_files/v2_0_19_heatmap_wasserstein.png)
-    
-
+![png](Myocardial_infarction_files/v2_0_20_cell10_1.png)
 
 ##### Trajectory:
-<div class="alert alert-block alert-info"> 
- Here we show the Diffusion map of Wasserstein distance.  In the upcoming trajectory analysis, the labels "IZ" stands for the ischaemic zone tissue.
-The colors are chosen automatically from the number of groups, so there is no need to give them. Useful options:
+<div class="alert alert-block alert-info">
+Here we show the diffusion map of the Wasserstein distances (the trajectory). In the upcoming trajectory analysis, the label "IZ" stands for the ischaemic zone tissue.
 
-- `legend_order`: order of the groups in the legend, e.g. the control group first.
-- `colors`: your own colors, as a list or a dict, e.g. `{'control': 'blue'}`.
-- `location_labels` and `legend_bbox`: position of the legend, e.g. `location_labels = 'upper left', legend_bbox = (1.02, 1)` puts it outside the plot.
-- `clusters`: color the samples by another sample-level column of `adata.obs` (e.g. `clusters = 'sex'`), without computing the trajectory again.
-- `point_size`, `figsize`, `font_size`, `plot_titel`, `label_act` (show the sample names).
+Each point is a sample, colored by its status. The parameters that change the trajectory are:
 
-The trajectory is computed once and saved in the object. Running `pl.pl.trajectory` again (e.g. with other colors) gives the same picture. It is computed again only when the Wasserstein distance or the diffusion map parameters (`knn`, `epsilon`, `alpha`, `n_evecs`) change.
+- `epsilon` (default 1): width of the kernel. Small values link each sample only to its most similar samples; large values give a smoother trajectory. `epsilon = 'bgh'` chooses it automatically.
+- `alpha` (default 0.5, between 0 and 1): with 1, groups with many samples do not dominate the trajectory.
+- `n_neighbors` (default 64): number of neighbor samples used for each sample. It only has an effect when it is smaller than the number of samples.
+- `n_evecs` (default 2): number of diffusion components.
+
+The other parameters only change the look of the plot (colors, legend, point size, ...). Run `pl.pl.trajectory?` or press Shift+Tab in Jupyter to see all parameters.
 </div>
 
-
 ```python
-pl.pl.trajectory(adata, legend_order = ['control', 'IZ'])
+pl.pl.trajectory(adata)
 ```
 
-
-    
-![png](Myocardial_infarction_files/v2_0_19_trajectory.png)
-    
-
+![png](Myocardial_infarction_files/v2_0_20_cell12_1.png)
 
 ##### UMAP of the samples:
 <div class="alert alert-block alert-info">
-PILOT can also show the samples (patients) in a UMAP computed from the Wasserstein distances. The colors are the same as in the trajectory, so both plots can be compared directly. The same legend options as in `pl.pl.trajectory` can be used.
+PILOT can also show the samples in a UMAP computed from the Wasserstein distances. Important parameters:
+
+- `n_neighbors` (default 15, or fewer for small cohorts): small values keep the local structure, large values the global structure.
+- `min_dist` (default 0.5): how close the points can be to each other.
 </div>
 
 ```python
-pl.pl.umap_samples(adata, legend_order = ['control', 'IZ'])
+pl.pl.umap_samples(adata)
 ```
 
-
-    
-![png](Myocardial_infarction_files/v2_0_19_umap.png)
-    
+![png](Myocardial_infarction_files/v2_0_20_cell14_1.png)
 
 #####  Fit a principal graph:
-<div class="alert alert-block alert-info"> 
-The difussion map creates an embedding that potentially reveals a trajectory in the data. Next, PILOT explores EIPLGraph to find the structure of the trajectory. An important parameter is the source_node, which indicates the start of the trajectory. Here, the root is chosen automatically near the control samples. This method returns ranked samples, which we define as a disease progression score (t = t1, ..., tn), where tl represents the ranking of the nth sample. With `source_node = 'auto'`, PILOT chooses the root automatically: the end node of the graph from which the control samples (given by `root_status`) come first along the trajectory. You can also give the node number yourself, e.g. `source_node = 7` (the node numbers are shown in the plot). The graph is fitted with a fixed random seed. In a new Python session the graph can still change slightly, so the node numbers can change; `source_node = 'auto'` does not depend on them. Always check the plot. The steps can also be run one by one: `pl.tl.fit_principal_graph`, `pl.pl.principal_graph` and `pl.tl.compute_pseudotime`.
+<div class="alert alert-block alert-info">
+The diffusion map creates an embedding that potentially reveals a trajectory in the data. Next, PILOT uses ElPiGraph to fit a principal graph (a tree) through the samples and orders the samples along it, starting from the root. This order is the disease progression score (pseudotime). Important parameters:
+
+- `source_node`: the start (root) of the trajectory. With `'auto'`, PILOT chooses the end node of the graph where the samples of `root_status` come first. You can also give a node number (the numbers are shown in the plot).
+- `root_status`: the group where the trajectory starts, here `'control'`.
+- `NumNodes` (default 20): number of nodes of the graph. More nodes give a more detailed curve.
 </div>
-
-
 
 ```python
 pl.pl.fit_pricipla_graph(adata, source_node = 'auto', root_status = 'control')
 ```
 
+![png](Myocardial_infarction_files/v2_0_20_cell16_1.png)
 
-    
-![png](Myocardial_infarction_files/v2_0_19_principal_graph.png)
-    
+##### Clinical and technical variables on the trajectory:
+<div class="alert alert-block alert-info">
+The trajectory and the principal graph are computed from the status. To see how other information about the samples relates to the disease progression, PILOT can color the samples by any column of `adata.obs`, e.g. the batch (technical) or the percentage of mitochondrial reads. The trajectory and the principal graph (grey, with the root as a red star) stay the same.
 
-
-#####  Cell-type importance:
-<div class="alert alert-block alert-info"> 
-Next, we can use the robust regression model to find cells whose proportions change linearly or non-linearly with disease progression. As indicated in the paper, major hallmark of MI progression are detected, i.e., a decrease of cardiomyocyte cells (CM) and an increase of fibroblasts and myeloid cells. By default the x-axis is the order of the samples along the trajectory (1, 2, 3, ...). Use `x_axis = 'pseudotime'` to use the pseudotime values instead. The size of the figure follows the number of cell types; the labels and fonts can be changed with `xlabel`, `ylabel`, `label_fontsize`, `tick_fontsize` and `title_fontsize`. The steps can also be run one by one: `pl.tl.cell_importance_calculation`, `pl.pl.heatmap_proportions` and `pl.pl.cell_importance_grid` (or `pl.pl.cell_importance_plot` for one file per cell type).
+- Categorical variables (e.g. sex, batch) get one color per group.
+- Numeric variables (e.g. age, or a technical value such as the percentage of mitochondrial reads) get a color scale. Values that are given per cell are averaged per sample (`agg = 'mean'`).
+- `variable = 'pseudotime'` and `variable = 'n_cells'` (number of cells of each sample) can also be used.
 </div>
 
-
 ```python
-pl.tl.cell_importance(adata)
+pl.pl.trajectory_variable(adata, variable = 'batch')
 ```
 
+![png](Myocardial_infarction_files/v2_0_20_cell18_1.png)
 
-    
-![png](Myocardial_infarction_files/v2_0_19_proportions_heatmap.png)
-    
+```python
+pl.pl.trajectory_variable(adata, variable = 'percent_mt')
+```
 
+![png](Myocardial_infarction_files/v2_0_20_cell19_1.png)
 
+The same variables can be shown on the UMAP of the samples:
 
-    
-![png](Myocardial_infarction_files/v2_0_19_cell_importance.png)
-    
+```python
+pl.pl.umap_variable(adata, variable = 'batch')
+```
 
+![png](Myocardial_infarction_files/v2_0_20_cell21_1.png)
+
+```python
+pl.pl.umap_variable(adata, variable = 'percent_mt')
+```
+
+![png](Myocardial_infarction_files/v2_0_20_cell22_1.png)
+
+#####  Cell-type importance:
+<div class="alert alert-block alert-info">
+Next, we use a regression model to find cell types whose proportions change linearly or non-linearly with disease progression. As indicated in the paper, major hallmarks of MI progression are detected, i.e., a decrease of cardiomyocyte cells (CM) and an increase of fibroblasts and myeloid cells.
+
+`pl.tl.cell_importance_calculation` orders the samples along the trajectory and, for each cell type, fits a linear, a quadratic and a linear + quadratic model of its proportion, and keeps the best one. Important parameters:
+
+- `p_val` (default 1): keep only the cell types with an adjusted p-value below this value; 1 keeps all of them.
+- `x_axis`: `'order'` (default) places the samples at their position along the trajectory (1, 2, 3, ...); `'pseudotime'` uses the pseudotime values, so the distances between the samples are kept.
+
+The results are saved in 'Results_PILOT/Cell_type_Report' and the cell types in `adata.uns['cellnames']`.
+</div>
+
+```python
+pl.tl.cell_importance_calculation(adata)
+```
+
+The heatmap shows the cell type proportions (columns) of each sample (rows). The samples are ordered along the trajectory, from the start (top) to the end (bottom). Each cell type is scaled between 0 and 1, so its changes are easy to see.
+
+```python
+pl.pl.heatmap_proportions(adata)
+```
+
+![png](Myocardial_infarction_files/v2_0_20_cell26_1.png)
+
+Each panel shows one cell type: its proportion in each sample (points) along the trajectory and the fitted curve. The panels are sorted by p-value; cell types with an adjusted p-value below 0.05 have a bold title. `pl.pl.cell_importance_plot(adata)` saves the same plots as one file per cell type (in 'Results_PILOT/Cell_types_importance'), and `pl.tl.cell_importance(adata)` runs these three steps in one call.
+
+```python
+pl.pl.cell_importance_grid(adata)
+```
+
+![png](Myocardial_infarction_files/v2_0_20_cell28_1.png)
 
 ##### Applying PILOT for finding Markers
 
