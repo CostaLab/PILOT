@@ -56,6 +56,7 @@ caption: scRNA-seq Analysis
 maxdepth: 2
 ---
 Myocardial_infarction
+Distance_settings
 ```
 
 ```{toctree}

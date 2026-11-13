@@ -32,7 +32,15 @@ Use the following parameters to configure PILOT for your analysis (Setting Param
 - sample_col: Indicate the column name in the observation level of your Anndata that contains information about samples or patients.
     
 - status: Provide the column name that represents the status or disease (e.g., "control" or "case").
-       
+
+Optional settings of the distance (the defaults are the settings of the PILOT paper):
+
+- `cost_method`: how the cost between two cell types is computed: `'centroid'` (default, distance between the centers of the cell types), `'distribution'` (all cells of the cell types), `'graph'` (neighbor graph of the cells), `'expression'` (average gene expression), `'jaccard'` (shared marker genes) or `'precomputed'` (your own matrix in `cost`).
+- `metric`: distance between two cell types: `'cosine'` (default), `'correlation'`, `'euclidean'`, `'sqeuclidean'`, `'cityblock'`, `'chebyshev'`, `'minkowski'`, `'canberra'`, `'braycurtis'`, `'seuclidean'`, `'mahalanobis'` or `'jensenshannon'` (only for non-negative values).
+- `n_pcs`: number of components of `emb_matrix` that are used (default: all); `centroid`: `'median'` (default) or `'mean'`.
+- `regularized`: transport method: `'unreg'` (default, exact), `'sinkhorn'`, `'sinkhorn_divergence'` or `'unbalanced'`.
+
+The [Distance settings](https://pilot.readthedocs.io/en/latest/Distance_settings.html) tutorial shows all of them and their effect.
 </div>
 
 ```python

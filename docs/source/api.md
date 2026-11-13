@@ -33,6 +33,12 @@ import pilotpy
    :toctree: generated/
 
    tl.wasserstein_distance
+   tl.cost_centroid
+   tl.cost_distribution
+   tl.cost_graph
+   tl.cost_expression
+   tl.cost_jaccard
+   tl.cost_precomputed
    tl.trajectory_calculation
    tl.umap_calculation
    tl.fit_principal_graph
@@ -68,6 +74,7 @@ import pilotpy
    pl.umap_samples
    pl.trajectory_variable
    pl.umap_variable
+   pl.plot_trajectory_continuous
    pl.fit_pricipla_graph
    pl.principal_graph
    pl.heatmap_proportions
