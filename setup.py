@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 setup(
     name='pilotpy',
     version='2.0.18',
-    author='Mehdi Joodaki',
+    author='Mehdi Joodaki & Mina Shaigan',
     author_email='judakimehdi@gmail.com',
     url='https://github.com/CostaLab/PILOT',
     description="PatIent Level analysis with Optimal Transport (PILOT)",

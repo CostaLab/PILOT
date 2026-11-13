@@ -4,10 +4,10 @@
 
 project = ' PILOT'
 copyright = '2023, Costalab'
-author = 'Mehdi Joodaki'
+author = 'Mehdi Joodaki & Mina Shaigan'
 
-release = '2.0'
-version = '2.0.10'
+release = '2.0.18'
+version = '2.0.18'
 
 # -- General configuration
 
