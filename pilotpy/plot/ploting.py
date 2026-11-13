@@ -246,7 +246,7 @@ def _scatter_samples(adata,
                           title_fontsize=legend_fontsize, markerscale=1)
             if legend_bbox is not None:
                 kwargs['bbox_to_anchor'] = legend_bbox
-            ax.legend(**kwargs)
+            _fixed_legend_markers(ax.legend(**kwargs))
         if title:
             ax.set_title(title, fontsize=title_fontsize)
         if xlabel is not None:
@@ -255,6 +255,15 @@ def _scatter_samples(adata,
             ax.set_ylabel(ylabel)
         ax.tick_params(labelsize=max(font_size - 2, 6))
     return fig, ax
+
+
+def _fixed_legend_markers(legend, size=80):
+    """Give all legend markers the same, readable size (also with small points)."""
+    handles = getattr(legend, 'legend_handles', None) or getattr(legend, 'legendHandles', [])
+    for handle in handles:
+        if hasattr(handle, 'set_sizes'):
+            handle.set_sizes([size])
+    return legend
 
 
 def _auto_point_size(n_samples):
@@ -278,8 +287,17 @@ def _drop_keys(adata, keys):
             del adata.uns[key]
 
 
-def _compute_trajectory(adata, n_evecs=2, epsilon=1, alpha=0.5, knn=64,
-                        recompute=False, root_status=None, verbose=True):
+def _resolve_n_neighbors(knn=None, n_neighbors=None):
+    """``n_neighbors`` is the new name of ``knn``; both are accepted."""
+    if knn is not None and n_neighbors is not None and int(knn) != int(n_neighbors):
+        raise ValueError("Give only n_neighbors (knn is its old name).")
+    value = n_neighbors if n_neighbors is not None else knn
+    return 64 if value is None else int(value)
+
+
+def _compute_trajectory(adata, n_evecs=2, epsilon=1, alpha=0.5, knn=None,
+                        recompute=False, root_status=None, verbose=True,
+                        n_neighbors=None, bandwidth_type=None):
     """
     Compute (or reuse) the diffusion map of the Wasserstein distances.
 
@@ -290,9 +308,11 @@ def _compute_trajectory(adata, n_evecs=2, epsilon=1, alpha=0.5, knn=64,
     """
     if 'EMD' not in adata.uns:
         raise ValueError("No Wasserstein distances found. Run pl.tl.wasserstein_distance(adata, ...) first.")
+    n_neighbors = _resolve_n_neighbors(knn, n_neighbors)
     EMD = np.asarray(adata.uns['EMD'], dtype=float)
     params = {'n_evecs': int(n_evecs), 'epsilon': str(epsilon), 'alpha': float(alpha),
-              'knn': int(knn), 'emd_hash': _array_hash(EMD),
+              'n_neighbors': int(n_neighbors), 'bandwidth_type': str(bandwidth_type),
+              'emd_hash': _array_hash(EMD),
               'root_status': 'None' if root_status is None else str(root_status)}
     old = adata.uns.get('trajectory_params', None)
     if (not recompute and 'embedding' in adata.uns and isinstance(old, dict)
@@ -300,7 +320,8 @@ def _compute_trajectory(adata, n_evecs=2, epsilon=1, alpha=0.5, knn=64,
         return adata.uns['embedding']
 
     mydmap = diffusion_map.DiffusionMap.from_sklearn(n_evecs=n_evecs, epsilon=epsilon,
-                                                     alpha=alpha, k=knn)
+                                                     alpha=alpha, k=n_neighbors,
+                                                     bandwidth_type=bandwidth_type)
     embedding = np.real(np.asarray(mydmap.fit_transform(EMD / EMD.max()), dtype=complex))
 
     # The eigen solver returns each axis with a random sign. Fix the sign so
@@ -486,6 +507,19 @@ def _clustermap(df, title, save_path, figsize=None, col_cluster=True, row_cluste
     return g
 
 
+def _trajectory_axes(adata, components=(0, 1)):
+    """The two chosen diffusion components and their axis labels."""
+    embedding = np.asarray(adata.uns['embedding'])
+    components = [int(c) for c in components]
+    if len(components) != 2:
+        raise ValueError("components must have two values, e.g. (0, 1).")
+    if max(components) >= embedding.shape[1] or min(components) < 0:
+        raise ValueError(f"The trajectory has {embedding.shape[1]} components (0 to "
+                         f"{embedding.shape[1] - 1}). Use a larger n_evecs in pl.pl.trajectory.")
+    return (embedding[:, components], f'Diffusion component {components[0] + 1}',
+            f'Diffusion component {components[1] + 1}')
+
+
 # ---------------------------------------------------------------------------
 # Trajectory
 # ---------------------------------------------------------------------------
@@ -494,7 +528,7 @@ def trajectory(adata,
                n_evecs=2,
                epsilon=1,
                alpha=0.5,
-               knn=64,
+               knn=None,
                sample_col=1,
                clusters='status',
                label_act=False,
@@ -517,7 +551,10 @@ def trajectory(adata,
                root_status=None,
                recompute=False,
                save_format='pdf',
-               show=True):
+               show=True,
+               n_neighbors=None,
+               bandwidth_type=None,
+               components=(0, 1)):
     """
     Find the trajectory with a diffusion map and plot it.
 
@@ -525,22 +562,30 @@ def trajectory(adata,
     ``adata.uns['embedding']``. Calling this function again (e.g. with other
     colors) reuses it, so the picture and the principal graph do not change.
     It is recomputed only when the Wasserstein distances or the diffusion map
-    parameters (``n_evecs``, ``epsilon``, ``alpha``, ``knn``) change, or when
-    ``recompute=True``.
+    parameters (``n_evecs``, ``epsilon``, ``alpha``, ``n_neighbors``,
+    ``bandwidth_type``) change, or when ``recompute=True``.
+
+    The parameters that change the trajectory are ``epsilon``, ``alpha``,
+    ``n_neighbors``, ``bandwidth_type`` and ``n_evecs``. All other parameters
+    only change the look of the plot.
 
     Parameters
     ----------
     adata : AnnData
         AnnData object after ``pl.tl.wasserstein_distance``.
     n_evecs : int, optional
-        Number of diffusion map dimensions, by default 2.
+        Number of diffusion components that are computed, by default 2. The
+        principal graph is fitted on all of them.
     epsilon : float or str, optional
-        Kernel bandwidth of the diffusion map, a number or a pydiffmap method
-        such as 'bgh', by default 1.
+        Width of the kernel, by default 1. Small values link each sample only
+        to its most similar samples; large values give a smoother trajectory.
+        'bgh' (or 'bgh_generous') chooses the width automatically from the data.
     alpha : float, optional
-        Normalization parameter of the diffusion map, by default 0.5.
+        Density normalization, by default 0.5. 0 is the classical diffusion
+        map; 1 removes the effect of how densely the samples are placed, so
+        that groups with many samples do not dominate.
     knn : int, optional
-        Number of nearest neighbors used to build the kernel, by default 64.
+        Old name of ``n_neighbors``, kept for backwards compatibility.
     sample_col : int, optional
         Position of the sample column in ``adata.uns['annot']``, by default 1.
     clusters : str, optional
@@ -597,6 +642,16 @@ def trajectory(adata,
         Use None to not save.
     show : bool, optional
         Whether to show the plot, by default True.
+    n_neighbors : int, optional
+        Number of neighbor samples used to build the kernel, by default 64.
+        It only has an effect when it is smaller than the number of samples.
+    bandwidth_type : float, str or None, optional
+        None (default) uses the same kernel width for all samples. A number
+        such as -0.25 gives each sample its own width from the local density,
+        which helps when some groups have many more samples than others.
+    components : tuple, optional
+        The two diffusion components shown on the x and y axes, by default
+        (0, 1). Use e.g. (0, 2) together with ``n_evecs=3``.
 
     Returns
     -------
@@ -605,7 +660,9 @@ def trajectory(adata,
         saved in 'Results_PILOT/plots'.
     """
     embedding = _compute_trajectory(adata, n_evecs=n_evecs, epsilon=epsilon, alpha=alpha,
-                                    knn=knn, recompute=recompute, root_status=root_status)
+                                    knn=knn, n_neighbors=n_neighbors,
+                                    bandwidth_type=bandwidth_type, recompute=recompute,
+                                    root_status=root_status)
     trajectory_plotting(adata, sample_col=sample_col, clusters=clusters, label_act=label_act,
                         colors=colors, location_labels=location_labels, figsize=figsize,
                         font_size=font_size, axes_line_width=axes_line_width,
@@ -613,7 +670,8 @@ def trajectory(adata,
                         fontsize_legend=fontsize_legend, alpha_trans=alpha_trans,
                         plot_title=plot_titel, legend_order=legend_order,
                         legend_bbox=legend_bbox, legend_title=legend_title,
-                        show_legend=show_legend, save_format=save_format, show=show)
+                        show_legend=show_legend, save_format=save_format, show=show,
+                        components=components)
 
 
 def trajectory_calculation(
@@ -621,9 +679,11 @@ def trajectory_calculation(
     n_evecs=2,
     epsilon=1,
     alpha=0.5,
-    knn=64,
+    knn=None,
     root_status=None,
-    recompute=True):
+    recompute=True,
+    n_neighbors=None,
+    bandwidth_type=None):
     """
     Compute the trajectory (diffusion map) without plotting it.
 
@@ -636,20 +696,24 @@ def trajectory_calculation(
         AnnData object with the sample-by-sample Wasserstein distances in
         ``adata.uns['EMD']``.
     n_evecs : int, optional
-        Number of diffusion map dimensions, by default 2.
+        Number of diffusion components, by default 2.
     epsilon : float or str, optional
-        Kernel bandwidth, a number or a pydiffmap method such as 'bgh',
-        by default 1.
+        Width of the kernel, by default 1; 'bgh' chooses it automatically.
+        See ``pl.pl.trajectory``.
     alpha : float, optional
-        Normalization parameter of the diffusion map, by default 0.5.
+        Density normalization (0 to 1), by default 0.5.
     knn : int, optional
-        Number of nearest neighbors used to build the kernel, by default 64.
+        Old name of ``n_neighbors``.
     root_status : str, optional
         If given, the samples of this group are placed on the left side of the
         first axis.
     recompute : bool, optional
         If False, an existing trajectory with the same parameters is reused,
         by default True.
+    n_neighbors : int, optional
+        Number of neighbor samples of the kernel, by default 64.
+    bandwidth_type : float, str or None, optional
+        None (default) for one kernel width; e.g. -0.25 for a width per sample.
 
     Returns
     -------
@@ -657,6 +721,7 @@ def trajectory_calculation(
         The trajectory is stored in ``adata.uns['embedding']``.
     """
     _compute_trajectory(adata, n_evecs=n_evecs, epsilon=epsilon, alpha=alpha, knn=knn,
+                        n_neighbors=n_neighbors, bandwidth_type=bandwidth_type,
                         recompute=recompute, root_status=root_status)
 
 
@@ -682,7 +747,8 @@ def trajectory_plotting(
     legend_title=None,
     show_legend=True,
     save_format="png",
-    show=True):
+    show=True,
+    components=(0, 1)):
     """
     Plot the trajectory stored in ``adata.uns['embedding']``.
 
@@ -736,10 +802,12 @@ def trajectory_plotting(
         File format, by default 'png'. Use None to not save.
     show : bool, optional
         Whether to show the plot, by default True.
+    components : tuple, optional
+        The two diffusion components shown on the axes, by default (0, 1).
     """
     if 'embedding' not in adata.uns:
         raise ValueError("No trajectory found. Run pl.pl.trajectory(adata) first.")
-    embedding = np.asarray(adata.uns['embedding'])
+    embedding, xlabel, ylabel = _trajectory_axes(adata, components)
     fig, ax = _scatter_samples(adata, embedding, clusters=clusters, sample_col=sample_col,
                                colors=colors, legend_order=legend_order,
                                legend_loc=location_labels, legend_bbox=legend_bbox,
@@ -747,7 +815,7 @@ def trajectory_plotting(
                                show_legend=show_legend, label_act=label_act,
                                point_size=point_size, alpha=alpha_trans, figsize=figsize,
                                font_size=font_size, title=plot_title,
-                               xlabel='Diffusion component 1', ylabel='Diffusion component 2',
+                               xlabel=xlabel, ylabel=ylabel,
                                facecolor=facecolor, axes_color=axes_color,
                                axes_line_width=axes_line_width)
     save_path = None if save_format is None else Path(plot_path) / f"{plot_title}.{save_format}"
@@ -857,6 +925,342 @@ def umap_samples(adata,
                                xlabel='UMAP 1', ylabel='UMAP 2', facecolor=facecolor)
     save_path = None if save_format is None else Path(plot_path) / f"{title}.{save_format}"
     _save_and_show(fig, save_path, show)
+
+
+# ---------------------------------------------------------------------------
+# Any sample variable (clinical or technical) on the trajectory / UMAP
+# ---------------------------------------------------------------------------
+
+def _variable_values(adata, variable, agg='mean'):
+    """
+    One value of ``variable`` per sample, in the row order of ``adata.uns['EMD']``.
+
+    ``variable`` can be a sample-level column, a cell-level column of
+    ``adata.obs`` (numeric values are summarised with ``agg``, other values
+    with the most frequent one), 'pseudotime' or 'n_cells'.
+    """
+    order = _sample_order(adata)
+    keys = [str(x) for x in order]
+    if variable == 'pseudotime':
+        if 'pseudotime' not in adata.uns:
+            raise ValueError("No pseudotime found. Run pl.pl.fit_pricipla_graph(adata) first.")
+        return pd.Series(np.asarray(adata.uns['pseudotime'], dtype=float), index=keys)
+    if variable == 'n_cells':
+        counts = adata.uns['annot'].iloc[:, 1].astype(str).value_counts()
+        return counts.reindex(keys).astype(float)
+    table = _sample_table(adata)
+    if variable in table.columns and variable != 'sampleID':
+        values = table[variable]
+        values.index = keys
+        return values
+    sample_col = None
+    params = adata.uns.get('wasserstein_params', None)
+    if isinstance(params, dict):
+        sample_col = params.get('sample_col', None)
+    if variable in adata.obs.columns and sample_col in adata.obs.columns:
+        column = adata.obs[variable]
+        groups = column.groupby(adata.obs[sample_col].astype(str), observed=True)
+        if pd.api.types.is_numeric_dtype(column) and not pd.api.types.is_bool_dtype(column):
+            values = groups.agg(agg)
+        else:
+            values = groups.agg(lambda x: x.value_counts().index[0] if x.notna().any() else np.nan)
+        return values.reindex(keys)
+    available = sorted([c for c in table.columns if c != 'sampleID'] +
+                       [c for c in adata.obs.columns if c not in table.columns])
+    raise ValueError(f"'{variable}' was not found. Use 'pseudotime', 'n_cells' or one of: "
+                     f"{available}")
+
+
+def _as_numeric(values, kind='auto'):
+    """Return the values as floats if the variable is numeric, otherwise None."""
+    if kind == 'categorical':
+        return None
+    if pd.api.types.is_bool_dtype(values):
+        numeric = None
+    else:
+        numeric = pd.to_numeric(values, errors='coerce')
+        if values.notna().sum() == 0 or numeric[values.notna()].isna().any():
+            numeric = None
+    if kind == 'numeric':
+        if numeric is None:
+            raise ValueError("The variable is not numeric. Use kind='categorical'.")
+        return numeric.astype(float)
+    if kind != 'auto':
+        raise ValueError("kind must be 'auto', 'categorical' or 'numeric'.")
+    # A few distinct numbers (e.g. 0/1 or 1/2/3) are shown as groups.
+    if numeric is None or numeric.nunique(dropna=True) <= 5:
+        return None
+    return numeric.astype(float)
+
+
+def _scatter_variable(adata, coords, values, name, kind='auto', colors=None, cmap='viridis',
+                      na_color='lightgrey', vmin=None, vmax=None, legend_order=None,
+                      legend_loc='best', legend_bbox=None, legend_title=None,
+                      fontsize_legend=None, show_legend=True, label_act=False,
+                      point_size=None, alpha=1, figsize=None, font_size=None, title=None,
+                      xlabel=None, ylabel=None, facecolor='white'):
+    """Scatter the samples colored by a categorical or numeric variable."""
+    font_size = DEFAULT_FONTSIZE if font_size is None else font_size
+    fontsize_legend = font_size if fontsize_legend is None else fontsize_legend
+    point_size = _auto_point_size(len(values)) if point_size is None else point_size
+    legend_title = name if legend_title is None else legend_title
+    numeric = _as_numeric(values, kind)
+    with plt.rc_context({'font.size': font_size}):
+        fig, ax = plt.subplots(figsize=DEFAULT_FIGSIZE if figsize is None else figsize)
+        ax.set_facecolor(facecolor)
+        na = values.isna().values if numeric is None else numeric.isna().values
+        if na.any():
+            ax.scatter(coords[na, 0], coords[na, 1], color=na_color, s=point_size,
+                       alpha=alpha, label='NA', edgecolors='none')
+        if numeric is None:
+            vals = values.astype(object).values
+            categories = _category_order(vals[~na], legend_order)
+            color_map = _get_colors(adata, name, categories, colors)
+            for category in categories:
+                mask = (~na) & (vals == category)
+                ax.scatter(coords[mask, 0], coords[mask, 1], color=color_map[category],
+                           s=point_size, alpha=alpha, label=str(category), edgecolors='none')
+            if show_legend:
+                kwargs = dict(loc=legend_loc, fontsize=fontsize_legend, frameon=False,
+                              title=legend_title, title_fontsize=fontsize_legend)
+                if legend_bbox is not None:
+                    kwargs['bbox_to_anchor'] = legend_bbox
+                _fixed_legend_markers(ax.legend(**kwargs))
+        else:
+            points = ax.scatter(coords[~na, 0], coords[~na, 1], c=numeric.values[~na],
+                                cmap=cmap, vmin=vmin, vmax=vmax, s=point_size, alpha=alpha,
+                                edgecolors='none')
+            cbar = fig.colorbar(points, ax=ax, fraction=0.046, pad=0.04)
+            cbar.set_label(legend_title, fontsize=fontsize_legend)
+            if na.any() and show_legend:
+                _fixed_legend_markers(ax.legend(loc=legend_loc, fontsize=fontsize_legend,
+                                                frameon=False))
+        if label_act:
+            for sample, x, y in zip(values.index, coords[:, 0], coords[:, 1]):
+                ax.annotate(str(sample), (x, y), fontsize=max(font_size - 4, 6),
+                            xytext=(3, 3), textcoords='offset points')
+        if title:
+            ax.set_title(title, fontsize=font_size + 2)
+        if xlabel:
+            ax.set_xlabel(xlabel)
+        if ylabel:
+            ax.set_ylabel(ylabel)
+        ax.tick_params(labelsize=max(font_size - 2, 6))
+    return fig, ax
+
+
+def _draw_graph(ax, adata, components=(0, 1), color='grey', node_size=25):
+    """Draw the principal graph (and its root) in the background of a trajectory plot."""
+    graph = adata.uns['principal_graph']
+    nodes = np.asarray(graph['NodePositions'])
+    d0, d1 = components
+    for a, b in np.asarray(graph['Edges']):
+        ax.plot(nodes[[a, b], d0], nodes[[a, b], d1], color=color, lw=1.2, zorder=0, alpha=0.8)
+    ax.scatter(nodes[:, d0], nodes[:, d1], color=color, s=node_size, zorder=0, alpha=0.8)
+    root = adata.uns.get('root_node', None)
+    if root is not None:
+        ax.scatter(nodes[root, d0], nodes[root, d1], color='#e41a1c', s=node_size * 5,
+                   marker='*', zorder=1, edgecolors='k', linewidths=0.5)
+
+
+_VARIABLE_PARAMS_DOC = """
+    kind : {'auto', 'categorical', 'numeric'}, optional
+        How the variable is shown. 'auto' (default): numbers with more than 5
+        distinct values get a color scale, everything else one color per group.
+    agg : str, optional
+        How a numeric cell-level column is summarised per sample, e.g. 'mean'
+        (default), 'median', 'sum', 'max'.
+    colors : list, dict or None, optional
+        Colors of the groups (categorical variables). If None, chosen
+        automatically and reused by the other plots of the same variable.
+    cmap : str, optional
+        Color scale of numeric variables, by default 'viridis'.
+    na_color : str, optional
+        Color of the samples without a value, by default 'lightgrey'.
+    vmin, vmax : float, optional
+        Limits of the color scale. If None, taken from the data.
+    legend_order : list, optional
+        Order of the groups in the legend.
+    legend_loc : str, optional
+        Legend position, by default 'best'.
+    legend_bbox : tuple, optional
+        ``bbox_to_anchor`` of the legend, e.g. (1.02, 1) with
+        ``legend_loc='upper left'`` to put it outside the plot.
+    legend_title : str, optional
+        Title of the legend or color bar. If None, the variable name.
+    fontsize_legend : int, optional
+        Font size of the legend. If None, the base font size.
+    show_legend : bool, optional
+        Whether to show the legend, by default True.
+    label_act : bool, optional
+        If True, write the sample IDs next to the points, by default False.
+    point_size : float, optional
+        Size of the points. If None, chosen from the number of samples.
+    alpha : float, optional
+        Opacity of the points, by default 1.
+    figsize : tuple, optional
+        Figure size in inches. If None, (8, 7), the same as the trajectory.
+    font_size : int, optional
+        Base font size. If None, 14.
+    title : str, optional
+        Title of the plot, also used as the file name.
+    facecolor : str, optional
+        Background color, by default 'white'.
+    plot_path : str or Path, optional
+        Folder where the plot is saved, by default 'Results_PILOT/plots'.
+    save_format : str, optional
+        File format, by default 'pdf'. Use None to not save.
+    show : bool, optional
+        Whether to show the plot, by default True."""
+
+
+def trajectory_variable(adata,
+                        variable,
+                        kind='auto',
+                        agg='mean',
+                        show_graph=True,
+                        components=(0, 1),
+                        colors=None,
+                        cmap='viridis',
+                        na_color='lightgrey',
+                        vmin=None,
+                        vmax=None,
+                        legend_order=None,
+                        legend_loc='best',
+                        legend_bbox=None,
+                        legend_title=None,
+                        fontsize_legend=None,
+                        show_legend=True,
+                        label_act=False,
+                        point_size=None,
+                        alpha=1,
+                        figsize=None,
+                        font_size=None,
+                        title=None,
+                        facecolor='white',
+                        plot_path='Results_PILOT/plots',
+                        save_format='pdf',
+                        show=True):
+    """
+    Show any clinical or technical variable of the samples on the trajectory.
+
+    The trajectory and the principal graph are not changed: they stay the
+    ones computed from the status (``pl.pl.trajectory`` and
+    ``pl.pl.fit_pricipla_graph``). Only the colors of the samples change.
+    Categorical variables (e.g. sex, batch) get one color per group, numeric
+    variables (e.g. age, eGFR, % mitochondrial reads) a color scale.
+
+    Parameters
+    ----------
+    adata : AnnData
+        AnnData object after ``pl.pl.trajectory``.
+    variable : str
+        What to show: a column of ``adata.obs`` (sample-level, or cell-level
+        that is summarised per sample), 'pseudotime' or 'n_cells' (number of
+        cells of each sample).
+    show_graph : bool, optional
+        Draw the principal graph in grey, with the root as a red star, if it
+        has been fitted, by default True.
+    components : tuple, optional
+        The two diffusion components on the axes, by default (0, 1).
+    <<VARIABLE_PARAMS>>
+
+    Returns
+    -------
+    None
+        The plot is saved in ``plot_path``.
+    """
+    if 'embedding' not in adata.uns:
+        raise ValueError("No trajectory found. Run pl.pl.trajectory(adata) first.")
+    coords, xlabel, ylabel = _trajectory_axes(adata, components)
+    values = _variable_values(adata, variable, agg=agg)
+    title = f"Trajectory colored by {variable}" if title is None else title
+    fig, ax = _scatter_variable(adata, coords, values, variable, kind=kind, colors=colors,
+                                cmap=cmap, na_color=na_color, vmin=vmin, vmax=vmax,
+                                legend_order=legend_order, legend_loc=legend_loc,
+                                legend_bbox=legend_bbox, legend_title=legend_title,
+                                fontsize_legend=fontsize_legend, show_legend=show_legend,
+                                label_act=label_act, point_size=point_size, alpha=alpha,
+                                figsize=figsize, font_size=font_size, title=title,
+                                xlabel=xlabel, ylabel=ylabel, facecolor=facecolor)
+    if show_graph and 'principal_graph' in adata.uns:
+        _draw_graph(ax, adata, components=components)
+    save_path = None if save_format is None else Path(plot_path) / f"{title}.{save_format}"
+    _save_and_show(fig, save_path, show)
+
+
+def umap_variable(adata,
+                  variable,
+                  kind='auto',
+                  agg='mean',
+                  n_neighbors=None,
+                  min_dist=0.5,
+                  random_state=0,
+                  colors=None,
+                  cmap='viridis',
+                  na_color='lightgrey',
+                  vmin=None,
+                  vmax=None,
+                  legend_order=None,
+                  legend_loc='best',
+                  legend_bbox=None,
+                  legend_title=None,
+                  fontsize_legend=None,
+                  show_legend=True,
+                  label_act=False,
+                  point_size=None,
+                  alpha=1,
+                  figsize=None,
+                  font_size=None,
+                  title=None,
+                  facecolor='white',
+                  plot_path='Results_PILOT/plots',
+                  save_format='pdf',
+                  show=True):
+    """
+    Show any clinical or technical variable of the samples on the sample UMAP.
+
+    The UMAP is the one of ``pl.pl.umap_samples`` (computed once from the
+    Wasserstein distances); only the colors change.
+
+    Parameters
+    ----------
+    adata : AnnData
+        AnnData object after ``pl.tl.wasserstein_distance``.
+    variable : str
+        What to show: a column of ``adata.obs`` (sample-level, or cell-level
+        that is summarised per sample), 'pseudotime' or 'n_cells'.
+    n_neighbors : int, optional
+        Number of neighbors of the UMAP. If None, ``min(15, n_samples - 1)``.
+    min_dist : float, optional
+        Minimum distance between points in the UMAP, by default 0.5.
+    random_state : int, optional
+        Random seed of the UMAP, by default 0.
+    <<VARIABLE_PARAMS>>
+
+    Returns
+    -------
+    None
+        The plot is saved in ``plot_path``.
+    """
+    coords = np.asarray(_compute_umap(adata, n_neighbors=n_neighbors, min_dist=min_dist,
+                                      random_state=random_state))
+    values = _variable_values(adata, variable, agg=agg)
+    title = f"UMAP colored by {variable}" if title is None else title
+    fig, ax = _scatter_variable(adata, coords, values, variable, kind=kind, colors=colors,
+                                cmap=cmap, na_color=na_color, vmin=vmin, vmax=vmax,
+                                legend_order=legend_order, legend_loc=legend_loc,
+                                legend_bbox=legend_bbox, legend_title=legend_title,
+                                fontsize_legend=fontsize_legend, show_legend=show_legend,
+                                label_act=label_act, point_size=point_size, alpha=alpha,
+                                figsize=figsize, font_size=font_size, title=title,
+                                xlabel='UMAP 1', ylabel='UMAP 2', facecolor=facecolor)
+    save_path = None if save_format is None else Path(plot_path) / f"{title}.{save_format}"
+    _save_and_show(fig, save_path, show)
+
+
+for _func in (trajectory_variable, umap_variable):
+    _func.__doc__ = _func.__doc__.replace('\n    <<VARIABLE_PARAMS>>', _VARIABLE_PARAMS_DOC)
 
 
 def plot_trajectory_continuous(

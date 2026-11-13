@@ -66,6 +66,8 @@ import pilotpy
    pl.trajectory
    pl.trajectory_plotting
    pl.umap_samples
+   pl.trajectory_variable
+   pl.umap_variable
    pl.fit_pricipla_graph
    pl.principal_graph
    pl.heatmap_proportions
