@@ -17,6 +17,7 @@ import time
 import sys 
 from genericpath import isfile
 from ..plot.ploting import *
+from ..plot.ploting import _fit_principal_graph, _compute_pseudotime, _compute_umap
 from .Cell_gene_selection import *
 from .Gene_cluster_specific import *
 from .Gene_cluster_specific_functions import *
@@ -33,92 +34,209 @@ warnings.filterwarnings('ignore')
 
 
 
-def wasserstein_distance(adata,emb_matrix='X_PCA',
-clusters_col='cell_types',sample_col='sampleID',status='status',
-                              metric='cosine',
-                               regulizer=0.2,normalization=True,
-                               regularized='unreg',reg=0.1,
-                               res=0.01,steper=0.01,data_type='scRNA',return_sil_ari=False,use_centroids=True):
-    
+#: Metrics that can be used for the cost matrix (distances between the
+#: centroids of the cell types). They are the metrics of
+#: ``scipy.spatial.distance.pdist``.
+COST_METRICS = ('cosine', 'euclidean', 'sqeuclidean', 'cityblock', 'correlation',
+                'chebyshev', 'canberra', 'braycurtis', 'minkowski', 'seuclidean',
+                'mahalanobis', 'jensenshannon')
+
+
+def _sample_metadata(adata, sample_col, samples, columns='auto'):
     """
-    Calculate the Wasserstein (W) distance among samples using PCA representation and clustering information.
+    Collect the sample-level metadata from ``adata.obs``.
+
+    With ``columns='auto'`` all columns of ``adata.obs`` that have one value
+    per sample are kept. With a list, these columns are kept (if a column has
+    more than one value in a sample, the most frequent value is used).
+    """
+    obs = adata.obs
+    if columns is None:
+        return None
+    if isinstance(columns, str) and columns == 'auto':
+        candidates = [c for c in obs.columns if c != sample_col]
+        auto = True
+    else:
+        candidates = [columns] if isinstance(columns, str) else list(columns)
+        missing = [c for c in candidates if c not in obs.columns]
+        if missing:
+            raise ValueError(f"These columns are not in adata.obs: {missing}")
+        auto = False
+    groups = obs.groupby(sample_col, observed=True)
+    keep = {}
+    for col in candidates:
+        try:
+            n_unique = groups[col].nunique(dropna=False)
+        except TypeError:
+            continue
+        if (n_unique <= 1).all():
+            keep[col] = groups[col].first()
+        elif not auto:
+            warnings.warn(f"'{col}' has more than one value in some samples; "
+                          "the most frequent value is used.")
+            keep[col] = groups[col].agg(lambda s: s.value_counts().index[0]
+                                        if s.notna().any() else np.nan)
+    if not keep:
+        return pd.DataFrame(index=pd.Index(samples, name='sampleID'))
+    meta = pd.DataFrame(keep)
+    meta.index = meta.index.astype(object)
+    meta = meta.reindex(samples)
+    meta.index.name = 'sampleID'
+    for col in meta.columns:
+        if isinstance(meta[col].dtype, pd.CategoricalDtype):
+            meta[col] = meta[col].astype(object)
+    return meta
+
+
+def wasserstein_distance(adata,
+                         emb_matrix='X_PCA',
+                         clusters_col='cell_types',
+                         sample_col='sampleID',
+                         status='status',
+                         metric='cosine',
+                         regulizer=0.2,
+                         normalization=True,
+                         regularized='unreg',
+                         reg=0.1,
+                         res=0.01,
+                         steper=0.01,
+                         data_type='scRNA',
+                         return_sil_ari=False,
+                         use_centroids=True,
+                         sample_metadata='auto'):
+    """
+    Calculate the Wasserstein (W) distance among samples.
+
+    Each sample is described by its cell type proportions. The distance
+    between two samples is the optimal transport (Wasserstein) distance
+    between their proportions, where the cost of moving mass between two cell
+    types is the distance between the cell types in the embedding.
+
+    The results are stored in ``adata.uns`` and reused by the next steps
+    (trajectory, UMAP, heatmaps). If this function is run again with other
+    parameters, the old trajectory and pseudotime are removed, so they are
+    recomputed with the new distances.
 
     Parameters
     ----------
     adata : AnnData
-        Loaded AnnData object containing the data.
-    emb_matrix : numpy.ndarray
-        PCA representation of data (variable).
+        AnnData object with one row per cell.
+    emb_matrix : str
+        Key in ``adata.obsm`` with the cell embedding, e.g. 'X_pca' or 'PCA'
+        (numpy array or DataFrame). Only used for scRNA data.
     clusters_col : str
-        Column name in the observation level of 'adata' that represents cell types or clustering.
+        Column of ``adata.obs`` with the cell types or clusters.
     sample_col : str
-        Column name in the observation level of 'adata' that represents samples or patients.
+        Column of ``adata.obs`` with the sample (patient) IDs.
     status : str
-        Column name in the observation level of 'adata' that represents status or disease, e.g., control/case.
-    regulizer : float, optional
-        Hyper-parameter of a Dirichlet distribution for regularization, by default 0.1.
+        Column of ``adata.obs`` with the status of each sample, e.g.
+        control/disease.
     metric : str, optional
-        Metric for calculating the cost matrix, by default 'cosine'.
-    regularized : bool, optional
-        Whether to use regularized optimal transport, by default True.
+        Distance used for the cost matrix between cell types, by default
+        'cosine'. Any metric of ``scipy.spatial.distance.pdist`` can be used:
+        'cosine', 'euclidean', 'sqeuclidean', 'cityblock' (Manhattan),
+        'correlation', 'chebyshev', 'canberra', 'braycurtis', 'minkowski',
+        'seuclidean', 'mahalanobis'. 'jensenshannon' only works for
+        non-negative features (e.g. pathomics data or ``use_centroids=False``),
+        not for PCA. 'cosine' and 'correlation' compare the direction of the
+        cell type profiles, 'euclidean' also their magnitude. The same metric
+        is used for the Silhouette and ARI scores if ``return_sil_ari=True``.
+    regulizer : float, optional
+        Weight of the prior added to the proportions, so that cell types that
+        are missing in a sample do not get a proportion of zero, by default 0.2.
+    normalization : bool, optional
+        Whether to normalize the proportions, by default True.
+    regularized : str, optional
+        'unreg' (default) for classical optimal transport, any other value for
+        regularized (Sinkhorn) optimal transport.
     reg : float, optional
-        Regularization parameter if 'regularized' is True, by default 0.1.
+        Regularization strength when ``regularized`` is not 'unreg',
+        by default 0.1.
     res : float, optional
-        Resolution for Leiden clustering to achieve desired cluster count, by default 0.1.
+        Initial Leiden resolution, only used if ``return_sil_ari=True``,
+        by default 0.01.
     steper : float, optional
-        Stepper value for finding the best Leiden resolution, by default 0.01.
+        Step of the Leiden resolution search, only used if
+        ``return_sil_ari=True``, by default 0.01.
     data_type : str, optional
-        Type of your data, e.g., 'scRNA' or 'pathomics', by default 'scRNA'.
-    use_centroids: str, optional,
-        Use centriod in Cost function.
+        'scRNA' (default) or 'pathomics'. For pathomics data the features in
+        ``adata.X`` are used instead of ``emb_matrix``.
     return_sil_ari : bool, optional
-        Whether to return ARI (Adjusted Rand Index) or Silhouette score for assessing W distance effects, by default False.
+        Whether to compute the ARI and Silhouette scores of the status labels,
+        by default False.
+    use_centroids : bool, optional
+        If True (default), each cell type is represented by the median of its
+        cells; if False, by its normalized sum.
+    sample_metadata : 'auto', list or None, optional
+        Sample-level information to keep from ``adata.obs``, so it can be used
+        in the plots (e.g. ``pl.pl.trajectory(adata, clusters='sex')``).
+        'auto' (default) keeps every column that has one value per sample, a
+        list keeps the given columns, None keeps nothing. Stored in
+        ``adata.uns['sample_metadata']``.
 
     Returns
     -------
     None
-        Calculates and stores the W distance among samples in the adata object.
+        Stores in ``adata.uns``: 'EMD' (distance matrix), 'EMD_df' (the same
+        as a DataFrame), 'cost' (cost matrix), 'proportions', 'annot',
+        'data', 'real_labels', 'sample_metadata' and 'wasserstein_params'.
     """
-    
-    
-    if data_type=='scRNA':
-        data,annot=extract_data_anno_scRNA_from_h5ad(adata,emb_matrix=emb_matrix,
-clusters_col=clusters_col,sample_col=sample_col,status=status)
+    if not callable(metric) and metric not in COST_METRICS:
+        raise ValueError(f"Unknown metric '{metric}'. Use one of {list(COST_METRICS)}.")
+    for col in [clusters_col, sample_col, status]:
+        if col not in adata.obs.columns:
+            raise ValueError(f"'{col}' is not a column of adata.obs.")
+    if data_type == 'scRNA':
+        if emb_matrix not in adata.obsm:
+            raise ValueError(f"'{emb_matrix}' is not in adata.obsm. "
+                             f"Available keys: {list(adata.obsm.keys())}")
+        data, annot = extract_data_anno_scRNA_from_h5ad(adata, emb_matrix=emb_matrix,
+                                                         clusters_col=clusters_col,
+                                                         sample_col=sample_col, status=status)
     else:
-         data,annot=extract_data_anno_pathomics_from_h5ad(adata,var_names=list(adata.var_names),clusters_col=clusters_col,sample_col=sample_col,status=status)
-           
-        
-       
-        
-        
-    adata.uns['data'] =data
-    adata.uns['annot'] =annot
-    proportions = Cluster_Representations(annot,regulizer=regulizer,
-    normalization=normalization)
-    adata.uns['proportions'] = proportions
-    
-    #cost,cost_df= cost_matrix(annot,data,metric=metric)
-    cost,cost_df= cost_matrix(annot,data,metric=metric,use_centroids=use_centroids)
-    adata.uns['cost'] = cost_df
-    
-    EMD,emd_df = wasserstein_d(proportions,cost/cost.max(),regularized=regularized,
-    reg=reg)
-    
-    adata.uns['EMD_df']=emd_df
-    adata.uns['EMD'] =EMD
-    #Computing clusters and then ARI
-    if return_sil_ari:
-        predicted_labels, ARI, real_labels = Clustering(EMD/EMD.max(), annot,metric=metric,res=res,steper=steper)
-        adata.uns['real_labels'] =real_labels
-        #Computing Sil
-        Silhouette = Sil_computing(EMD/EMD.max(), real_labels,metric=metric)
-        adata.uns['Sil']=Silhouette
-        adata.uns['ARI']=ARI
-    else:
-        adata.uns['real_labels']=return_real_labels(annot)
-      
-        
+        data, annot = extract_data_anno_pathomics_from_h5ad(adata, var_names=list(adata.var_names),
+                                                             clusters_col=clusters_col,
+                                                             sample_col=sample_col, status=status)
 
+    adata.uns['data'] = data
+    adata.uns['annot'] = annot
+    proportions = Cluster_Representations(annot, regulizer=regulizer,
+                                          normalization=normalization)
+    adata.uns['proportions'] = proportions
+
+    cost, cost_df = cost_matrix(annot, data, metric=metric, use_centroids=use_centroids)
+    adata.uns['cost'] = cost_df
+
+    EMD, emd_df = wasserstein_d(proportions, cost / cost.max(), regularized=regularized,
+                                reg=reg)
+
+    adata.uns['EMD_df'] = emd_df
+    adata.uns['EMD'] = EMD
+    if return_sil_ari:
+        predicted_labels, ARI, real_labels = Clustering(EMD / EMD.max(), annot, metric=metric,
+                                                        res=res, steper=steper)
+        adata.uns['real_labels'] = real_labels
+        Silhouette = Sil_computing(EMD / EMD.max(), real_labels, metric=metric)
+        adata.uns['Sil'] = Silhouette
+        adata.uns['ARI'] = ARI
+    else:
+        adata.uns['real_labels'] = return_real_labels(annot)
+
+    adata.uns['sample_metadata'] = _sample_metadata(adata, sample_col, list(proportions.keys()),
+                                                    sample_metadata)
+    adata.uns['wasserstein_params'] = {
+        'emb_matrix': str(emb_matrix), 'clusters_col': str(clusters_col),
+        'sample_col': str(sample_col), 'status': str(status), 'metric': str(metric),
+        'regulizer': float(regulizer), 'normalization': bool(normalization),
+        'regularized': str(regularized), 'reg': float(reg),
+        'use_centroids': bool(use_centroids), 'data_type': str(data_type)}
+
+    # Results computed from older distances are no longer valid.
+    for key in ['embedding', 'trajectory_params', 'umap_samples', 'umap_samples_params',
+                'principal_graph', 'principal_graph_params', 'pseudotime', 'root_node',
+                'cell_importance']:
+        if key in adata.uns:
+            del adata.uns[key]
 
 
 def load_h5ad(path):
@@ -658,163 +776,277 @@ def return_real_labels(df, category = 'status', sample_col=1):
         
 
 
-def cell_importance(adata,
-                    width = 20,
-                    height = 35,
-                    xlim = 5,
-                    p_val = 1,
-                    plot_cell = True,
-                    point_size = 100,
-                    color_back = 'white',
-                    fontsize = 20,
-                    alpha = 1,
-                    cmap_proportions = 'viridis',
-                    cmap_heatmap = 'Blues',
-                    save_as_pdf = True,
-                    figsize = (12, 12),
-                    col_cluster = True,
-                    row_cluster = False):
+def fit_principal_graph(adata, NumNodes=20, random_state=0, recompute=False):
     """
-    Order cells based on estimated time and visualize cell type importance.
+    Fit an elastic principal graph (tree) to the trajectory.
+
+    The graph is fitted with a fixed random seed, so the node numbers stay the
+    same when the function is run again. Plot it with
+    ``pl.pl.principal_graph`` and compute the pseudotime with
+    ``pl.tl.compute_pseudotime``.
+
+    Note: elpigraph can still give a slightly different graph in a new Python
+    session (small numerical differences), so node numbers can change between
+    sessions. ``pl.tl.compute_pseudotime(adata, source_node='auto')`` does not
+    depend on the node numbers. Always check the plot.
 
     Parameters
     ----------
     adata : AnnData
-        Annotated data matrix containing necessary data.
-    width : int, optional
-        Width of the plot, by default 40.
-    height : int, optional
-        Height of the plot, by default 35.
-    xlim : int, optional
-        Limit for x-axis in the plot, by default 5.
-    p_val : float, optional
-        P-value for filtering the fitting models, by default 0.05.
-    plot_cell : bool, optional
-        Whether to plot the cell type importance, by default True.
-    point_size : int, optional
-        Size of points in the plot, by default 100.
-    color_back : str, optional
-        Background color of the plot, by default 'white'.
-    fontsize : int, optional
-        Font size for labels and annotations, by default 20.
-    alpha : float, optional
-        Transparency level for plotting, by default 1.
-    cmap_proportions : str, optional
-        Colormap for plotting proportions over time, by default 'viridis'.
-    cmap_heatmap : str, optional
-        Colormap for plotting heatmap, by default 'Blues_r'.
-    save_as_pdf : bool, optional
-        Whether to save the plot as PDF, by default False.
-    figsize : tuple, optional
-        Figure size of the heatmap (width, height) in inches, by default (12, 12).
-    col_cluster : bool, optional
-        Whether to cluster columns in the heatmap, by default True.
-    row_cluster : bool, optional
-        Whether to cluster rows in the heatmap, by default False.
+        AnnData object after ``pl.pl.trajectory`` (or
+        ``pl.tl.trajectory_calculation``).
+    NumNodes : int, optional
+        Number of nodes of the graph, by default 20.
+    random_state : int or None, optional
+        Random seed, by default 0. None gives a different graph each time.
+    recompute : bool, optional
+        Force a new fit, by default False.
 
     Returns
     -------
     None
-        Visualizes and saves the cell type importance plot.
-     """
+        The graph is stored in ``adata.uns['principal_graph']``.
+    """
+    _fit_principal_graph(adata, NumNodes=NumNodes, random_state=random_state,
+                         recompute=recompute)
 
 
-    
+def compute_pseudotime(adata, source_node='auto', root_status=None):
+    """
+    Compute the pseudotime of each sample along the principal graph.
+
+    Parameters
+    ----------
+    adata : AnnData
+        AnnData object after ``pl.tl.fit_principal_graph``.
+    source_node : int or 'auto', optional
+        Root node of the trajectory (the node numbers are shown by
+        ``pl.pl.principal_graph``). With 'auto' (default), every end node of
+        the graph is tried, and the one from which the control samples come
+        first along the trajectory is used.
+    root_status : str, optional
+        The control group used with ``source_node='auto'``, e.g. 'control' or
+        'normal'. If None, a status called 'control', 'normal', 'healthy' or
+        'ctrl' is used.
+
+    Returns
+    -------
+    None
+        The pseudotime is stored in ``adata.uns['pseudotime']`` and the root
+        in ``adata.uns['root_node']``.
+    """
+    _compute_pseudotime(adata, source_node=source_node, root_status=root_status)
+
+
+def umap_calculation(adata, n_neighbors=None, min_dist=0.5, random_state=0, recompute=True):
+    """
+    Compute a UMAP of the samples from the Wasserstein distances.
+
+    Plot it with ``pl.pl.umap_samples``.
+
+    Parameters
+    ----------
+    adata : AnnData
+        AnnData object after ``pl.tl.wasserstein_distance``.
+    n_neighbors : int, optional
+        Number of neighbors. If None, ``min(15, n_samples - 1)``.
+    min_dist : float, optional
+        Minimum distance between points, by default 0.5.
+    random_state : int, optional
+        Random seed, by default 0.
+    recompute : bool, optional
+        If False, an existing UMAP with the same parameters is reused,
+        by default True.
+
+    Returns
+    -------
+    None
+        The coordinates are stored in ``adata.uns['umap_samples']``.
+    """
+    _compute_umap(adata, n_neighbors=n_neighbors, min_dist=min_dist,
+                  random_state=random_state, recompute=recompute)
+
+
+def cell_importance_calculation(adata, p_val=1, x_axis='order', save_report=True):
+    """
+    Find the cell types whose proportions change along the trajectory.
+
+    For each cell type, a linear, quadratic or linear + quadratic model of its
+    proportion along the trajectory is fitted, and the best model is kept.
+    Nothing is plotted; use ``pl.pl.cell_importance_grid``,
+    ``pl.pl.cell_importance_plot`` and ``pl.pl.heatmap_proportions``.
+
+    Parameters
+    ----------
+    adata : AnnData
+        AnnData object after ``pl.pl.fit_pricipla_graph``.
+    p_val : float, optional
+        Keep only the cell types whose model has an adjusted p-value below
+        this value, by default 1 (keep all).
+    x_axis : {'order', 'pseudotime'}, optional
+        Position of the samples along the trajectory. 'order' (default) uses
+        the rank of the samples (1, 2, 3, ...), as in earlier versions;
+        'pseudotime' uses the pseudotime values, so the distances between
+        samples are kept.
+    save_report : bool, optional
+        Whether to save the table 'Cell_type_Report/Cells_Importance' in the
+        results folder, by default True.
+
+    Returns
+    -------
+    None
+        Stores in ``adata.uns``: 'cell_importance' (all results),
+        'cellnames' (the selected cell types) and 'orders' (samples and their
+        position along the trajectory).
+    """
+    if x_axis not in ('order', 'pseudotime'):
+        raise ValueError("x_axis must be 'order' or 'pseudotime'.")
+    if 'pseudotime' not in adata.uns:
+        raise ValueError("No pseudotime found. Run pl.pl.fit_pricipla_graph(adata) first.")
     path = path_to_results
-    real_labels = adata.uns['real_labels']
-    pseudotime = adata.uns['pseudotime']
     annot = adata.uns['annot']
     bins = adata.uns['proportions']
-    embedding_diff = adata.uns['embedding']
-    cell_types_propo = bins
-    patients_id = bins.keys()
+    samples = list(bins.keys())
     cell_types = annot['cell_type'].unique()
-    emd = embedding_diff
-    labels = real_labels
-    emd_dataframe = pd.DataFrame({'sampleID': list(patients_id),
-                                  'pseudotime': pseudotime,
-                                  'lables': list(labels)}, dtype = object)
-    emd_dataframe_sort = emd_dataframe.sort_values('pseudotime', ascending = True) 
-    emd_dataframe_sort['pseudotime'] = np.arange(1, len(emd_dataframe) + 1, 1).tolist()
-    pathies_cell_proportions = pd.DataFrame.from_dict(bins).T
-    pathies_cell_proportions.columns = cell_types
-    
-    
-    pathies_cell_proportions.index.name = 'sampleID'
+    pseudotime = np.asarray(adata.uns['pseudotime'], dtype=float)
+    if len(pseudotime) != len(samples):
+        raise ValueError(f"{len(pseudotime)} pseudotime values vs {len(samples)} samples. "
+                         "Run pl.pl.trajectory and pl.pl.fit_pricipla_graph again.")
 
-    ### got error slice(None, None, None)
-    # df_join = pd.merge(emd_dataframe_sort['sampleID'], pathies_cell_proportions,
-    #                    how='inner', on = 'sampleID')
-    df_join = pathies_cell_proportions.loc[emd_dataframe_sort['sampleID']]
-    #df_join = df_join.set_index('sampleID')
-    # Normalizing the proportions for heat map
-    normalized_df = (df_join - df_join.min()) / (df_join.max() - df_join.min())
- 
-    #Saving Heat map based on sorte pseuduscores of the Trajectory 
-    
-    heatmaps_df(normalized_df[cell_types], row_cluster=row_cluster,
-                col_cluster = col_cluster, cmap = cmap_heatmap, figsize = figsize) 
-    #Building a model based on Regression and pseuduscores 
-    pathies_cell_proportions['Time_score'] = list(emd_dataframe['pseudotime'])
-    pathies_cell_proportions = pathies_cell_proportions.sort_values('Time_score', ascending = True)
-    pathies_cell_proportions['Time_score'] = np.arange(1, len(emd_dataframe) + 1, 1).tolist()
-    pathies_cell_proportions = pathies_cell_proportions.reset_index()
-    RNA_data = pd.DataFrame()
-    RNA_data['label'] = pathies_cell_proportions['Time_score']
-    RNA_target = np.transpose(pathies_cell_proportions.iloc[:, 1:len(annot.cell_type.unique()) + 1])
-    min_target = min(RNA_data['label'])
-    max_target = max(RNA_data['label'])
-    #sorted_best = fit_best_model_cell_types(RNA_target, RNA_data,min_target=min_target, max_target=max_target)
-    
-    
-    sorted_best = fit_best_model(RNA_target, RNA_data, model_type = 'LinearRegression',
-                                 max_iter_huber = 1, epsilon_huber = 1,
-                                 pval_thr = p_val, modify_r2 = False)
-    
-    if save_as_pdf:
-        suffix = 'Cell_types_importance.pdf'
-    else:
-        suffix = 'Cell_types_importance.png'
-    
+    props = pd.DataFrame.from_dict(bins).T
+    props.columns = cell_types
+    props.index.name = 'sampleID'
+    props['Time_score'] = pseudotime
+    props = props.sort_values('Time_score', ascending=True, kind='stable')
+    if x_axis == 'order':
+        props['Time_score'] = np.arange(1, len(props) + 1)
+    props = props.reset_index()
+
+    RNA_data = pd.DataFrame({'label': props['Time_score'].values})
+    RNA_target = np.transpose(props[list(cell_types)])
+    sorted_best = fit_best_model(RNA_target, RNA_data, model_type='LinearRegression',
+                                 max_iter_huber=1, epsilon_huber=1, pval_thr=p_val,
+                                 modify_r2=False)
+    if save_report:
+        if not os.path.exists(path + '/Cell_type_Report'):
+            os.makedirs(path + '/Cell_type_Report')
+        save_data(sorted_best,
+                  ['Cell name', 'Expression pattern', 'Slope', 'Fitted function',
+                   'Intercept', 'Treat', 'Treat2', 'adjusted P-value', 'R-squared',
+                   'mod_rsquared_adj'], path + '/Cell_type_Report/', 'Cells_Importance',
+                  p_val=p_val, pro=None)
+
+    adata.uns['cell_importance'] = {'sorted_best': sorted_best, 'target': RNA_target,
+                                    'x': props['Time_score'].values.astype(float),
+                                    'x_axis': x_axis, 'proportions_sorted': props,
+                                    'results_path': path}
+    adata.uns['cellnames'] = list(sorted_best.keys())
+    adata.uns['orders'] = props[['sampleID', 'Time_score']]
+
+
+def cell_importance(adata,
+                    width=None,
+                    height=None,
+                    xlim=None,
+                    p_val=1,
+                    plot_cell=True,
+                    point_size=60,
+                    color_back='white',
+                    fontsize=None,
+                    alpha=1,
+                    cmap_proportions='viridis',
+                    cmap_heatmap='Blues',
+                    save_as_pdf=True,
+                    figsize=None,
+                    col_cluster=True,
+                    row_cluster=False,
+                    x_axis='order',
+                    plot_heatmap=True,
+                    ncols=4,
+                    xlabel=None,
+                    ylabel='Cell proportion',
+                    title_fontsize=None,
+                    label_fontsize=None,
+                    tick_fontsize=None,
+                    show=True):
+    """
+    Find the cell types that change along the trajectory and plot them.
+
+    This runs three steps, which can also be run one by one:
+    ``pl.tl.cell_importance_calculation`` (fit the models),
+    ``pl.pl.heatmap_proportions`` (heatmap of the samples vs. the cell type
+    proportions) and ``pl.pl.cell_importance_grid`` (one panel per cell type).
+
+    Parameters
+    ----------
+    adata : AnnData
+        AnnData object after ``pl.pl.fit_pricipla_graph``.
+    width, height : float, optional
+        Size in inches of the cell type figure. If None (default), it follows
+        the number of cell types, so the panels are not squeezed.
+    xlim : float, optional
+        Step between the x-axis ticks. If None, chosen automatically.
+    p_val : float, optional
+        Keep only the cell types with an adjusted p-value below this value,
+        by default 1 (keep all).
+    plot_cell : bool, optional
+        Whether to plot the cell types, by default True.
+    point_size : float, optional
+        Size of the points, by default 60.
+    color_back : str, optional
+        Background color of the panels, by default 'white'.
+    fontsize : int, optional
+        Font size of the panel titles. If None, 13.
+    alpha : float, optional
+        Opacity of the points, by default 1.
+    cmap_proportions : str, optional
+        Colormap of the points, by default 'viridis'.
+    cmap_heatmap : str, optional
+        Colormap of the heatmap, by default 'Blues'.
+    save_as_pdf : bool, optional
+        Save the cell type figure as PDF (default) or PNG.
+    figsize : tuple, optional
+        Size of the heatmap in inches. If None, it follows the data.
+    col_cluster : bool, optional
+        Whether to cluster the cell types in the heatmap, by default True.
+    row_cluster : bool, optional
+        Whether to cluster the samples in the heatmap, by default False.
+    x_axis : {'order', 'pseudotime'}, optional
+        Position of the samples on the x-axis: their rank 1, 2, 3, ...
+        ('order', default) or their pseudotime ('pseudotime').
+    plot_heatmap : bool, optional
+        Whether to plot the heatmap, by default True.
+    ncols : int, optional
+        Number of panels per row, by default 4.
+    xlabel : str, optional
+        Label of the x-axis. If None, 'Sample order' or 'Pseudotime'.
+    ylabel : str, optional
+        Label of the y-axis, by default 'Cell proportion'.
+    title_fontsize, label_fontsize, tick_fontsize : int, optional
+        Font sizes of the panel titles, axis labels and tick labels.
+    show : bool, optional
+        Whether to show the plots, by default True.
+
+    Returns
+    -------
+    None
+        Stores the results in ``adata.uns`` (see
+        ``cell_importance_calculation``) and saves the plots in the results
+        folder.
+    """
+    cell_importance_calculation(adata, p_val=p_val, x_axis=x_axis)
+    if plot_heatmap:
+        heatmap_proportions(adata, figsize=figsize, col_cluster=col_cluster,
+                            row_cluster=row_cluster, cmap=cmap_heatmap, show=show)
     if plot_cell:
-    
-        with plt.rc_context():
-                plot_best_matches_cell_types(RNA_target, RNA_data,pathies_cell_proportions,
-                                             sorted_best, "Cell Proportion", 
-                                             min_target = min_target,
-                                             max_target = max_target,
-                                             num = len(sorted_best.keys()),
-                                             width = width,
-                                             height = height,
-                                             xlim = xlim,
-                                             point_size = point_size,
-                                             color_back = color_back,
-                                             fontsize = fontsize,
-                                             alpha = alpha,
-                                             cmap = cmap_proportions)
-                plt.savefig(path + "/" + suffix)
-    
-    
-    cellnames = list(sorted_best.keys())
-    #return orders of samples based on the trejctory and selected cell-types
-    
-    
-    if not os.path.exists(path + '/Cell_type_Report'):
-        os.makedirs(path + '/Cell_type_Report')
-  
-    
-    save_data(sorted_best, 
-              ['Cell name', 'Expression pattern', 'Slope', 'Fitted function',
-               'Intercept', 'Treat', 'Treat2', 'adjusted P-value', 'R-squared',
-               'mod_rsquared_adj'], path + '/Cell_type_Report/', 'Cells_Importance',
-              p_val = p_val, pro = None)
-    
-    
-    
-    adata.uns['cellnames'] = cellnames
-    adata.uns['orders'] = pathies_cell_proportions[['sampleID', 'Time_score']]
- 
-
+        suffix = 'Cell_types_importance.pdf' if save_as_pdf else 'Cell_types_importance.png'
+        cell_importance_grid(adata, ncols=ncols, width=width, height=height, xlim=xlim,
+                             point_size=point_size, color_back=color_back,
+                             fontsize=fontsize, title_fontsize=title_fontsize,
+                             label_fontsize=label_fontsize, tick_fontsize=tick_fontsize,
+                             xlabel=xlabel, ylabel=ylabel, alpha=alpha,
+                             cmap_proportions=cmap_proportions,
+                             save_path=os.path.join(path_to_results, suffix), show=show)
 
 
 def extract_cells_from_gene_expression(adata,sample_col,col_cell,cell_list=[],normalize=True):
