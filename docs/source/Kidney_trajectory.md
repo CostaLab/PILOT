@@ -4,11 +4,9 @@
 In this tutorial, we will demonstrate how to use statistical tests to evaluate the potential association between the detected trajectories with any experimental or clinical variable present in a data set. This example will be based on the kidney single cell data.
 </div>
 
-
 ```python
 import pilotpy as pl
 import scanpy as sc
-from matplotlib.cm import get_cmap
 import seaborn as sns
 import pandas as pd
 ```
@@ -16,9 +14,8 @@ import pandas as pd
 #### Reading the original Anndata:
 First, we consider the original kidney single cell data. You can download the Anndata (h5ad) file from [here](https://costalab.ukaachen.de/open_data/PILOT/Kidney_ori.h5ad), and place it in the _Datasets_ folder.
 
-
 ```python
-adata = sc.read_h5ad('/Datasets/kidney_ori.h5ad')
+adata = sc.read_h5ad('Datasets/Kidney_ori.h5ad')
 ```
 
 ##### Loading the required information and computing the Wasserstein distance:
@@ -38,7 +35,6 @@ Use the following parameters to configure PILOT for your analysis (Setting Param
        
 </div>
 
-
 ```python
 pl.tl.wasserstein_distance(
     adata,
@@ -50,44 +46,120 @@ pl.tl.wasserstein_distance(
 ```
 
 ##### Trajectory estimation:
-<div class="alert alert-block alert-info"> 
-As a next step, we estimate a diffusion map from the Wasserstein distance
-The colors are chosen automatically from the number of groups, so there is no need to give them. Useful options:
+<div class="alert alert-block alert-info">
+As a next step, we estimate a diffusion map (the trajectory) from the Wasserstein distances.
 
-- `legend_order`: order of the groups in the legend, e.g. the control group first.
-- `colors`: your own colors, as a list or a dict, e.g. `{'control': 'blue'}`.
-- `location_labels` and `legend_bbox`: position of the legend, e.g. `location_labels = 'upper left', legend_bbox = (1.02, 1)` puts it outside the plot.
-- `clusters`: color the samples by another sample-level column of `adata.obs` (e.g. `clusters = 'sex'`), without computing the trajectory again.
-- `point_size`, `figsize`, `font_size`, `plot_titel`, `label_act` (show the sample names).
+Each point is a sample, colored by its status. The parameters that change the trajectory are:
 
-The trajectory is computed once and saved in the object. Running `pl.pl.trajectory` again (e.g. with other colors) gives the same picture. It is computed again only when the Wasserstein distance or the diffusion map parameters (`knn`, `epsilon`, `alpha`, `n_evecs`) change.
+- `epsilon` (default 1): width of the kernel. Small values link each sample only to its most similar samples; large values give a smoother trajectory. `epsilon = 'bgh'` chooses it automatically.
+- `alpha` (default 0.5, between 0 and 1): with 1, groups with many samples do not dominate the trajectory.
+- `n_neighbors` (default 64): number of neighbor samples used for each sample. It only has an effect when it is smaller than the number of samples.
+- `n_evecs` (default 2): number of diffusion components.
+
+The other parameters only change the look of the plot (colors, legend, point size, ...). Run `pl.pl.trajectory?` or press Shift+Tab in Jupyter to see all parameters.
 </div>
 
-
 ```python
-pl.pl.trajectory(adata, legend_order = ['normal'])
+pl.pl.trajectory(adata)
 ```
 
-
-![png](Kidney_trajectory_files/Kidney_trajectory_8_0.png)
-
+![png](Kidney_trajectory_files/v2_0_20_cell08_1.png)
 
 ##### UMAP of the samples:
 <div class="alert alert-block alert-info">
-PILOT can also show the samples (patients) in a UMAP computed from the Wasserstein distances. The colors are the same as in the trajectory, so both plots can be compared directly. The same legend options as in `pl.pl.trajectory` can be used.
+PILOT can also show the samples in a UMAP computed from the Wasserstein distances. Important parameters:
+
+- `n_neighbors` (default 15, or fewer for small cohorts): small values keep the local structure, large values the global structure.
+- `min_dist` (default 0.5): how close the points can be to each other.
 </div>
 
 ```python
-pl.pl.umap_samples(adata, legend_order = ['normal'])
+pl.pl.umap_samples(adata)
 ```
 
-Then, estimate the trajectory by fitting a principle graph and calculate the order of samples by 'cell_importance' functions. See the main [tutorial](https://pilot.readthedocs.io/en/latest/Myocardial_infarction.html), for details. The root of the trajectory is chosen automatically near the normal samples (`source_node = 'auto'`).
+![png](Kidney_trajectory_files/v2_0_20_cell10_1.png)
 
+#####  Fit a principal graph:
+<div class="alert alert-block alert-info">
+The diffusion map creates an embedding that potentially reveals a trajectory in the data. Next, PILOT uses ElPiGraph to fit a principal graph (a tree) through the samples and orders the samples along it, starting from the root. This order is the disease progression score (pseudotime). See the main [tutorial](https://pilot.readthedocs.io/en/latest/Myocardial_infarction.html) for details. Here, the trajectory starts at the normal samples. Important parameters:
+
+- `source_node`: the start (root) of the trajectory. With `'auto'`, PILOT chooses the end node of the graph where the samples of `root_status` come first. You can also give a node number (the numbers are shown in the plot).
+- `root_status`: the group where the trajectory starts, here `'normal'`.
+- `NumNodes` (default 20): number of nodes of the graph. More nodes give a more detailed curve.
+</div>
 
 ```python
 pl.pl.fit_pricipla_graph(adata, source_node = 'auto', root_status = 'normal')
-pl.tl.cell_importance(adata, xlim = 30)
 ```
+
+![png](Kidney_trajectory_files/v2_0_20_cell12_1.png)
+
+##### Clinical and technical variables on the trajectory:
+<div class="alert alert-block alert-info">
+The trajectory and the principal graph are computed from the status. To see how other information about the samples relates to the disease progression, PILOT can color the samples by any column of `adata.obs`, e.g. the sex of the donors or the degeneration score of the cells. The trajectory and the principal graph (grey, with the root as a red star) stay the same.
+
+- Categorical variables (e.g. sex, batch) get one color per group.
+- Numeric variables (e.g. age, or a technical value such as the percentage of mitochondrial reads) get a color scale. Values that are given per cell are averaged per sample (`agg = 'mean'`).
+- `variable = 'pseudotime'` and `variable = 'n_cells'` (number of cells of each sample) can also be used.
+</div>
+
+```python
+pl.pl.trajectory_variable(adata, variable = 'sex')
+```
+
+![png](Kidney_trajectory_files/v2_0_20_cell14_1.png)
+
+```python
+pl.pl.trajectory_variable(adata, variable = 'degen.score')
+```
+
+![png](Kidney_trajectory_files/v2_0_20_cell15_1.png)
+
+The same variables can be shown on the UMAP of the samples:
+
+```python
+pl.pl.umap_variable(adata, variable = 'sex')
+```
+
+![png](Kidney_trajectory_files/v2_0_20_cell17_1.png)
+
+```python
+pl.pl.umap_variable(adata, variable = 'degen.score')
+```
+
+![png](Kidney_trajectory_files/v2_0_20_cell18_1.png)
+
+#####  Cell-type importance:
+<div class="alert alert-block alert-info">
+Next, we use a regression model to find cell types whose proportions change linearly or non-linearly with disease progression. 
+
+`pl.tl.cell_importance_calculation` orders the samples along the trajectory and, for each cell type, fits a linear, a quadratic and a linear + quadratic model of its proportion, and keeps the best one. Important parameters:
+
+- `p_val` (default 1): keep only the cell types with an adjusted p-value below this value; 1 keeps all of them.
+- `x_axis`: `'order'` (default) places the samples at their position along the trajectory (1, 2, 3, ...); `'pseudotime'` uses the pseudotime values, so the distances between the samples are kept.
+
+The results are saved in 'Results_PILOT/Cell_type_Report' and the cell types in `adata.uns['cellnames']`.
+</div>
+
+```python
+pl.tl.cell_importance_calculation(adata)
+```
+
+The heatmap shows the cell type proportions (columns) of each sample (rows). The samples are ordered along the trajectory, from the start (top) to the end (bottom). Each cell type is scaled between 0 and 1, so its changes are easy to see.
+
+```python
+pl.pl.heatmap_proportions(adata)
+```
+
+![png](Kidney_trajectory_files/v2_0_20_cell22_1.png)
+
+Each panel shows one cell type: its proportion in each sample (points) along the trajectory and the fitted curve. The panels are sorted by p-value; cell types with an adjusted p-value below 0.05 have a bold title. `pl.pl.cell_importance_plot(adata)` saves the same plots as one file per cell type (in 'Results_PILOT/Cell_types_importance'), and `pl.tl.cell_importance(adata)` runs these three steps in one call.
+
+```python
+pl.pl.cell_importance_grid(adata)
+```
+
+![png](Kidney_trajectory_files/v2_0_20_cell24_1.png)
 
 ##### Evaluation of the association of estimated disease progression with experimental factor:
 A very important question is if PILOT analysis is affected by experimental artefacts (location of tissues, batch processing). To evaluate this, we use ANOVA statistics and Spearman correlation to check any association between any variables describing the disease cohort and the predicted variables. 
