@@ -554,7 +554,8 @@ def trajectory(adata,
                show=True,
                n_neighbors=None,
                bandwidth_type=None,
-               components=(0, 1)):
+               components=(0, 1),
+               ax=None):
     """
     Find the trajectory with a diffusion map and plot it.
 
@@ -652,6 +653,9 @@ def trajectory(adata,
     components : tuple, optional
         The two diffusion components shown on the x and y axes, by default
         (0, 1). Use e.g. (0, 2) together with ``n_evecs=3``.
+    ax : matplotlib Axes, optional
+        Draw into this subplot (e.g. to compare several settings side by
+        side). The plot is then not saved or shown.
 
     Returns
     -------
@@ -671,7 +675,7 @@ def trajectory(adata,
                         plot_title=plot_titel, legend_order=legend_order,
                         legend_bbox=legend_bbox, legend_title=legend_title,
                         show_legend=show_legend, save_format=save_format, show=show,
-                        components=components)
+                        components=components, ax=ax)
 
 
 def trajectory_calculation(
@@ -748,7 +752,8 @@ def trajectory_plotting(
     show_legend=True,
     save_format="png",
     show=True,
-    components=(0, 1)):
+    components=(0, 1),
+    ax=None):
     """
     Plot the trajectory stored in ``adata.uns['embedding']``.
 
@@ -804,6 +809,8 @@ def trajectory_plotting(
         Whether to show the plot, by default True.
     components : tuple, optional
         The two diffusion components shown on the axes, by default (0, 1).
+    ax : matplotlib Axes, optional
+        Draw into this subplot. The plot is then not saved or shown.
     """
     if 'embedding' not in adata.uns:
         raise ValueError("No trajectory found. Run pl.pl.trajectory(adata) first.")
@@ -817,7 +824,9 @@ def trajectory_plotting(
                                font_size=font_size, title=plot_title,
                                xlabel=xlabel, ylabel=ylabel,
                                facecolor=facecolor, axes_color=axes_color,
-                               axes_line_width=axes_line_width)
+                               axes_line_width=axes_line_width, ax=ax)
+    if ax is not None:
+        return ax
     save_path = None if save_format is None else Path(plot_path) / f"{plot_title}.{save_format}"
     _save_and_show(fig, save_path, show)
 
@@ -845,7 +854,8 @@ def umap_samples(adata,
                  facecolor='white',
                  plot_path='Results_PILOT/plots',
                  save_format='pdf',
-                 show=True):
+                 show=True,
+                 ax=None):
     """
     UMAP of the samples (patients) based on the Wasserstein distances.
 
@@ -907,6 +917,9 @@ def umap_samples(adata,
         File format, by default 'pdf'. Use None to not save.
     show : bool, optional
         Whether to show the plot, by default True.
+    ax : matplotlib Axes, optional
+        Draw into this subplot (e.g. to compare several settings side by
+        side). The plot is then not saved or shown.
 
     Returns
     -------
@@ -922,7 +935,9 @@ def umap_samples(adata,
                                legend_fontsize=fontsize_legend, show_legend=show_legend,
                                label_act=label_act, point_size=point_size, alpha=alpha,
                                figsize=figsize, font_size=font_size, title=title,
-                               xlabel='UMAP 1', ylabel='UMAP 2', facecolor=facecolor)
+                               xlabel='UMAP 1', ylabel='UMAP 2', facecolor=facecolor, ax=ax)
+    if ax is not None:
+        return ax
     save_path = None if save_format is None else Path(plot_path) / f"{title}.{save_format}"
     _save_and_show(fig, save_path, show)
 

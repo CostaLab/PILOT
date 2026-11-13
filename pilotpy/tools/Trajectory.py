@@ -18,6 +18,9 @@ import sys
 from genericpath import isfile
 from ..plot.ploting import *
 from ..plot.ploting import _fit_principal_graph, _compute_pseudotime, _compute_umap
+from .distances import (COST_METHODS, OT_METHODS, compute_cost, transport_distances,
+                        cost_centroid, cost_distribution, cost_graph, cost_expression,
+                        cost_jaccard, cost_precomputed)
 from .Cell_gene_selection import *
 from .Gene_cluster_specific import *
 from .Gene_cluster_specific_functions import *
@@ -103,14 +106,33 @@ def wasserstein_distance(adata,
                          data_type='scRNA',
                          return_sil_ari=False,
                          use_centroids=True,
-                         sample_metadata='auto'):
+                         sample_metadata='auto',
+                         cost_method='centroid',
+                         n_pcs=None,
+                         centroid='median',
+                         cost=None,
+                         layer=None,
+                         n_genes=2000,
+                         n_markers=100,
+                         n_neighbors_cost=15,
+                         max_cells=500,
+                         reg_m=1.0,
+                         random_state=0):
     """
     Calculate the Wasserstein (W) distance among samples.
 
     Each sample is described by its cell type proportions. The distance
     between two samples is the optimal transport (Wasserstein) distance
-    between their proportions, where the cost of moving mass between two cell
-    types is the distance between the cell types in the embedding.
+    between their proportions: the cheapest way to turn the proportions of
+    one sample into those of the other, where moving cells from one cell type
+    to another costs the distance between the two cell types (the cost
+    matrix).
+
+    The defaults are the original PILOT settings. Two things can be changed:
+
+    1. How the cost between cell types is computed (``cost_method``,
+       ``metric``, ``n_pcs``, ``centroid``, ...).
+    2. How the transport between samples is computed (``regularized``).
 
     The results are stored in ``adata.uns`` and reused by the next steps
     (trajectory, UMAP, heatmaps). If this function is run again with other
@@ -123,7 +145,8 @@ def wasserstein_distance(adata,
         AnnData object with one row per cell.
     emb_matrix : str
         Key in ``adata.obsm`` with the cell embedding, e.g. 'X_pca' or 'PCA'
-        (numpy array or DataFrame). Only used for scRNA data.
+        (numpy array or DataFrame). A batch-corrected embedding (e.g.
+        'X_harmony', 'X_scVI') can also be used. Only used for scRNA data.
     clusters_col : str
         Column of ``adata.obs`` with the cell types or clusters.
     sample_col : str
@@ -132,26 +155,46 @@ def wasserstein_distance(adata,
         Column of ``adata.obs`` with the status of each sample, e.g.
         control/disease.
     metric : str, optional
-        Distance used for the cost matrix between cell types, by default
-        'cosine'. Any metric of ``scipy.spatial.distance.pdist`` can be used:
-        'cosine', 'euclidean', 'sqeuclidean', 'cityblock' (Manhattan),
-        'correlation', 'chebyshev', 'canberra', 'braycurtis', 'minkowski',
-        'seuclidean', 'mahalanobis'. 'jensenshannon' only works for
-        non-negative features (e.g. pathomics data or ``use_centroids=False``),
-        not for PCA. 'cosine' and 'correlation' compare the direction of the
-        cell type profiles, 'euclidean' also their magnitude. The same metric
-        is used for the Silhouette and ARI scores if ``return_sil_ari=True``.
+        Distance used inside the cost method, by default 'cosine'. Any metric
+        of ``scipy.spatial.distance.pdist``:
+
+        - 'cosine' (default): angle between the profiles, ignores their size.
+        - 'correlation': 1 - Pearson correlation (cosine after centering).
+        - 'euclidean': straight-line distance; also compares the size.
+        - 'sqeuclidean': squared euclidean; far cell types cost much more.
+        - 'cityblock' (Manhattan): sum of the absolute differences.
+        - 'chebyshev': largest difference in one dimension.
+        - 'minkowski': generalisation of euclidean and cityblock (p=2).
+        - 'canberra': sum of relative differences; sensitive to small values.
+        - 'braycurtis': relative sum of differences; for non-negative values.
+        - 'seuclidean': euclidean with every dimension scaled by its variance.
+        - 'mahalanobis': euclidean that takes correlated dimensions into account.
+        - 'jensenshannon': for non-negative values that are like proportions
+          (pathomics features, ``centroid='sum'``, ``cost_method='expression'``);
+          not for PCA.
+
+        Used by the 'centroid', 'distribution', 'graph' (neighbor search) and
+        'expression' cost methods. The same metric is used for the
+        Silhouette and ARI scores if ``return_sil_ari=True``.
     regulizer : float, optional
         Weight of the prior added to the proportions, so that cell types that
         are missing in a sample do not get a proportion of zero, by default 0.2.
     normalization : bool, optional
         Whether to normalize the proportions, by default True.
     regularized : str, optional
-        'unreg' (default) for classical optimal transport, any other value for
-        regularized (Sinkhorn) optimal transport.
+        Optimal transport method between two samples:
+
+        - 'unreg' (default): exact optimal transport (earth mover's distance).
+        - 'sinkhorn' (or 'reg'): entropic (Sinkhorn) optimal transport with
+          strength ``reg``; faster for many cell types and smoother.
+        - 'sinkhorn_divergence': Sinkhorn, corrected so that the distance of a
+          sample to itself is 0.
+        - 'unbalanced': the proportions do not have to be matched exactly;
+          mass that is not moved is penalised with strength ``reg_m``. Less
+          sensitive to rare cell types and outliers.
     reg : float, optional
-        Regularization strength when ``regularized`` is not 'unreg',
-        by default 0.1.
+        Strength of the entropic regularization for 'sinkhorn' and
+        'sinkhorn_divergence', by default 0.1. Larger is smoother.
     res : float, optional
         Initial Leiden resolution, only used if ``return_sil_ari=True``,
         by default 0.01.
@@ -165,24 +208,81 @@ def wasserstein_distance(adata,
         Whether to compute the ARI and Silhouette scores of the status labels,
         by default False.
     use_centroids : bool, optional
-        If True (default), each cell type is represented by the median of its
-        cells; if False, by its normalized sum.
+        Old option: False is the same as ``centroid='sum'``. By default True.
     sample_metadata : 'auto', list or None, optional
         Sample-level information to keep from ``adata.obs``, so it can be used
-        in the plots (e.g. ``pl.pl.trajectory(adata, clusters='sex')``).
+        in the plots (e.g. ``pl.pl.trajectory_variable(adata, 'sex')``).
         'auto' (default) keeps every column that has one value per sample, a
         list keeps the given columns, None keeps nothing. Stored in
         ``adata.uns['sample_metadata']``.
+    cost_method : str, optional
+        How the cost between two cell types is computed:
+
+        - 'centroid' (default): distance between the centers of the cell
+          types in the embedding (see ``centroid``, ``metric``, ``n_pcs``).
+        - 'distribution': compares all cells of the two cell types (energy
+          distance), so the spread and sub-groups of a cell type count too.
+          Uses at most ``max_cells`` cells per cell type.
+        - 'graph': two cell types are close when many of their cells are
+          neighbors in the k-nearest-neighbor graph of the cells (like PAGA),
+          also through intermediate cell types. ``n_neighbors_cost`` sets k.
+        - 'expression': distance between the average gene expression
+          (pseudobulk, log CPM) of the cell types on the ``n_genes`` most
+          variable genes. Needs counts in ``adata.X`` or ``layer``.
+        - 'jaccard': Jaccard distance between the top ``n_markers`` marker
+          genes of the cell types (1 - shared markers / all markers). Needs
+          counts in ``adata.X`` or ``layer``.
+        - 'precomputed': your own cost matrix, given in ``cost``.
+    n_pcs : int, optional
+        Use only the first ``n_pcs`` dimensions of the embedding. If None
+        (default), all are used.
+    centroid : {'median', 'mean', 'sum'}, optional
+        Center of a cell type for ``cost_method='centroid'``: the median
+        (default, robust to outlier cells), the mean, or the normalized sum.
+    cost : DataFrame, optional
+        Cost matrix for ``cost_method='precomputed'``, with the cell types as
+        index and columns (symmetric, 0 on the diagonal).
+    layer : str, optional
+        Layer of ``adata`` with the counts for 'expression' and 'jaccard'. If
+        None (default), ``adata.X``.
+    n_genes : int, optional
+        Number of most variable genes for 'expression', by default 2000.
+    n_markers : int, optional
+        Number of marker genes per cell type for 'jaccard', by default 100.
+    n_neighbors_cost : int, optional
+        Number of neighbors of every cell for 'graph', by default 15.
+    max_cells : int, optional
+        Maximum number of random cells per cell type for 'distribution',
+        by default 500.
+    reg_m : float, optional
+        For ``regularized='unbalanced'``: how strongly the proportions must
+        be matched, by default 1.0. Larger values are closer to 'unreg'.
+    random_state : int, optional
+        Random seed for 'distribution', by default 0.
 
     Returns
     -------
     None
         Stores in ``adata.uns``: 'EMD' (distance matrix), 'EMD_df' (the same
         as a DataFrame), 'cost' (cost matrix), 'proportions', 'annot',
-        'data', 'real_labels', 'sample_metadata' and 'wasserstein_params'.
+        'data', 'real_labels', 'sample_metadata' and 'wasserstein_params'
+        (all settings and the run time in seconds).
     """
     if not callable(metric) and metric not in COST_METRICS:
         raise ValueError(f"Unknown metric '{metric}'. Use one of {list(COST_METRICS)}.")
+    if cost_method not in COST_METHODS:
+        raise ValueError(f"Unknown cost_method '{cost_method}'. Use one of {list(COST_METHODS)}.")
+    if regularized == 'reg':
+        regularized = 'sinkhorn'
+    if regularized not in OT_METHODS:
+        # Earlier versions used Sinkhorn for every value other than 'unreg'.
+        warnings.warn(f"Unknown regularized='{regularized}', Sinkhorn is used. "
+                      f"Use one of {list(OT_METHODS)}.")
+        regularized = 'sinkhorn'
+    if not use_centroids:
+        centroid = 'sum'
+    if cost_method in ('expression', 'jaccard') and data_type != 'scRNA':
+        raise ValueError(f"cost_method='{cost_method}' needs gene expression (scRNA data).")
     for col in [clusters_col, sample_col, status]:
         if col not in adata.obs.columns:
             raise ValueError(f"'{col}' is not a column of adata.obs.")
@@ -197,6 +297,10 @@ def wasserstein_distance(adata,
         data, annot = extract_data_anno_pathomics_from_h5ad(adata, var_names=list(adata.var_names),
                                                              clusters_col=clusters_col,
                                                              sample_col=sample_col, status=status)
+    if n_pcs is not None:
+        if not 1 <= int(n_pcs) <= data.shape[1]:
+            raise ValueError(f"n_pcs must be between 1 and {data.shape[1]} (the size of the embedding).")
+        data = data.iloc[:, :int(n_pcs)]
 
     adata.uns['data'] = data
     adata.uns['annot'] = annot
@@ -204,11 +308,35 @@ def wasserstein_distance(adata,
                                           normalization=normalization)
     adata.uns['proportions'] = proportions
 
-    cost, cost_df = cost_matrix(annot, data, metric=metric, use_centroids=use_centroids)
+    start = time.perf_counter()
+    if cost_method == 'centroid' and centroid in ('median', 'sum'):
+        # The original PILOT cost matrix.
+        cost_values, cost_df = cost_matrix(annot, data, metric=metric,
+                                           use_centroids=(centroid == 'median'))
+    else:
+        cost_values, cost_df = compute_cost(cost_method, annot, data, adata=adata, metric=metric,
+                                            centroid=centroid, cost=cost, layer=layer,
+                                            n_genes=n_genes, n_markers=n_markers,
+                                            n_neighbors_cost=n_neighbors_cost,
+                                            max_cells=max_cells, random_state=random_state)
+    cost_values = np.asarray(cost_values, dtype=float)
+    if not np.isfinite(cost_values).all():
+        raise ValueError("The cost matrix contains NaN or infinite values. Try another metric "
+                         "or cost_method.")
+    if cost_values.max() <= 0:
+        raise ValueError("All costs are 0: the cell types cannot be told apart with these settings.")
     adata.uns['cost'] = cost_df
+    seconds_cost = time.perf_counter() - start
 
-    EMD, emd_df = wasserstein_d(proportions, cost / cost.max(), regularized=regularized,
-                                reg=reg)
+    start = time.perf_counter()
+    if regularized in ('unreg', 'sinkhorn'):
+        EMD, emd_df = wasserstein_d(proportions, cost_values / cost_values.max(),
+                                    regularized='unreg' if regularized == 'unreg' else 'reg',
+                                    reg=reg)
+    else:
+        EMD, emd_df = transport_distances(proportions, cost_values / cost_values.max(),
+                                          method=regularized, reg=reg, reg_m=reg_m)
+    seconds_ot = time.perf_counter() - start
 
     adata.uns['EMD_df'] = emd_df
     adata.uns['EMD'] = EMD
@@ -228,8 +356,10 @@ def wasserstein_distance(adata,
         'emb_matrix': str(emb_matrix), 'clusters_col': str(clusters_col),
         'sample_col': str(sample_col), 'status': str(status), 'metric': str(metric),
         'regulizer': float(regulizer), 'normalization': bool(normalization),
-        'regularized': str(regularized), 'reg': float(reg),
-        'use_centroids': bool(use_centroids), 'data_type': str(data_type)}
+        'regularized': str(regularized), 'reg': float(reg), 'reg_m': float(reg_m),
+        'cost_method': str(cost_method), 'n_pcs': 'all' if n_pcs is None else int(n_pcs),
+        'centroid': str(centroid), 'data_type': str(data_type),
+        'seconds_cost': float(seconds_cost), 'seconds_transport': float(seconds_ot)}
 
     # Results computed from older distances are no longer valid.
     for key in ['embedding', 'trajectory_params', 'umap_samples', 'umap_samples_params',
