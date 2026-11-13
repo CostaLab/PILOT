@@ -52,7 +52,7 @@ pl.tl.wasserstein_distance(
 
 ##### Ploting the Cost matrix and the Wasserstein distance:
 <div class="alert alert-block alert-info"> 
-Here we show the heatmaps of Cost matrix (cells) and Wasserstein distance (samples). At this point, you should have a 'Results_PILOT' folder inside the folder where you are running your analysis, which includes all the plots created by PILOT.
+Here we show the heatmaps of Cost matrix (cells) and Wasserstein distance (samples). At this point, you should have a 'Results_PILOT' folder inside the folder where you are running your analysis, which includes all the plots created by PILOT. To plot only one of them, use `pl.pl.heatmap_cost(adata)` or `pl.pl.heatmap_wasserstein(adata)`. The size of the heatmaps follows the number of cell types and samples; it can be changed with `figsize`.
 </div>
 
 
@@ -62,52 +62,75 @@ pl.pl.heatmaps(adata)
 
 
     
-![png](Myocardial_infarction_files/Myocardial_infarction_8_0.png)
+![png](Myocardial_infarction_files/v2_0_19_heatmap_cost.png)
     
 
 
 
     
-![png](Myocardial_infarction_files/Myocardial_infarction_8_1.png)
+![png](Myocardial_infarction_files/v2_0_19_heatmap_wasserstein.png)
     
 
 
 ##### Trajectory:
 <div class="alert alert-block alert-info"> 
- Here we show the Diffusion map of Wasserstein distance.  In the upcoming trajectory analysis, the labels "IZ" stands for the ischaemic zone tissue. 
+ Here we show the Diffusion map of Wasserstein distance.  In the upcoming trajectory analysis, the labels "IZ" stands for the ischaemic zone tissue.
+The colors are chosen automatically from the number of groups, so there is no need to give them. Useful options:
+
+- `legend_order`: order of the groups in the legend, e.g. the control group first.
+- `colors`: your own colors, as a list or a dict, e.g. `{'control': 'blue'}`.
+- `location_labels` and `legend_bbox`: position of the legend, e.g. `location_labels = 'upper left', legend_bbox = (1.02, 1)` puts it outside the plot.
+- `clusters`: color the samples by another sample-level column of `adata.obs` (e.g. `clusters = 'sex'`), without computing the trajectory again.
+- `point_size`, `figsize`, `font_size`, `plot_titel`, `label_act` (show the sample names).
+
+The trajectory is computed once and saved in the object. Running `pl.pl.trajectory` again (e.g. with other colors) gives the same picture. It is computed again only when the Wasserstein distance or the diffusion map parameters (`knn`, `epsilon`, `alpha`, `n_evecs`) change.
 </div>
 
 
 ```python
-pl.pl.trajectory(adata, colors = ['Blue','red'])
+pl.pl.trajectory(adata, legend_order = ['control', 'IZ'])
 ```
 
 
     
-![png](Myocardial_infarction_files/Myocardial_infarction_10_0.png)
+![png](Myocardial_infarction_files/v2_0_19_trajectory.png)
     
 
+
+##### UMAP of the samples:
+<div class="alert alert-block alert-info">
+PILOT can also show the samples (patients) in a UMAP computed from the Wasserstein distances. The colors are the same as in the trajectory, so both plots can be compared directly. The same legend options as in `pl.pl.trajectory` can be used.
+</div>
+
+```python
+pl.pl.umap_samples(adata, legend_order = ['control', 'IZ'])
+```
+
+
+    
+![png](Myocardial_infarction_files/v2_0_19_umap.png)
+    
 
 #####  Fit a principal graph:
 <div class="alert alert-block alert-info"> 
-The difussion map creates an embedding that potentially reveals a trajectory in the data. Next, PILOT explores EIPLGraph to find the structure of the trajectory. An important parameter is the source_node, which indicates the start of the trajectory. Here, we selected a control sample (node with id = 7). This method returns ranked samples, which we define as a disease progression score (t = t1, ..., tn), where tl represents the ranking of the nth sample.
+The difussion map creates an embedding that potentially reveals a trajectory in the data. Next, PILOT explores EIPLGraph to find the structure of the trajectory. An important parameter is the source_node, which indicates the start of the trajectory. Here, the root is chosen automatically near the control samples. This method returns ranked samples, which we define as a disease progression score (t = t1, ..., tn), where tl represents the ranking of the nth sample. With `source_node = 'auto'`, PILOT chooses the root automatically: the end node of the graph from which the control samples (given by `root_status`) come first along the trajectory. You can also give the node number yourself, e.g. `source_node = 7` (the node numbers are shown in the plot). The graph is fitted with a fixed random seed. In a new Python session the graph can still change slightly, so the node numbers can change; `source_node = 'auto'` does not depend on them. Always check the plot. The steps can also be run one by one: `pl.tl.fit_principal_graph`, `pl.pl.principal_graph` and `pl.tl.compute_pseudotime`.
 </div>
 
 
 
 ```python
-pl.pl.fit_pricipla_graph(adata, source_node = 7)
+pl.pl.fit_pricipla_graph(adata, source_node = 'auto', root_status = 'control')
 ```
 
 
     
-![png](Myocardial_infarction_files/Myocardial_infarction_12_0.png)
+![png](Myocardial_infarction_files/v2_0_19_principal_graph.png)
     
 
 
 #####  Cell-type importance:
 <div class="alert alert-block alert-info"> 
-Next, we can use the robust regression model to find cells whose proportions change linearly or non-linearly with disease progression. As indicated in the paper, major hallmark of MI progression are detected, i.e., a decrease of cardiomyocyte cells (CM) and an increase of fibroblasts and myeloid cells.
+Next, we can use the robust regression model to find cells whose proportions change linearly or non-linearly with disease progression. As indicated in the paper, major hallmark of MI progression are detected, i.e., a decrease of cardiomyocyte cells (CM) and an increase of fibroblasts and myeloid cells. By default the x-axis is the order of the samples along the trajectory (1, 2, 3, ...). Use `x_axis = 'pseudotime'` to use the pseudotime values instead. The size of the figure follows the number of cell types; the labels and fonts can be changed with `xlabel`, `ylabel`, `label_fontsize`, `tick_fontsize` and `title_fontsize`. The steps can also be run one by one: `pl.tl.cell_importance_calculation`, `pl.pl.heatmap_proportions` and `pl.pl.cell_importance_grid` (or `pl.pl.cell_importance_plot` for one file per cell type).
 </div>
 
 
@@ -117,13 +140,13 @@ pl.tl.cell_importance(adata)
 
 
     
-![png](Myocardial_infarction_files/Myocardial_infarction_14_0.png)
+![png](Myocardial_infarction_files/v2_0_19_proportions_heatmap.png)
     
 
 
 
     
-![png](Myocardial_infarction_files/Myocardial_infarction_14_2.png)
+![png](Myocardial_infarction_files/v2_0_19_cell_importance.png)
     
 
 

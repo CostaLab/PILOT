@@ -54,7 +54,7 @@ pl.tl.wasserstein_distance(
 
 ##### Ploting the Cost matrix and the Wasserstein distance:
 <div class="alert alert-block alert-info"> 
- Here we show the heatmaps of the Cost matrix (cells) and Wasserstein distance (samples). At this point, you should have a 'Results_PILOT' folder inside the folder where you are running your analysis, which includes all the plots created by PILOT.
+ Here we show the heatmaps of the Cost matrix (cells) and Wasserstein distance (samples). At this point, you should have a 'Results_PILOT' folder inside the folder where you are running your analysis, which includes all the plots created by PILOT. To plot only one of them, use `pl.pl.heatmap_cost(adata)` or `pl.pl.heatmap_wasserstein(adata)`. The size of the heatmaps follows the number of cell types and samples; it can be changed with `figsize`.
 </div>
 
 
@@ -77,11 +77,20 @@ pl.pl.heatmaps(adata)
 ##### Trajectory:
 <div class="alert alert-block alert-info"> 
  Here we show the Diffusion map of Wasserstein distance. In the upcoming trajectory analysis, the labels "T" stands for Tumor and "N" stands for the Normal.
+The colors are chosen automatically from the number of groups, so there is no need to give them. Useful options:
+
+- `legend_order`: order of the groups in the legend, e.g. the control group first.
+- `colors`: your own colors, as a list or a dict, e.g. `{'control': 'blue'}`.
+- `location_labels` and `legend_bbox`: position of the legend, e.g. `location_labels = 'upper left', legend_bbox = (1.02, 1)` puts it outside the plot.
+- `clusters`: color the samples by another sample-level column of `adata.obs` (e.g. `clusters = 'sex'`), without computing the trajectory again.
+- `point_size`, `figsize`, `font_size`, `plot_titel`, `label_act` (show the sample names).
+
+The trajectory is computed once and saved in the object. Running `pl.pl.trajectory` again (e.g. with other colors) gives the same picture. It is computed again only when the Wasserstein distance or the diffusion map parameters (`knn`, `epsilon`, `alpha`, `n_evecs`) change.
 </div>
 
 
 ```python
-pl.pl.trajectory(adata, colors = ['red','Blue'])
+pl.pl.trajectory(adata, legend_order = ['normal', 'pdac'])
 ```
 
 
@@ -89,6 +98,15 @@ pl.pl.trajectory(adata, colors = ['red','Blue'])
 ![png](Patients_sub_group_detection_files/Patients_sub_group_detection_10_0.png)
     
 
+
+##### UMAP of the samples:
+<div class="alert alert-block alert-info">
+PILOT can also show the samples (patients) in a UMAP computed from the Wasserstein distances. The colors are the same as in the trajectory, so both plots can be compared directly. The same legend options as in `pl.pl.trajectory` can be used.
+</div>
+
+```python
+pl.pl.umap_samples(adata, legend_order = ['normal', 'pdac'])
+```
 
 ##### In this section, we should find the optimal number of clusters. 
 <div class="alert alert-block alert-info"> 

@@ -52,23 +52,41 @@ pl.tl.wasserstein_distance(
 ##### Trajectory estimation:
 <div class="alert alert-block alert-info"> 
 As a next step, we estimate a diffusion map from the Wasserstein distance
+The colors are chosen automatically from the number of groups, so there is no need to give them. Useful options:
+
+- `legend_order`: order of the groups in the legend, e.g. the control group first.
+- `colors`: your own colors, as a list or a dict, e.g. `{'control': 'blue'}`.
+- `location_labels` and `legend_bbox`: position of the legend, e.g. `location_labels = 'upper left', legend_bbox = (1.02, 1)` puts it outside the plot.
+- `clusters`: color the samples by another sample-level column of `adata.obs` (e.g. `clusters = 'sex'`), without computing the trajectory again.
+- `point_size`, `figsize`, `font_size`, `plot_titel`, `label_act` (show the sample names).
+
+The trajectory is computed once and saved in the object. Running `pl.pl.trajectory` again (e.g. with other colors) gives the same picture. It is computed again only when the Wasserstein distance or the diffusion map parameters (`knn`, `epsilon`, `alpha`, `n_evecs`) change.
 </div>
 
 
 ```python
-pl.pl.trajectory(adata, colors = ['red','orange','Blue'])
+pl.pl.trajectory(adata, legend_order = ['normal'])
 ```
 
 
 ![png](Kidney_trajectory_files/Kidney_trajectory_8_0.png)
 
 
-Then, estimate the trajectory by fitting a principle graph and calculate the order of samples by 'cell_importance' functions. See the main [tutorial](https://pilot.readthedocs.io/en/latest/Myocardial_infarction.html), for details. 
+##### UMAP of the samples:
+<div class="alert alert-block alert-info">
+PILOT can also show the samples (patients) in a UMAP computed from the Wasserstein distances. The colors are the same as in the trajectory, so both plots can be compared directly. The same legend options as in `pl.pl.trajectory` can be used.
+</div>
+
+```python
+pl.pl.umap_samples(adata, legend_order = ['normal'])
+```
+
+Then, estimate the trajectory by fitting a principle graph and calculate the order of samples by 'cell_importance' functions. See the main [tutorial](https://pilot.readthedocs.io/en/latest/Myocardial_infarction.html), for details. The root of the trajectory is chosen automatically near the normal samples (`source_node = 'auto'`).
 
 
 ```python
-pl.pl.fit_pricipla_graph(adata, source_node = 8)
-pl.tl.cell_importance(adata,heatmap_w = 20,height = 15,xlim = 30)
+pl.pl.fit_pricipla_graph(adata, source_node = 'auto', root_status = 'normal')
+pl.tl.cell_importance(adata, xlim = 30)
 ```
 
 ##### Evaluation of the association of estimated disease progression with experimental factor:
