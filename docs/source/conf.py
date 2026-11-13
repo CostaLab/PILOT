@@ -6,8 +6,8 @@ project = ' PILOT'
 copyright = '2023, Costalab'
 author = 'Mehdi Joodaki & Mina Shaigan'
 
-release = '2.0.18'
-version = '2.0.18'
+release = '2.0.19'
+version = '2.0.19'
 
 # -- General configuration
 
