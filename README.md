@@ -6,6 +6,16 @@ Although clinical applications represent the next challenge in single-cell genom
 
 ![plot](./img/plot.png)
 
+## 🆕 What's new in version 2.1.0
+> [!TIP]
+> **You can now choose how PILOT measures the distances between samples.**
+> - **Metrics** (`metric`): `cosine` (default), `euclidean`, `correlation`, `cityblock` and more.
+> - **Cost methods** (`cost_method`): `centroid` (default), `distribution`, `graph`, `expression`, `jaccard`, or your own cost matrix.
+> - **Transport methods** (`regularized`): exact (default), `sinkhorn`, `sinkhorn_divergence`, `unbalanced`.
+> - **Clinical variables**: color the patients by any variable (age, sex, eGFR, ...) on the trajectory and UMAP with `pl.pl.trajectory_variable` and `pl.pl.umap_variable`.
+>
+> The default settings are unchanged. 👉 See the **[Distance settings tutorial](https://pilot.readthedocs.io/en/latest/Distance_settings.html)** for examples.
+
 
 
 ## Installation
@@ -26,7 +36,6 @@ cd PILOT/Tutorial
 There are six tutorials, one for [Myocardial Infarction (single cell data)](https://pilot.readthedocs.io/en/latest/Myocardial_infarction.html), and the second tutorial for [pathomics data, the combination of Kidney IgAN(G) & Kidney IgAN(T)](https://pilot.readthedocs.io/en/latest/Combination_Kidney_IgAN.html), and the third one  for [Patients sub-group detection and then ranking cells/genes (Pancreas data)](https://pilot.readthedocs.io/en/latest/Patients_sub_group_detection.html) and the forth one for 
 [evaluation of the presence of batch effects in Trajectory](https://pilot.readthedocs.io/en/latest/Kidney_trajectory.html) the fifth one for [evaluation of the presence of batch effects in detected sub-groups](https://pilot.readthedocs.io/en/latest/Kidney_clusters.html), and the last one for the [settings of the Wasserstein distance](https://pilot.readthedocs.io/en/latest/Distance_settings.html).
 
-> **New in 2.1.0:** you can choose how PILOT measures the distance between cell types and samples: different metrics (`metric`), cost methods (`cost_method`: `centroid`, `distribution`, `graph`, `expression`, `jaccard` or your own matrix) and transport methods (`regularized`: `sinkhorn_divergence`, `unbalanced`). The defaults are unchanged. You can also color patients by any clinical variable on the trajectory and UMAP (`pl.pl.trajectory_variable`, `pl.pl.umap_variable`). See the [Distance settings tutorial](https://pilot.readthedocs.io/en/latest/Distance_settings.html).
 
 
 You can access the used data sets by PILOT in Part 1 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4740646.svg)](https://zenodo.org/records/8370081) and  Part 2 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4740646.svg)](https://zenodo.org/records/7957118)
