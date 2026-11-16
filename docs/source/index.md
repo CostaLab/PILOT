@@ -1,35 +1,80 @@
+# PILOT
 
-# Welcome to the exciting world of data analysis with PILOT!
-
-```{eval-rst}
-..  figure:: logo.png
-    :scale: 20%
-    :align: right
+```{div} pilot-tagline
+**P**at**I**ent-**L**evel analysis with **O**ptimal **T**ransport for single-cell genomics and pathomics data.
 ```
 
-**PILOT** is a Python library for Detection of **P**at**I**ent-**L**evel distances from single cell genomics and pathomics data with **O**ptimal **T**ransport.
+PILOT compares patients (samples) by their cell type proportions. It computes the Wasserstein distance between every pair of samples with optimal transport, and uses these distances to find disease trajectories and patient sub-groups. It then shows which cell types, genes and tissue structures change along the trajectory or between the groups.
 
-🚀 In these three comprehensive tutorials, we'll guide you through a fascinating journey across diverse datasets. 📊✨ Uncover the intricate details of cellular behavior in Myocardial Infarction single cell data, explore the intricate landscape of Kidney IgAN(Glomeruli) & Kidney IgAN(Tubule) with pathomics data, and unravel the complexities of Patients sub-group detection while ranking cells and genes in Pancreas data. Whether you're a beginner or an experienced data enthusiast, our step-by-step guides will empower you to harness the power of PILOT to derive insights and make impactful discoveries from these intricate datasets. Let's dive in and unlock the hidden insights within the data together! 🧬🔍💡
-
-
-## Installation Guide
-
-Follow these steps to install and set up PILOT:
-
-```bash
-pip install pilotpy
-```
-Once you've completed these steps, you can proceed to run the tutorials and explore the features of PILOT. 
-When doing so, remember to move to the tutorial folder, as all the work will be performed there:
-```bash
-
-cd Tutorial
-
-
+```{image} _static/pilot_overview.png
+:alt: Overview of PILOT
+:width: 100%
 ```
 
+## Key features
+
+::::{grid} 1 2 2 2
+:gutter: 2
+
+:::{grid-item}
+🧭 **Disease trajectories**: order patients from healthy to disease (pseudotime) with diffusion maps and a principal graph.
+:::
+
+:::{grid-item}
+👥 **Patient sub-groups**: cluster patients by their Wasserstein distances.
+:::
+
+:::{grid-item}
+🔬 **Interpretation**: find the cell types, genes and tissue structures that change along the trajectory or between groups.
+:::
+
+:::{grid-item}
+⚙️ **Flexible distances**: choose the metric, the cost between cell types and the transport method.
+:::
+::::
+
+## Get started
+
+::::{grid} 1 2 2 2
+:gutter: 3
+
+:::{grid-item-card} 📦 Installation
+:link: installation
+:link-type: doc
+
+Install PILOT with pip and get the tutorial data.
+:::
+
+:::{grid-item-card} 📘 Tutorials
+:link: tutorials
+:link-type: doc
+
+Step-by-step examples on single-cell and pathomics data.
+:::
+
+:::{grid-item-card} 📖 API reference
+:link: api
+:link-type: doc
+
+All functions of `pl.tl` (tools) and `pl.pl` (plots) with their parameters.
+:::
+
+:::{grid-item-card} ✨ What's new
+:link: whats_new
+:link-type: doc
+
+New in version 2.1.0: distance settings and clinical variables on the trajectory.
+:::
+::::
+
+Questions, bugs or ideas? Please open an issue on [GitHub](https://github.com/CostaLab/PILOT/issues).
 
 ## Citation
+
+If you use PILOT, please cite:
+
+> Joodaki, M., Shaigan, M., Parra, V. *et al.* Detection of PatIent-Level distances from single cell genomics and pathomics data with Optimal Transport (PILOT). *Molecular Systems Biology* 20, 57–74 (2024). [doi:10.1038/s44320-023-00003-8](https://link.springer.com/article/10.1038/s44320-023-00003-8)
+
 ```
 @article{joodaki2024detection,
   title={Detection of PatIent-Level distances from single cell genomics and pathomics data with Optimal Transport (PILOT)},
@@ -42,52 +87,31 @@ cd Tutorial
   publisher={Nature Publishing Group UK London}
 }
 ```
+
 ```{toctree}
----
-maxdepth: 2
-caption: API Reference
----
+:hidden:
+:caption: Getting started
+
+installation
+Tutorial overview <tutorials>
+whats_new
+```
+
+```{toctree}
+:hidden:
+:caption: Tutorials
+
+Myocardial infarction <Myocardial_infarction>
+Distance settings <Distance_settings>
+Kidney IgAN (pathomics) <Combination_Kidney_IgAN>
+Patient sub-groups (pancreas) <Patients_sub_group_detection>
+Batch effects: trajectory <Kidney_trajectory>
+Batch effects: sub-groups <Kidney_clusters>
+```
+
+```{toctree}
+:hidden:
+:caption: Reference
+
 api
-```
-
-```{toctree}
----
-caption: scRNA-seq Analysis
-maxdepth: 2
----
-Myocardial_infarction
-Distance_settings
-```
-
-```{toctree}
----
-maxdepth: 2
-caption: Multimodal Integration
----
-Combination_Kidney_IgAN
-```
-
-```{toctree}
----
-maxdepth: 2
-caption: Patients sub-group detection
----
-Patients_sub_group_detection
-```
-
-```{toctree}
----
-maxdepth: 2
-caption: Evaluation of the presence of
-batch effects(Trajectory)
----
-Kidney_trajectory
-```
-```{toctree}
----
-maxdepth: 2
-caption: Evaluation of the presence of
-batch effects(Clusters)
----
-Kidney_clusters
 ```

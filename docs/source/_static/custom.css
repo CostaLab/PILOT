@@ -1,0 +1,36 @@
+/* PILOT colors, taken from the logo: navy blue and sun yellow. */
+html[data-theme="light"] {
+  --pst-color-primary: #1d3c78;
+  --pst-color-secondary: #d99a00;
+  --pst-color-link: #1d3c78;
+  --pst-color-link-hover: #d99a00;
+  --pilot-box-bg: #f3f6fc;
+  --pilot-box-line: #1d3c78;
+}
+html[data-theme="dark"] {
+  --pst-color-primary: #8fb3ff;
+  --pst-color-secondary: #ffc93c;
+  --pst-color-link: #8fb3ff;
+  --pst-color-link-hover: #ffc93c;
+  --pilot-box-bg: #1b2333;
+  --pilot-box-line: #8fb3ff;
+}
+
+/* Front page title */
+
+.pilot-tagline { font-size: 1.2rem; color: var(--pst-color-text-muted); margin-bottom: 1.2rem; }
+
+/* Cards: lift a little on hover */
+.sd-card { transition: transform .15s ease, box-shadow .15s ease; }
+.sd-card:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0, 0, 0, .12) !important; }
+.sd-card-title { color: var(--pst-color-primary); }
+
+/* The blue info boxes of the tutorials (Jupyter style) */
+div.alert-info {
+  background: var(--pilot-box-bg);
+  border-left: 4px solid var(--pilot-box-line);
+  border-radius: 6px;
+  padding: .8rem 1rem;
+  margin: 1rem 0;
+}
+div.alert-info > :last-child { margin-bottom: 0; }
