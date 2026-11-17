@@ -25,6 +25,15 @@ How the metric, the cost between cell types and the transport method change the 
 **✨ New in 2.1.0**
 :::
 
+:::{grid-item-card} 🌿 Trajectory branches
+:link: Trajectory_branches
+:link-type: doc
+
+Split the trajectory by choosing nodes of the principal graph, and find the cell types that change in each branch.
+
+**✨ New in 2.1.1**
+:::
+
 :::{grid-item-card} 🔬 Kidney IgAN (pathomics)
 :link: Combination_Kidney_IgAN
 :link-type: doc

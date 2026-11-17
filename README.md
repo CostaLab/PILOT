@@ -15,6 +15,8 @@ Although clinical applications represent the next challenge in single-cell genom
 > - **Clinical variables**: color the patients by any variable (age, sex, eGFR, ...) on the trajectory and UMAP with `pl.pl.trajectory_variable` and `pl.pl.umap_variable`.
 >
 > The default settings are unchanged. 👉 See the **[Distance settings tutorial](https://pilot.readthedocs.io/en/latest/Distance_settings.html)** for examples.
+>
+> **New in 2.1.1: trajectory branches.** Choose nodes of the principal graph with `pl.tl.select_branch` and find the cell types that change in each branch. 👉 See the **[Trajectory branches tutorial](https://pilot.readthedocs.io/en/latest/Trajectory_branches.html)**.
 
 
 
@@ -33,8 +35,8 @@ cd PILOT/Tutorial
 ```
 
 ## [Tutorial&Data sets](https://pilot.readthedocs.io/en/latest/index.html)
-There are six tutorials, one for [Myocardial Infarction (single cell data)](https://pilot.readthedocs.io/en/latest/Myocardial_infarction.html), and the second tutorial for [pathomics data, the combination of Kidney IgAN(G) & Kidney IgAN(T)](https://pilot.readthedocs.io/en/latest/Combination_Kidney_IgAN.html), and the third one  for [Patients sub-group detection and then ranking cells/genes (Pancreas data)](https://pilot.readthedocs.io/en/latest/Patients_sub_group_detection.html) and the forth one for 
-[evaluation of the presence of batch effects in Trajectory](https://pilot.readthedocs.io/en/latest/Kidney_trajectory.html) the fifth one for [evaluation of the presence of batch effects in detected sub-groups](https://pilot.readthedocs.io/en/latest/Kidney_clusters.html), and the last one for the [settings of the Wasserstein distance](https://pilot.readthedocs.io/en/latest/Distance_settings.html).
+There are seven tutorials, one for [Myocardial Infarction (single cell data)](https://pilot.readthedocs.io/en/latest/Myocardial_infarction.html), and the second tutorial for [pathomics data, the combination of Kidney IgAN(G) & Kidney IgAN(T)](https://pilot.readthedocs.io/en/latest/Combination_Kidney_IgAN.html), and the third one  for [Patients sub-group detection and then ranking cells/genes (Pancreas data)](https://pilot.readthedocs.io/en/latest/Patients_sub_group_detection.html) and the forth one for 
+[evaluation of the presence of batch effects in Trajectory](https://pilot.readthedocs.io/en/latest/Kidney_trajectory.html) the fifth one for [evaluation of the presence of batch effects in detected sub-groups](https://pilot.readthedocs.io/en/latest/Kidney_clusters.html), the sixth one for the [settings of the Wasserstein distance](https://pilot.readthedocs.io/en/latest/Distance_settings.html), and the last one for [splitting the trajectory into branches](https://pilot.readthedocs.io/en/latest/Trajectory_branches.html).
 
 
 

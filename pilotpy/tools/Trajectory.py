@@ -18,6 +18,8 @@ import sys
 from genericpath import isfile
 from ..plot.ploting import *
 from ..plot.ploting import _fit_principal_graph, _compute_pseudotime, _compute_umap
+from ..plot.ploting import (_sample_nodes, _sample_order, _sample_table, _branch,
+                            _branch_folder, _drop_keys)
 from .distances import (COST_METHODS, OT_METHODS, compute_cost, transport_distances,
                         cost_centroid, cost_distribution, cost_graph, cost_expression,
                         cost_jaccard, cost_precomputed)
@@ -364,7 +366,7 @@ def wasserstein_distance(adata,
     # Results computed from older distances are no longer valid.
     for key in ['embedding', 'trajectory_params', 'umap_samples', 'umap_samples_params',
                 'principal_graph', 'principal_graph_params', 'pseudotime', 'root_node',
-                'cell_importance']:
+                'cell_importance', 'branch']:
         if key in adata.uns:
             del adata.uns[key]
 
@@ -968,6 +970,130 @@ def compute_pseudotime(adata, source_node='auto', root_status=None):
     _compute_pseudotime(adata, source_node=source_node, root_status=root_status)
 
 
+def sample_nodes(adata):
+    """
+    Show the nearest principal graph node of every sample.
+
+    Use it together with ``pl.pl.principal_graph`` (which shows the node
+    numbers) to choose the nodes of a branch for ``pl.tl.select_branch``.
+
+    Parameters
+    ----------
+    adata : AnnData
+        AnnData object after ``pl.tl.fit_principal_graph``.
+
+    Returns
+    -------
+    pandas.DataFrame
+        One row per sample with the columns 'sampleID', 'node', 'status' and,
+        if computed, 'pseudotime', sorted by node and pseudotime.
+    """
+    df = _sample_table(adata)[['sampleID', 'status']].copy()
+    df.insert(1, 'node', _sample_nodes(adata))
+    sort_by = ['node']
+    if 'pseudotime' in adata.uns:
+        df['pseudotime'] = np.asarray(adata.uns['pseudotime'], dtype=float)
+        sort_by.append('pseudotime')
+    return df.sort_values(sort_by, kind='stable').reset_index(drop=True)
+
+
+def select_branch(adata, nodes=None, name=None, min_samples=8, verbose=True):
+    """
+    Use only the samples of some nodes of the principal graph (one branch).
+
+    Each sample belongs to its nearest node of the principal graph. After this
+    function, the next steps only use the samples of the chosen nodes:
+    ``pl.tl.cell_importance_calculation``, ``pl.pl.heatmap_proportions``,
+    ``pl.pl.cell_importance_grid``, ``pl.pl.cell_importance_plot`` and
+    ``pl.tl.cell_importance``. The samples keep their pseudotime from the
+    root, so they are ordered along the branch. ``pl.pl.principal_graph``
+    highlights the branch. The Wasserstein distances, the trajectory and the
+    graph are not changed. Call it again with other nodes to analyse another
+    branch, or with ``nodes=None`` to use all samples again.
+
+    The node numbers are shown by ``pl.pl.principal_graph``. They can change
+    when the graph is fitted again, so always check the plot.
+
+    Parameters
+    ----------
+    adata : AnnData
+        AnnData object after ``pl.tl.fit_principal_graph`` and
+        ``pl.tl.compute_pseudotime``.
+    nodes : list of int or None
+        Node numbers of the branch, e.g. [7, 8, 9, 15, 0, 1]. None removes the
+        selection, so all samples are used again.
+    name : str, optional
+        Name of the branch, used in the plot titles and in the names of the
+        result folders. If None, made from the node numbers.
+    min_samples : int, optional
+        A warning is given when the branch has fewer samples, by default 8.
+        At least 3 samples are needed.
+    verbose : bool, optional
+        Whether to print the number of samples of the branch, by default True.
+
+    Returns
+    -------
+    list or None
+        The sample IDs of the branch. They are also stored in
+        ``adata.uns['branch']`` (with the name and the nodes).
+    """
+    if nodes is None:
+        _drop_keys(adata, ['branch', 'cell_importance', 'cellnames', 'orders'])
+        if verbose:
+            print("No branch selected: all samples are used.")
+        return None
+    if 'principal_graph' not in adata.uns:
+        raise ValueError("No principal graph found. Run pl.tl.fit_principal_graph(adata) first.")
+    if 'pseudotime' not in adata.uns:
+        raise ValueError("No pseudotime found. Run pl.tl.compute_pseudotime(adata) first.")
+    graph = adata.uns['principal_graph']
+    n_nodes = np.asarray(graph['NodePositions']).shape[0]
+    nodes = list(dict.fromkeys(int(n) for n in np.atleast_1d(nodes)))
+    wrong = [n for n in nodes if not 0 <= n < n_nodes]
+    if wrong:
+        raise ValueError(f"Nodes {wrong} do not exist. The graph has the nodes 0 to {n_nodes - 1} "
+                         "(see pl.pl.principal_graph).")
+
+    # Warn when the nodes are not connected along the graph.
+    edges = np.asarray(graph['Edges'])
+    chosen = set(nodes)
+    neighbours = {n: set() for n in nodes}
+    for a, b in edges:
+        if int(a) in chosen and int(b) in chosen:
+            neighbours[int(a)].add(int(b))
+            neighbours[int(b)].add(int(a))
+    seen, stack = {nodes[0]}, [nodes[0]]
+    while stack:
+        for nxt in neighbours[stack.pop()] - seen:
+            seen.add(nxt)
+            stack.append(nxt)
+    if seen != chosen:
+        warnings.warn(f"The nodes {sorted(chosen - seen)} are not connected to node {nodes[0]} "
+                      "along the principal graph, so the branch has gaps. Check the nodes with "
+                      "pl.pl.principal_graph(adata).")
+
+    order = _sample_order(adata)
+    assigned = _sample_nodes(adata)
+    mask = np.isin(assigned, nodes)
+    samples = [str(s) for s, keep in zip(order, mask) if keep]
+    if len(samples) < 3:
+        counts = pd.Series(assigned).value_counts().sort_index()
+        raise ValueError(f"Only {len(samples)} samples belong to the nodes {nodes}; at least 3 "
+                         f"are needed. Samples per node: {counts.to_dict()}")
+    if len(samples) < min_samples:
+        warnings.warn(f"The branch has only {len(samples)} samples, so the cell type importance "
+                      "is not reliable.")
+    if name is None:
+        name = 'nodes_' + '_'.join(str(n) for n in nodes)
+    _drop_keys(adata, ['cell_importance', 'cellnames', 'orders'])
+    adata.uns['branch'] = {'name': str(name), 'nodes': nodes, 'samples': samples}
+    if verbose:
+        status = _sample_table(adata)['status'].values[mask]
+        counts = ', '.join(f"{k}: {v}" for k, v in pd.Series(status).value_counts().items())
+        print(f"Branch '{name}': {len(samples)} of {len(order)} samples ({counts}).")
+    return samples
+
+
 def umap_calculation(adata, n_neighbors=None, min_dist=0.5, random_state=0, recompute=True):
     """
     Compute a UMAP of the samples from the Wasserstein distances.
@@ -1005,6 +1131,10 @@ def cell_importance_calculation(adata, p_val=1, x_axis='order', save_report=True
     proportion along the trajectory is fitted, and the best model is kept.
     Nothing is plotted; use ``pl.pl.cell_importance_grid``,
     ``pl.pl.cell_importance_plot`` and ``pl.pl.heatmap_proportions``.
+
+    If a branch was selected with ``pl.tl.select_branch``, only the samples of
+    that branch are used, and the report is saved in a sub-folder named after
+    the branch.
 
     Parameters
     ----------
@@ -1047,6 +1177,13 @@ def cell_importance_calculation(adata, p_val=1, x_axis='order', save_report=True
     props.columns = cell_types
     props.index.name = 'sampleID'
     props['Time_score'] = pseudotime
+    branch = _branch(adata)
+    if branch is not None:
+        keep = set(str(s) for s in branch['samples'])
+        props = props[[str(s) in keep for s in props.index]]
+        if len(props) < 3:
+            raise ValueError("The selected branch has fewer than 3 samples. Choose other nodes "
+                             "with pl.tl.select_branch(adata, nodes=[...]).")
     props = props.sort_values('Time_score', ascending=True, kind='stable')
     if x_axis == 'order':
         props['Time_score'] = np.arange(1, len(props) + 1)
@@ -1057,19 +1194,23 @@ def cell_importance_calculation(adata, p_val=1, x_axis='order', save_report=True
     sorted_best = fit_best_model(RNA_target, RNA_data, model_type='LinearRegression',
                                  max_iter_huber=1, epsilon_huber=1, pval_thr=p_val,
                                  modify_r2=False)
+    folder = _branch_folder(adata)
     if save_report:
-        if not os.path.exists(path + '/Cell_type_Report'):
-            os.makedirs(path + '/Cell_type_Report')
+        report_dir = path + '/Cell_type_Report' + (f'/{folder}' if folder else '')
+        if not os.path.exists(report_dir):
+            os.makedirs(report_dir)
         save_data(sorted_best,
                   ['Cell name', 'Expression pattern', 'Slope', 'Fitted function',
                    'Intercept', 'Treat', 'Treat2', 'adjusted P-value', 'R-squared',
-                   'mod_rsquared_adj'], path + '/Cell_type_Report/', 'Cells_Importance',
+                   'mod_rsquared_adj'], report_dir + '/', 'Cells_Importance',
                   p_val=p_val, pro=None)
 
     adata.uns['cell_importance'] = {'sorted_best': sorted_best, 'target': RNA_target,
                                     'x': props['Time_score'].values.astype(float),
                                     'x_axis': x_axis, 'proportions_sorted': props,
-                                    'results_path': path}
+                                    'results_path': path,
+                                    'branch': None if branch is None else branch['name'],
+                                    'branch_folder': folder}
     adata.uns['cellnames'] = list(sorted_best.keys())
     adata.uns['orders'] = props[['sampleID', 'Time_score']]
 
@@ -1169,7 +1310,9 @@ def cell_importance(adata,
         heatmap_proportions(adata, figsize=figsize, col_cluster=col_cluster,
                             row_cluster=row_cluster, cmap=cmap_heatmap, show=show)
     if plot_cell:
-        suffix = 'Cell_types_importance.pdf' if save_as_pdf else 'Cell_types_importance.png'
+        folder = _branch_folder(adata)
+        suffix = 'Cell_types_importance' + (f'_{folder}' if folder else '') + \
+            ('.pdf' if save_as_pdf else '.png')
         cell_importance_grid(adata, ncols=ncols, width=width, height=height, xlim=xlim,
                              point_size=point_size, color_back=color_back,
                              fontsize=fontsize, title_fontsize=title_fontsize,

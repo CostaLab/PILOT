@@ -1,5 +1,14 @@
 # What's new
 
+## Version 2.1.1
+
+**Trajectory branches.** Split the trajectory and analyse each branch separately. See the [Trajectory branches tutorial](Trajectory_branches.md).
+
+- `pl.tl.select_branch(adata, nodes=[...], name=...)`: keep only the samples of the chosen nodes of the principal graph. All other samples are ignored by the next steps (cell type importance, heatmap of the proportions, cell type plots), whose results are saved in a folder per branch. `nodes=None` uses all samples again.
+- `pl.tl.sample_nodes(adata)`: the nearest graph node, status and pseudotime of every sample, to help choose the nodes.
+- `pl.pl.principal_graph` highlights the selected branch and accepts `ax=` to show branches side by side.
+- Without a selected branch, all results are exactly the same as in 2.1.0.
+
 ## Version 2.1.0
 
 **Distance settings.** You can now choose how PILOT measures the distance between samples (`pl.tl.wasserstein_distance`). The default settings are unchanged. See the [Distance settings tutorial](Distance_settings.md).

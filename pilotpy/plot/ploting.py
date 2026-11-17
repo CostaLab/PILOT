@@ -287,6 +287,42 @@ def _drop_keys(adata, keys):
             del adata.uns[key]
 
 
+def _sample_nodes(adata):
+    """Number of the nearest principal graph node of each sample (row order of the distances)."""
+    if 'principal_graph' not in adata.uns:
+        raise ValueError("No principal graph found. Run pl.tl.fit_principal_graph(adata) first.")
+    nodes = np.asarray(adata.uns['principal_graph']['NodePositions'], dtype=float)
+    emb = np.asarray(adata.uns['embedding'], dtype=float)[:, :nodes.shape[1]]
+    dist = ((emb[:, None, :] - nodes[None, :, :]) ** 2).sum(axis=2)
+    return dist.argmin(axis=1)
+
+
+def _branch(adata):
+    """The selected branch (dict with 'name', 'nodes', 'samples') or None."""
+    branch = adata.uns.get('branch', None)
+    return branch if isinstance(branch, dict) and len(branch.get('samples', [])) > 0 else None
+
+
+def _branch_mask(adata):
+    """True for the samples of the selected branch (all True if no branch is selected)."""
+    order = _sample_order(adata)
+    branch = _branch(adata)
+    if branch is None:
+        return np.ones(len(order), dtype=bool)
+    keep = set(str(s) for s in branch['samples'])
+    return np.array([str(s) in keep for s in order])
+
+
+def _branch_folder(adata):
+    """Sub-folder name for the results of the selected branch ('' if none)."""
+    import re
+    branch = _branch(adata)
+    if branch is None:
+        return ''
+    name = re.sub(r"[^\w\-.]+", "_", str(branch['name'])).strip("_")
+    return name if name.lower().startswith('branch') else 'branch_' + name
+
+
 def _resolve_n_neighbors(knn=None, n_neighbors=None):
     """``n_neighbors`` is the new name of ``knn``; both are accepted."""
     if knn is not None and n_neighbors is not None and int(knn) != int(n_neighbors):
@@ -344,7 +380,7 @@ def _compute_trajectory(adata, n_evecs=2, epsilon=1, alpha=0.5, knn=None,
     adata.uns['trajectory_params'] = params
     # Results that depend on the old embedding are no longer valid.
     _drop_keys(adata, ['principal_graph', 'principal_graph_params', 'pseudotime',
-                       'root_node'])
+                       'root_node', 'branch'])
     if had_graph and verbose:
         print("The trajectory changed. Run pl.pl.fit_pricipla_graph(adata, ...) again "
               "to update the pseudotime.")
@@ -406,7 +442,10 @@ def _fit_principal_graph(adata, NumNodes=20, random_state=0, recompute=False):
     graph = {'NodePositions': np.asarray(pg['NodePositions']), 'Edges': _graph_edges(pg)}
     adata.uns['principal_graph'] = graph
     adata.uns['principal_graph_params'] = params
-    _drop_keys(adata, ['pseudotime', 'root_node'])
+    if 'branch' in adata.uns:
+        print("The principal graph changed, so the node numbers may have changed. The selected "
+              "branch was removed; run pl.tl.select_branch(adata, nodes=[...]) again.")
+    _drop_keys(adata, ['pseudotime', 'root_node', 'branch'])
     return graph
 
 
@@ -1573,7 +1612,9 @@ def cell_importance_plot(
     save_as_pdf : bool, optional
         Save as PDF instead of PNG, by default False.
     save_path : str or None, optional
-        Output folder. If None, the PILOT results folder is used.
+        Output folder. If None, the PILOT results folder is used. If a branch
+        was selected (``pl.tl.select_branch``), the plots are saved in a
+        sub-folder named after the branch.
     figsize_single : tuple, optional
         Size (width, height) in inches of each plot, by default (6, 5).
     dpi : int, optional
@@ -1600,6 +1641,8 @@ def cell_importance_plot(
     if save_path is None:
         save_path = adata.uns['cell_importance'].get('results_path', 'Results_PILOT')
     out_dir = Path(save_path) / "Cell_types_importance"
+    if res.get('branch'):
+        out_dir = out_dir / res['branch_folder']
     out_dir.mkdir(parents=True, exist_ok=True)
     ext = "pdf" if save_as_pdf else "png"
     if xlabel is None:
@@ -1692,7 +1735,9 @@ def heatmap_proportions(adata, figsize=None, col_cluster=True, row_cluster=False
     Heatmap of the cell type proportions of the samples, ordered by pseudotime.
 
     Rows are samples (from the start to the end of the trajectory), columns
-    are cell types. Each column is scaled to the range 0 to 1.
+    are cell types. Each column is scaled to the range 0 to 1. If a branch was
+    selected with ``pl.tl.select_branch``, only the samples of that branch are
+    shown and the branch name is added to the title.
 
     Parameters
     ----------
@@ -1724,8 +1769,12 @@ def heatmap_proportions(adata, figsize=None, col_cluster=True, row_cluster=False
     props.columns = cell_types
     props.index.name = 'sampleID'
     props = props.loc[order]
-    sorted_samples = pd.Series(np.asarray(adata.uns['pseudotime'], dtype=float),
-                               index=order).sort_values(kind='stable').index
+    times = pd.Series(np.asarray(adata.uns['pseudotime'], dtype=float), index=order)
+    branch = _branch(adata)
+    if branch is not None:
+        times = times[_branch_mask(adata)]
+        title = f"{title} ({branch['name']})"
+    sorted_samples = times.sort_values(kind='stable').index
     df = props.loc[sorted_samples]
     df = (df - df.min()) / (df.max() - df.min())
     save_path = None if save_format is None else Path('Results_PILOT/plots') / f"{title}.{save_format}"
@@ -1823,13 +1872,18 @@ def principal_graph(adata,
                     show_legend=True,
                     plot_path='Results_PILOT/plots',
                     save_format='pdf',
-                    show=True):
+                    show=True,
+                    highlight_branch=True,
+                    branch_color='#ff7f00',
+                    ax=None):
     """
     Plot the principal graph on top of the trajectory.
 
     The samples are colored like in the trajectory plot, and the nodes are
-    numbered, which helps to choose ``source_node``. The root node, if
-    already chosen, is shown in red.
+    numbered, which helps to choose ``source_node`` and the nodes of a branch
+    (``pl.tl.select_branch``). The root node, if already chosen, is shown in
+    red. If a branch is selected, its nodes and edges are highlighted and the
+    other samples are faded.
 
     Parameters
     ----------
@@ -1876,6 +1930,14 @@ def principal_graph(adata,
         File format, by default 'pdf'. Use None to not save.
     show : bool, optional
         Whether to show the plot, by default True.
+    highlight_branch : bool, optional
+        Whether to highlight the branch selected with ``pl.tl.select_branch``,
+        by default True.
+    branch_color : str, optional
+        Color of the nodes and edges of the selected branch, by default orange.
+    ax : matplotlib Axes, optional
+        Draw into this subplot instead of a new figure (e.g. to show two
+        branches side by side). The plot is then not saved or shown.
     """
     if 'principal_graph' not in adata.uns:
         raise ValueError("No principal graph found. Run pl.tl.fit_principal_graph(adata) first.")
@@ -1885,6 +1947,10 @@ def principal_graph(adata,
     edges = np.asarray(graph['Edges'])
     emb = np.asarray(adata.uns['embedding'])
     font_size = DEFAULT_FONTSIZE if font_size is None else font_size
+    branch = _branch(adata) if highlight_branch else None
+    if branch is not None and title == 'Principal graph':
+        title = f"Principal graph - {branch['name']}"
+    own_figure = ax is None
     if show_samples:
         fig, ax = _scatter_samples(adata, emb[:, [d0, d1]], clusters=clusters, colors=colors,
                                    legend_order=legend_order, legend_loc=legend_loc,
@@ -1892,11 +1958,30 @@ def principal_graph(adata,
                                    point_size=point_size, alpha=0.8, figsize=figsize,
                                    font_size=font_size, title=title,
                                    xlabel=f'Diffusion component {d0 + 1}',
-                                   ylabel=f'Diffusion component {d1 + 1}', facecolor=facecolor)
+                                   ylabel=f'Diffusion component {d1 + 1}', facecolor=facecolor,
+                                   ax=ax)
     else:
-        fig, ax = plt.subplots(figsize=DEFAULT_FIGSIZE if figsize is None else figsize)
+        if ax is None:
+            fig, ax = plt.subplots(figsize=DEFAULT_FIGSIZE if figsize is None else figsize)
+        else:
+            fig = ax.figure
         ax.set_facecolor(facecolor)
         ax.set_title(title, fontsize=font_size + 2)
+    if branch is not None:
+        branch_nodes = set(int(n) for n in branch['nodes'])
+        if show_samples:
+            # Fade the samples that are not part of the branch.
+            outside = ~_branch_mask(adata)
+            size = _auto_point_size(len(emb)) if point_size is None else point_size
+            ax.scatter(emb[outside, d0], emb[outside, d1], color=facecolor, alpha=0.75,
+                       s=size * 1.4, zorder=2.5, edgecolors='none')
+        for a, b in edges:
+            if int(a) in branch_nodes and int(b) in branch_nodes:
+                ax.plot(nodes[[a, b], d0], nodes[[a, b], d1], color=branch_color, lw=6,
+                        zorder=2.8, alpha=0.8, solid_capstyle='round')
+        idx = sorted(branch_nodes)
+        ax.scatter(nodes[idx, d0], nodes[idx, d1], color=branch_color, s=node_size * 3,
+                   zorder=3.5, edgecolors='none')
     for a, b in edges:
         ax.plot(nodes[[a, b], d0], nodes[[a, b], d1], color=edge_color, lw=1.5, zorder=3)
     ax.scatter(nodes[:, d0], nodes[:, d1], color=node_color, s=node_size, zorder=4)
@@ -1908,6 +1993,8 @@ def principal_graph(adata,
         for i, (x, y) in enumerate(nodes[:, [d0, d1]]):
             ax.annotate(str(i), (x, y), fontsize=max(font_size - 3, 6), zorder=6,
                         xytext=(4, 4), textcoords='offset points')
+    if not own_figure:
+        return ax
     save_path = None if save_format is None else Path(plot_path) / f"{title}.{save_format}"
     _save_and_show(fig, save_path, show)
 

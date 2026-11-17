@@ -43,6 +43,8 @@ import pilotpy
    tl.umap_calculation
    tl.fit_principal_graph
    tl.compute_pseudotime
+   tl.sample_nodes
+   tl.select_branch
    tl.cell_importance
    tl.cell_importance_calculation
    tl.genes_importance

@@ -103,6 +103,7 @@ whats_new
 
 Myocardial infarction <Myocardial_infarction>
 Distance settings <Distance_settings>
+Trajectory branches <Trajectory_branches>
 Kidney IgAN (pathomics) <Combination_Kidney_IgAN>
 Patient sub-groups (pancreas) <Patients_sub_group_detection>
 Batch effects: trajectory <Kidney_trajectory>
