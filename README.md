@@ -12,7 +12,7 @@ Although clinical applications represent the next challenge in single-cell genom
 > - **Faster gene analysis (new):** `genes_importance` saves small sparse files instead of large CSV files; old results still work.
 > - **MuData (new):** export and import the results with one row per patient. 👉 [Tutorial](https://pilot.readthedocs.io/en/latest/MuData.html)
 > - **From raw data (new tutorial):** QC, PCA, Harmony and Leiden, then PILOT, on COVID-19 data. 👉 [Tutorial](https://pilot.readthedocs.io/en/latest/COVID_from_scratch.html)
-> - **Trajectory branches (2.1.1)** 👉 [Tutorial](https://pilot.readthedocs.io/en/latest/Trajectory_branches.html) · **Distance settings (2.1.0)** 👉 [Tutorial](https://pilot.readthedocs.io/en/latest/Distance_settings.html)
+> - **Trajectory branches (2.1.1, MI and lung cancer atlas)** 👉 [Tutorial](https://pilot.readthedocs.io/en/latest/Trajectory_branches.html) · **Distance settings (2.1.0)** 👉 [Tutorial](https://pilot.readthedocs.io/en/latest/Distance_settings.html)
 >
 > Default results are unchanged.
 
@@ -37,7 +37,7 @@ cd PILOT/Tutorial
 - [Patient sub-group detection and ranking of cells/genes (Pancreas data)](https://pilot.readthedocs.io/en/latest/Patients_sub_group_detection.html)
 - [Batch effects in the trajectory](https://pilot.readthedocs.io/en/latest/Kidney_trajectory.html) and [in the patient sub-groups](https://pilot.readthedocs.io/en/latest/Kidney_clusters.html)
 - [Settings of the Wasserstein distance](https://pilot.readthedocs.io/en/latest/Distance_settings.html)
-- [Splitting the trajectory into branches](https://pilot.readthedocs.io/en/latest/Trajectory_branches.html)
+- [Splitting the trajectory into branches (Myocardial Infarction and lung cancer atlas)](https://pilot.readthedocs.io/en/latest/Trajectory_branches.html)
 - [Export and import with MuData](https://pilot.readthedocs.io/en/latest/MuData.html)
 
 You can access the used data sets by PILOT in Part 1 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4740646.svg)](https://zenodo.org/records/8370081) and  Part 2 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4740646.svg)](https://zenodo.org/records/7957118)

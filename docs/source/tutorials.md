@@ -38,7 +38,7 @@ How the metric, the cost between cell types and the transport method change the 
 :link: Trajectory_branches
 :link-type: doc
 
-Split the trajectory by choosing nodes of the principal graph, and find the cell types that change in each branch.
+Split the trajectory by choosing nodes of the principal graph, and find the cell types that change in each branch. Examples: Myocardial Infarction, and a lung cancer atlas with two branches (normal to COPD, normal to cancer) and the clinical variables of each branch.
 
 **✨ New in 2.1.1**
 :::
