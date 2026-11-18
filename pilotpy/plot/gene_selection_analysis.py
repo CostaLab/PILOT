@@ -9,6 +9,7 @@ Created on Thu Apr 18 17:29:07 2024
 import os
 import numpy as np
 import pandas as pd
+from .._cells_io import load_cell_table as _load_cells
 import seaborn as sns
 import matplotlib.pyplot as plt
 
@@ -121,7 +122,10 @@ def get_noised_curves(adata: ad.AnnData = None,
     """
 
     # Get cells of one cell_type 
-    cells = pd.read_csv(path_to_results + "/cells/" + str(cell_type) + ".csv", index_col = 0)
+    cells = _load_cells(path_to_results + "/cells/", str(cell_type))
+    if cells is None:
+        raise FileNotFoundError(f"No table of '{cell_type}' in {path_to_results}/cells. "
+                                "Run pl.tl.genes_importance for this cell type first.")
 
     # Get the pseudotime points
     pseudotime_sample_names = cells[['sampleID', 'Time_score']].groupby('Time_score').first()
@@ -350,7 +354,7 @@ def plot_each_cluster_activities(curves: pd.DataFrame = None,
     plt.show()
     
 def adjust_p_values(p_values):
-    p = np.asfarray(p_values)
+    p = np.asarray(p_values, dtype=float)
     by_descend = p.argsort()[::-1]
     by_orig = by_descend.argsort()
     steps = float(len(p)) / np.arange(len(p), 0, -1)
@@ -669,8 +673,8 @@ def  plot_top_genes_patterns(rank_genes: pd.DataFrame,
                            ascending=[True, False], inplace = True, key = abs)
     rank_genes['rank'] = rank_genes.groupby('cluster').cumcount(ascending=True)
     
-    cells = pd.read_csv(path_to_results + "/cells/" + str(cell_type) + ".csv",
-                        usecols = np.concatenate((np.array([sample_col, time_col]), rank_genes.index.values)))
+    cells = _load_cells(path_to_results + "/cells/", str(cell_type),
+                            columns = np.concatenate((np.array([sample_col, time_col]), rank_genes.index.values)))
     
     scaler = StandardScaler()
     scaled_cells = pd.DataFrame(scaler.fit_transform(cells.iloc[:, 2:]))
@@ -764,8 +768,8 @@ def plot_gene_list_pattern(gene_list: list,
         return "The gene list is not unique!"
     
     try:
-        cells = pd.read_csv(path_to_results + "/cells/" + str(cell_type) + ".csv",
-                                usecols = np.concatenate((np.array([sample_col, time_col]), gene_list)))
+        cells = _load_cells(path_to_results + "/cells/", str(cell_type),
+                                columns = np.concatenate((np.array([sample_col, time_col]), gene_list)))
     except ValueError:
         return "Some of the genes are not exists in cell type " + str(cell_type) + "!"
         

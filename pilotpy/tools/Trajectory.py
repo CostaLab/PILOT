@@ -119,7 +119,8 @@ def wasserstein_distance(adata,
                          n_neighbors_cost=15,
                          max_cells=500,
                          reg_m=1.0,
-                         random_state=0):
+                         random_state=0,
+                         modality=None):
     """
     Calculate the Wasserstein (W) distance among samples.
 
@@ -261,6 +262,11 @@ def wasserstein_distance(adata,
         be matched, by default 1.0. Larger values are closer to 'unreg'.
     random_state : int, optional
         Random seed for 'distribution', by default 0.
+    modality : str, optional
+        Only if ``adata`` is a MuData object: the modality with the cells
+        (e.g. 'rna'). If None, chosen automatically. The results are stored
+        in that modality; continue with ``adata = mdata['rna']`` (or
+        ``pl.tl.from_mudata``).
 
     Returns
     -------
@@ -270,6 +276,10 @@ def wasserstein_distance(adata,
         'data', 'real_labels', 'sample_metadata' and 'wasserstein_params'
         (all settings and the run time in seconds).
     """
+    if hasattr(adata, 'mod'):
+        # MuData input: work on the modality with the cells.
+        from .mudata_io import get_modality
+        adata = get_modality(adata, modality)
     if not callable(metric) and metric not in COST_METRICS:
         raise ValueError(f"Unknown metric '{metric}'. Use one of {list(COST_METRICS)}.")
     if cost_method not in COST_METHODS:
@@ -1322,62 +1332,79 @@ def cell_importance(adata,
                              save_path=os.path.join(path_to_results, suffix), show=show)
 
 
-def extract_cells_from_gene_expression(adata,sample_col,col_cell,cell_list=[],normalize=True):
+def extract_cells_from_gene_expression(adata, sample_col, col_cell, cell_list=[], normalize=True,
+                                       cells_format='h5ad', path_to_results='Results_PILOT'):
     """
-    Extract gene expression data for specific cells and associate them with pseudotime.
+    Extract the gene expression of the cells of some cell types, with the
+    pseudotime of their sample.
+
+    For each cell type a table (cells x genes, plus 'sampleID' and
+    'Time_score') is saved in '<path_to_results>/cells'. Since version 2.1.2
+    it is saved as a sparse '.h5ad' file, which is much faster and smaller
+    than the CSV file of older versions. All PILOT functions read both
+    formats, so old results keep working.
 
     Parameters
     ----------
     adata : AnnData
-        Annotated data matrix containing gene expression data.
+        Annotated data matrix after ``pl.tl.cell_importance``.
     sample_col : str
-        Name of the column representing sample IDs in annotation data.
+        Column of ``adata.obs`` with the sample IDs.
     col_cell : str
-        Name of the column representing cell types in annotation data.
+        Column of ``adata.obs`` with the cell types.
     cell_list : list, optional
-        List of cell types to extract, by default an empty list (extract all cell types).
+        Cell types to extract. Empty (default): all cell types of
+        ``adata.uns['cellnames']``.
     normalize : bool, optional
-        Whether to normalize and log-transform the gene expression data, by default True.
+        Normalize (total counts 1e4) and log-transform the expression, by
+        default True.
+    cells_format : {'h5ad', 'csv'}, optional
+        File format: 'h5ad' (default, sparse) or 'csv' (as in PILOT <= 2.1.1).
+    path_to_results : str, optional
+        Results folder, by default 'Results_PILOT'.
 
     Returns
     -------
-    None
-        Extracts and saves gene expression data for specified cells associated with pseudotime.
+    DataFrame or dict
+        The table (columns 'sampleID', 'Time_score' and the genes) of the
+        cell type if one cell type is extracted, otherwise a dict
+        {cell type: table}.
     """
-
-    
-    path_results='Results_PILOT'
-    orders=adata.uns['orders']
-
-    if len(cell_list)==0:
-        cell_types=adata.uns['cellnames']
-    else:
-        cell_types=cell_list
-
-
+    from .._cells_io import save_cell_table, cells_path
+    import scipy.sparse as sp
+    orders = adata.uns['orders']
+    cell_types = adata.uns['cellnames'] if len(cell_list) == 0 else cell_list
+    times = pd.Series(orders['Time_score'].values, index=orders['sampleID'].astype(str).values)
+    sample_rank = pd.Series(np.arange(len(orders)), index=orders['sampleID'].astype(str).values)
+    out_dir = cells_path(path_to_results)
+    tables = {}
     for cell in cell_types:
-
-        adata_new = adata[adata.obs[col_cell].isin([cell]),:]
+        adata_new = adata[adata.obs[col_cell].isin([cell]), :].copy()
         if normalize:
             sc.pp.normalize_total(adata_new, target_sum=1e4)
             sc.pp.log1p(adata_new)
-        df=adata_new[:,adata_new.var_names].X
-        df=pd.DataFrame(df.toarray())
-        df.columns=adata_new.var_names
-        df['sampleID']=list(adata_new.obs[sample_col])
-        joint=orders.merge(df,on='sampleID')
-        if not os.path.exists(path_results+'/cells/'):
-            os.makedirs(path_results+'/cells/') 
-        joint.to_csv(path_results+'/cells/'+cell+'.csv')
-
-        return joint
-
-
-
+        samples = adata_new.obs[sample_col].astype(str).values
+        # Same rows and row order as before: the cells of the samples in
+        # 'orders', grouped in the order of 'orders'.
+        keep = np.flatnonzero(pd.Series(samples).isin(sample_rank.index).values)
+        rank = sample_rank.reindex(samples[keep]).values
+        keep = keep[np.argsort(rank, kind='stable')]
+        X = adata_new.X[keep]
+        X = X.tocsr() if sp.issparse(X) else np.asarray(X)
+        save_cell_table(out_dir, cell, X, adata_new.var_names, samples[keep],
+                        times.reindex(samples[keep]).values, cells_format=cells_format)
+        dense = X.toarray() if sp.issparse(X) else X
+        joint = pd.DataFrame(np.asarray(dense, dtype=float), columns=list(adata_new.var_names))
+        joint.insert(0, 'Time_score', times.reindex(samples[keep]).values)
+        joint.insert(0, 'sampleID', orders['sampleID'].values[np.sort(rank)] if len(keep) else [])
+        tables[cell] = joint
+    if len(tables) == 1:
+        return next(iter(tables.values()))
+    return tables
 
 
             
-def genes_importance(adata,name_cell,col='Time_score',genes_index=[],p_value=0.05,max_iter_huber=100,epsilon_huber=1.35,x_lim=4,width=20,height=30,store_data=True,genes_interesting=[],modify_r2 = False,model_type = 'HuberRegressor',fontsize=8,alpha=0.5,cmap='viridis',color_back=None,save_as_pdf=False,plot_genes=True,colnames=[],sample_col='sampleID',col_cell='cell_types',normalize=True):
+def genes_importance(adata,name_cell,col='Time_score',genes_index=[],p_value=0.05,max_iter_huber=100,epsilon_huber=1.35,x_lim=4,width=20,height=30,store_data=True,genes_interesting=[],modify_r2 = False,model_type = 'HuberRegressor',fontsize=8,alpha=0.5,cmap='viridis',color_back=None,save_as_pdf=False,plot_genes=True,colnames=[],sample_col='sampleID',col_cell='cell_types',normalize=True,cells_format='h5ad'):
     
     """
     Order genes based on estimated time and visualize gene importance.
@@ -1432,6 +1459,12 @@ def genes_importance(adata,name_cell,col='Time_score',genes_index=[],p_value=0.0
         Name of the cell type column, by default 'cell_types'.
     normalize: bool, optional
         Whether to normalize gene exp, by default True.
+    cells_format : {'h5ad', 'csv'}, optional
+        Format of the expression table of the cell type, saved once in
+        'Results_PILOT/cells' and reused by the next calls and functions:
+        'h5ad' (default, sparse, fast) or 'csv' (as in PILOT <= 2.1.1). An
+        existing table of either format is reused, so results of older
+        versions do not need to be computed again.
 
     Returns
     -------
@@ -1440,13 +1473,13 @@ def genes_importance(adata,name_cell,col='Time_score',genes_index=[],p_value=0.0
     """
 
     
+    from .._cells_io import load_cell_table, cells_path
     path='Results_PILOT'
-    if not os.path.exists(path+'/cells/'+name_cell+'.csv'):
-        data=extract_cells_from_gene_expression(adata,sample_col=sample_col,col_cell=col_cell,cell_list=[name_cell],normalize=normalize)
-    
-    elif os.path.exists(path+'/cells/'+name_cell+'.csv'):
-        
-        data =loadTarget(path+'/cells/', name_cell)
+    # The table of the cell type is made once and then read from
+    # 'Results_PILOT/cells' (sparse .h5ad, or .csv made by PILOT <= 2.1.1).
+    data = load_cell_table(cells_path(path), name_cell)
+    if data is None:
+        data=extract_cells_from_gene_expression(adata,sample_col=sample_col,col_cell=col_cell,cell_list=[name_cell],normalize=normalize,cells_format=cells_format)
         
         
     if len(colnames)!=0:  #for pathmics data

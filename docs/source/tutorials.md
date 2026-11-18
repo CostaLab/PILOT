@@ -16,6 +16,15 @@ The full PILOT workflow: Wasserstein distances, trajectory, patient UMAP, clinic
 **👉 Start here**
 :::
 
+:::{grid-item-card} 🦠 COVID-19 from raw data
+:link: COVID_from_scratch
+:link-type: doc
+
+Start from the raw counts: quality control, normalization, PCA, Harmony and Leiden, then PILOT and the clinical variables of the patients.
+
+**✨ New in 2.1.2**
+:::
+
 :::{grid-item-card} ⚙️ Distance settings
 :link: Distance_settings
 :link-type: doc
@@ -64,13 +73,32 @@ Find sub-groups of patients by clustering their distances, then rank the cell ty
 :link: Kidney_trajectory
 :link-type: doc
 
-Test whether the trajectory is related to a technical or clinical variable (kidney scRNA-seq).
+Test all technical and clinical variables against the trajectory at once; the variables and their types are found automatically (kidney scRNA-seq).
+
+**✨ Updated in 2.1.2**
 :::
 
 :::{grid-item-card} 🧩 Batch effects in sub-groups
 :link: Kidney_clusters
 :link-type: doc
 
-Test whether the patient sub-groups are related to a technical or clinical variable (kidney scRNA-seq).
+Name the sub-groups after their samples (e.g. control_1, control_2) and test all variables against them at once (kidney scRNA-seq).
+
+**✨ Updated in 2.1.2**
+:::
+::::
+
+## Saving and sharing results
+
+::::{grid} 1 2 2 2
+:gutter: 3
+
+:::{grid-item-card} 📦 Export and import with MuData
+:link: MuData
+:link-type: doc
+
+Save the PILOT results with one row per patient (MuData), load them again, or start from a MuData object.
+
+**✨ New in 2.1.2**
 :::
 ::::

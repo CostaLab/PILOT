@@ -102,12 +102,14 @@ whats_new
 :caption: Tutorials
 
 Myocardial infarction <Myocardial_infarction>
+COVID-19 from raw data <COVID_from_scratch>
 Distance settings <Distance_settings>
 Trajectory branches <Trajectory_branches>
 Kidney IgAN (pathomics) <Combination_Kidney_IgAN>
 Patient sub-groups (pancreas) <Patients_sub_group_detection>
 Batch effects: trajectory <Kidney_trajectory>
 Batch effects: sub-groups <Kidney_clusters>
+Export / import (MuData) <MuData>
 ```
 
 ```{toctree}

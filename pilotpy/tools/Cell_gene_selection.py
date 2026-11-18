@@ -42,7 +42,7 @@ def compute_metrics(y_test, y_pred):
             - Pearson Correlation Coefficient
     """
     r2 = r2_score(y_test, y_pred)
-    rmse = mean_squared_error(y_test, y_pred, squared=False)
+    rmse = np.sqrt(mean_squared_error(y_test, y_pred))
     mae = mean_absolute_error(y_test, y_pred)
     cor = stats.pearsonr(y_test, y_pred)[0]
     return (r2, rmse, mae, cor)
@@ -65,6 +65,12 @@ def loadTarget(path, name):
     """
 
     
+    from .._cells_io import cell_table_file, load_cell_table
+    stored = cell_table_file(path, name)
+    if stored is not None and stored.endswith('.h5ad'):
+        # Table of a cell type saved by PILOT >= 2.1.2 (sparse .h5ad).
+        info("loading " + stored)
+        return load_cell_table(path, name)
     for format in [".csv"]:
         p = os.path.join(path, name + format)
         if isfile(p):

@@ -48,6 +48,7 @@ def get_gene_dict(gene_list: list = None,
     Dictionary of genes map to clusters
 
     """
+    path_to_results = str(path_to_results)  # also accept a pathlib.Path
     gene_dict = defaultdict(list)
     for gene in gene_list:
         for c in cluster_names:
@@ -82,6 +83,15 @@ def load_data(path: str = None,
     Desired data read as Dataframe
 
     """
+    from .._cells_io import cell_table_file, load_cell_table
+    stored = cell_table_file(path, name)
+    if stored is not None and stored.endswith('.h5ad'):
+        # Table of a cell type saved by PILOT >= 2.1.2 (sparse .h5ad, kept in memory).
+        try:
+            return load_cell_table(path, name, columns=col_names)
+        except Exception:
+            warn("loading " + stored + " failed")
+            return None
     for format in [".csv"]:
         p = os.path.join(path, name + format)
         if isfile(p):
@@ -345,7 +355,7 @@ def _fit_model_(func_type: str = None,
     predictions = model.predict(X)
     results['rsquared_adj'] = 1 - (1 - model.score(X, y)) * (len(y) - 1) / \
                                     (len(y) - X.shape[1] - 1)
-    results['rmse'] = mean_squared_error(y, predictions, squared=False)
+    results['rmse'] = np.sqrt(mean_squared_error(y, predictions))
 
     new_X = np.append(np.ones((len(X),1)), X, axis=1)
     M_S_E = (sum((y-predictions)**2)) / (len(new_X)-len(new_X[0]))
@@ -451,9 +461,9 @@ def _fit_best_model_(target: pd.DataFrame = None,
                 all_results.append(best_results)
                 best_r2.update({index: [best_func, best_results, exp_pattern, slope, pval]})
                 
-        except BaseException:
+        except Exception as err:
             
-            print(index)
+            print(f"{index}: the model could not be fitted ({err})")
         
     sorted_best = {k: v for k, v in sorted(best_r2.items(),
                                            key = lambda item: item[1][1]['rsquared_adj'], reverse=True)}
@@ -602,6 +612,7 @@ def extend_stats(all_stats: pd.DataFrame = None,
     for each gene with specific clsuter.
 
     """
+    path_to_results = str(path_to_results)  # also accept a pathlib.Path
     all_stats_extend = pd.DataFrame(columns = ['gene', 'cluster', 'waldStat', 'df', 'pvalue', 'FC', 
                                            'Expression pattern', 'fit-pvalue', 'fit-rsquared', 'fit-mod-rsquared'])
     
@@ -766,6 +777,7 @@ def get_two_tables(gene_name: str = None,
         Fitted model for other clusters.
 
     """
+    path_to_results = str(path_to_results)  # also accept a pathlib.Path
     
     WT_adata = load_data(path_to_results + '/cells/', str(cluster_n), [gene_name, 'Time_score'])
     WT_adata = WT_adata.sort_values('Time_score', ignore_index=True)

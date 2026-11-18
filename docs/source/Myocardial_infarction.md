@@ -208,6 +208,8 @@ After running the command, you can find a folder named ‘Markers’ inside the 
 - You need to set names of columns that show cell_types/clusters and Samples/Patients in your object.
 
 - Note that if you are running this step on a personal computer, this step might take time.
+
+- The expression of each cell type is saved once in 'Results_PILOT/cells' (small sparse '.h5ad' files since version 2.1.2; '.csv' files of older versions are still read) and reused by the next functions, so they do not need to extract it again.
 </div>
 
 

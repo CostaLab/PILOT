@@ -71,7 +71,7 @@ The other parameters only change the look of the plot (colors, legend, point siz
 pl.pl.trajectory(adata)
 ```
 
-![png](Kidney_trajectory_files/v2_0_20_cell08_1.png)
+![png](Kidney_trajectory_files/cell08_1.png)
 
 ##### UMAP of the samples:
 <div class="alert alert-block alert-info">
@@ -85,7 +85,11 @@ PILOT can also show the samples in a UMAP computed from the Wasserstein distance
 pl.pl.umap_samples(adata)
 ```
 
-![png](Kidney_trajectory_files/v2_0_20_cell10_1.png)
+```
+<Axes: title={'center': 'UMAP of samples'}, xlabel='UMAP 1', ylabel='UMAP 2'>
+```
+
+![png](Kidney_trajectory_files/cell10_1.png)
 
 #####  Fit a principal graph:
 <div class="alert alert-block alert-info">
@@ -100,7 +104,11 @@ The diffusion map creates an embedding that potentially reveals a trajectory in 
 pl.pl.fit_pricipla_graph(adata, source_node = 'auto', root_status = 'normal')
 ```
 
-![png](Kidney_trajectory_files/v2_0_20_cell12_1.png)
+```
+Root of the trajectory: node 2 (end node where the control samples come first).
+```
+
+![png](Kidney_trajectory_files/cell12_1.png)
 
 ##### Clinical and technical variables on the trajectory:
 <div class="alert alert-block alert-info">
@@ -115,13 +123,13 @@ The trajectory and the principal graph are computed from the status. To see how 
 pl.pl.trajectory_variable(adata, variable = 'sex')
 ```
 
-![png](Kidney_trajectory_files/v2_0_20_cell14_1.png)
+![png](Kidney_trajectory_files/cell14_1.png)
 
 ```python
 pl.pl.trajectory_variable(adata, variable = 'degen.score')
 ```
 
-![png](Kidney_trajectory_files/v2_0_20_cell15_1.png)
+![png](Kidney_trajectory_files/cell15_1.png)
 
 The same variables can be shown on the UMAP of the samples:
 
@@ -129,13 +137,13 @@ The same variables can be shown on the UMAP of the samples:
 pl.pl.umap_variable(adata, variable = 'sex')
 ```
 
-![png](Kidney_trajectory_files/v2_0_20_cell17_1.png)
+![png](Kidney_trajectory_files/cell17_1.png)
 
 ```python
 pl.pl.umap_variable(adata, variable = 'degen.score')
 ```
 
-![png](Kidney_trajectory_files/v2_0_20_cell18_1.png)
+![png](Kidney_trajectory_files/cell18_1.png)
 
 #####  Cell-type importance:
 <div class="alert alert-block alert-info">
@@ -159,7 +167,7 @@ The heatmap shows the cell type proportions (columns) of each sample (rows). The
 pl.pl.heatmap_proportions(adata)
 ```
 
-![png](Kidney_trajectory_files/v2_0_20_cell22_1.png)
+![png](Kidney_trajectory_files/cell22_1.png)
 
 Each panel shows one cell type: its proportion in each sample (points) along the trajectory and the fitted curve. The panels are sorted by p-value; cell types with an adjusted p-value below 0.05 have a bold title. `pl.pl.cell_importance_plot(adata)` saves the same plots as one file per cell type (in 'Results_PILOT/Cell_types_importance'), and `pl.tl.cell_importance(adata)` runs these three steps in one call.
 
@@ -167,140 +175,772 @@ Each panel shows one cell type: its proportion in each sample (points) along the
 pl.pl.cell_importance_grid(adata)
 ```
 
-![png](Kidney_trajectory_files/v2_0_20_cell24_1.png)
+![png](Kidney_trajectory_files/cell24_1.png)
 
 ##### Evaluation of the association of estimated disease progression with experimental factor:
-A very important question is if PILOT analysis is affected by experimental artefacts (location of tissues, batch processing). To evaluate this, we use ANOVA statistics and Spearman correlation to check any association between any variables describing the disease cohort and the predicted variables. 
+A very important question is if PILOT analysis is affected by experimental artefacts (location of tissues, batch processing). To evaluate this, PILOT tests the association between every variable describing the samples and the position of the samples on the trajectory.
+<div class="alert alert-block alert-info">
+`pl.tl.correlation_with_trajectory` does this automatically for **all** columns of `adata.obs`; you do not need to list the variables or say if they are categorical or numeric:
 
-To run these functions, provide the sample_col as the Sample/Patientcolumns and your variables of interest. Of note, these functions only show the significant variables (p-value < 0.05).
+- Variables with one value per sample (e.g. sex, BMI, disease) are used directly. If only a few samples have more than one value (e.g. the tissue, when some donors have biopsies from two regions), the most frequent value of each sample is used.
+- Numeric values given per cell (e.g. the degeneration score or the number of genes per cell) are averaged per sample (`agg = 'mean'`).
+- The type is detected: numbers with at least 6 different values are numeric, everything else is categorical. Values such as 'unknown' or 'NA' are treated as missing.
+- Columns that cannot be used are skipped, and the reason is reported: only one value, a different value for every sample (IDs), more than 50% missing values, a different value in most cells of a sample (e.g. the cell type), or the same information as another column (e.g. 'sex' and 'sex_ontology_term_id').
+- Categorical variables are tested with ANOVA (and Kruskal-Wallis), numeric variables with a Spearman correlation. 'Adjusted_P_value' is corrected for multiple testing (Benjamini-Hochberg).
 
-
-```python
-numeric = ['degen.score','aStr.score','aEpi.score','matrisome.score','collagen.score','glycoprotein.score','proteoglycan.score']
-```
-
-
-```python
-categorical = ['BMI','hypertension','development_stage','sex','eGFR','diabetes_history','disease','tissue']
-```
-
-##### Categorical variables 
-
-
-```python
-pl.tl.correlation_categorical_with_trajectory(adata, sample_col = 'donor_id', features = categorical)
-```
-
-
-
-
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>Feature</th>
-      <th>ANOVA_FStatistic</th>
-      <th>ANOVA_PValue</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>7</th>
-      <td>tissue</td>
-      <td>9.772883</td>
-      <td>0.000022</td>
-    </tr>
-    <tr>
-      <th>5</th>
-      <td>diabetes_history</td>
-      <td>3.429356</td>
-      <td>0.038475</td>
-    </tr>
-  </tbody>
-</table>
+The result is one table with all variables, sorted by p-value. Use `features = [...]` to test only some columns.
 </div>
 
-
-
-
 ```python
-
+res = pl.tl.correlation_with_trajectory(adata, sample_col = 'donor_id')
+res
 ```
 
-#####  Numerical variables : 
-
-
-Similarly, you can do the same analysis for numerical variables. 
-
-
-```python
-pl.tl.correlation_numeric_with_trajectory(adata, sample_col = 'donor_id', features = numeric)
+```
+Tested 29 variables (13 categorical, 16 numeric); skipped 28 columns.
+  skipped (differs between the cells of a sample (cell-level)): subclass.full, subclass.l3, subclass.l2, subclass.l1, state.l2, state, class, structure, ...
+  skipped (only one value): assay, organism, organism_ontology_term_id, assay_ontology_term_id
+  skipped (same groups as 'development_stage'): development_stage_ontology_term_id
+  skipped (same groups as 'disease'): condition.l1, disease_ontology_term_id
+  skipped (same groups as 'percent.cortex'): percent.medulla
+  skipped (same groups as 'self_reported_ethnicity'): self_reported_ethnicity_ontology_term_id
+  skipped (same groups as 'sex'): sex_ontology_term_id
+  skipped (same groups as 'suspension_type'): id
+  skipped (same groups as 'tissue'): tissue_ontology_term_id
+  skipped (too many different values (67 for 67 samples, e.g. an ID)): library, experiment, specimen
+  skipped (too many missing values (35 of 67)): region.l1, region.l2
+  skipped (too many missing values (37 of 67)): BMI
 ```
 
-
-
-
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
       <th></th>
       <th>Feature</th>
-      <th>Spearman_Correlation</th>
-      <th>Spearman_PValue</th>
+      <th>Type</th>
+      <th>Level</th>
+      <th>Test</th>
+      <th>Statistic</th>
+      <th>P_value</th>
+      <th>Adjusted_P_value</th>
+      <th>Kruskal_P_value</th>
+      <th>N_samples</th>
+      <th>N_groups</th>
+      <th>Note</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
+      <td>percent.cortex</td>
+      <td>numeric</td>
+      <td>cell (mean)</td>
+      <td>Spearman</td>
+      <td>0.759392</td>
+      <td>7.897742e-08</td>
+      <td>0.000002</td>
+      <td>NaN</td>
+      <td>36</td>
+      <td>14</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>tissue</td>
+      <td>categorical</td>
+      <td>sample (most frequent)</td>
+      <td>ANOVA</td>
+      <td>8.945451</td>
+      <td>5.067254e-05</td>
+      <td>0.000554</td>
+      <td>0.000194</td>
+      <td>67</td>
+      <td>4</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>glycoprotein.score</td>
+      <td>numeric</td>
+      <td>cell (mean)</td>
+      <td>Spearman</td>
+      <td>-0.471107</td>
+      <td>5.730664e-05</td>
+      <td>0.000554</td>
+      <td>NaN</td>
+      <td>67</td>
+      <td>67</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>matrisome.score</td>
+      <td>numeric</td>
+      <td>cell (mean)</td>
+      <td>Spearman</td>
+      <td>-0.337617</td>
+      <td>5.205204e-03</td>
+      <td>0.037738</td>
+      <td>NaN</td>
+      <td>67</td>
+      <td>67</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>diabetes_history</td>
+      <td>categorical</td>
+      <td>sample</td>
+      <td>ANOVA</td>
+      <td>5.577724</td>
+      <td>2.169314e-02</td>
+      <td>0.125820</td>
+      <td>0.016035</td>
+      <td>58</td>
+      <td>2</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>nFeature_RNA</td>
+      <td>numeric</td>
+      <td>cell (mean)</td>
+      <td>Spearman</td>
+      <td>-0.265544</td>
+      <td>2.986922e-02</td>
+      <td>0.136152</td>
+      <td>NaN</td>
+      <td>67</td>
+      <td>67</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>condition.l2</td>
+      <td>categorical</td>
+      <td>sample</td>
+      <td>ANOVA</td>
+      <td>2.810723</td>
+      <td>3.286437e-02</td>
+      <td>0.136152</td>
+      <td>0.038276</td>
+      <td>67</td>
+      <td>5</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>proteoglycan.score</td>
+      <td>numeric</td>
+      <td>cell (mean)</td>
+      <td>Spearman</td>
+      <td>-0.254130</td>
+      <td>3.796769e-02</td>
+      <td>0.137633</td>
+      <td>NaN</td>
+      <td>67</td>
+      <td>67</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>condition.long</td>
+      <td>categorical</td>
+      <td>sample</td>
+      <td>ANOVA</td>
+      <td>2.358445</td>
+      <td>5.060087e-02</td>
+      <td>0.163047</td>
+      <td>0.057843</td>
+      <td>67</td>
+      <td>6</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>disease</td>
+      <td>categorical</td>
+      <td>sample</td>
+      <td>ANOVA</td>
+      <td>2.964253</td>
+      <td>5.872502e-02</td>
+      <td>0.170303</td>
+      <td>0.060949</td>
+      <td>67</td>
+      <td>3</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>self_reported_ethnicity</td>
+      <td>categorical</td>
+      <td>sample</td>
+      <td>ANOVA</td>
+      <td>3.046883</td>
+      <td>8.618794e-02</td>
+      <td>0.203004</td>
+      <td>0.082357</td>
+      <td>60</td>
+      <td>2</td>
+      <td>2 group(s) with &lt; 2 samples not tested</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>collagen.score</td>
+      <td>numeric</td>
+      <td>cell (mean)</td>
+      <td>Spearman</td>
+      <td>-0.208317</td>
+      <td>9.070878e-02</td>
+      <td>0.203004</td>
+      <td>NaN</td>
+      <td>67</td>
+      <td>67</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>tissue_type</td>
+      <td>categorical</td>
+      <td>sample</td>
+      <td>ANOVA</td>
+      <td>2.488925</td>
+      <td>9.100189e-02</td>
+      <td>0.203004</td>
+      <td>0.092414</td>
+      <td>67</td>
+      <td>3</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>pagoda_k100_infomap_coembed</td>
+      <td>numeric</td>
+      <td>cell (mean)</td>
+      <td>Spearman</td>
+      <td>0.194269</td>
+      <td>1.151904e-01</td>
+      <td>0.238609</td>
+      <td>NaN</td>
+      <td>67</td>
+      <td>67</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>14</th>
+      <td>sex</td>
+      <td>categorical</td>
+      <td>sample</td>
+      <td>ANOVA</td>
+      <td>2.234959</td>
+      <td>1.397596e-01</td>
+      <td>0.270202</td>
+      <td>0.138557</td>
+      <td>67</td>
+      <td>2</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>15</th>
+      <td>nCount_RNA</td>
+      <td>numeric</td>
+      <td>cell (mean)</td>
+      <td>Spearman</td>
+      <td>-0.166853</td>
+      <td>1.771669e-01</td>
+      <td>0.321115</td>
+      <td>NaN</td>
+      <td>67</td>
+      <td>67</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>16</th>
+      <td>percent.er</td>
+      <td>numeric</td>
+      <td>cell (mean)</td>
+      <td>Spearman</td>
+      <td>0.137920</td>
+      <td>2.657050e-01</td>
+      <td>0.453262</td>
+      <td>NaN</td>
+      <td>67</td>
+      <td>67</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>17</th>
+      <td>development_stage</td>
+      <td>categorical</td>
+      <td>sample</td>
+      <td>ANOVA</td>
+      <td>0.872606</td>
+      <td>5.666207e-01</td>
+      <td>0.893246</td>
+      <td>0.606595</td>
+      <td>45</td>
+      <td>11</td>
+      <td>22 group(s) with &lt; 2 samples not tested</td>
+    </tr>
+    <tr>
+      <th>18</th>
+      <td>aEpi.score</td>
+      <td>numeric</td>
+      <td>cell (mean)</td>
+      <td>Spearman</td>
+      <td>0.062176</td>
+      <td>6.171899e-01</td>
+      <td>0.893246</td>
+      <td>NaN</td>
+      <td>67</td>
+      <td>67</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>19</th>
+      <td>aStr.score</td>
+      <td>numeric</td>
+      <td>cell (mean)</td>
+      <td>Spearman</td>
+      <td>-0.047649</td>
+      <td>7.017900e-01</td>
+      <td>0.893246</td>
+      <td>NaN</td>
+      <td>67</td>
+      <td>67</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>20</th>
+      <td>cyc.score</td>
+      <td>numeric</td>
+      <td>cell (mean)</td>
+      <td>Spearman</td>
+      <td>0.046412</td>
+      <td>7.091834e-01</td>
+      <td>0.893246</td>
+      <td>NaN</td>
+      <td>67</td>
+      <td>67</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>21</th>
       <td>degen.score</td>
-      <td>0.262272</td>
-      <td>0.032027</td>
+      <td>numeric</td>
+      <td>cell (mean)</td>
+      <td>Spearman</td>
+      <td>0.044656</td>
+      <td>7.197233e-01</td>
+      <td>0.893246</td>
+      <td>NaN</td>
+      <td>67</td>
+      <td>67</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>22</th>
+      <td>is_primary_data</td>
+      <td>categorical</td>
+      <td>sample</td>
+      <td>ANOVA</td>
+      <td>0.106106</td>
+      <td>7.456678e-01</td>
+      <td>0.893246</td>
+      <td>0.742936</td>
+      <td>67</td>
+      <td>2</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>23</th>
+      <td>hypertension</td>
+      <td>categorical</td>
+      <td>sample</td>
+      <td>ANOVA</td>
+      <td>0.081412</td>
+      <td>7.764275e-01</td>
+      <td>0.893246</td>
+      <td>0.759006</td>
+      <td>59</td>
+      <td>2</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>24</th>
+      <td>percent.mt</td>
+      <td>numeric</td>
+      <td>cell (mean)</td>
+      <td>Spearman</td>
+      <td>-0.033043</td>
+      <td>7.906598e-01</td>
+      <td>0.893246</td>
+      <td>NaN</td>
+      <td>67</td>
+      <td>67</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>25</th>
+      <td>eGFR</td>
+      <td>categorical</td>
+      <td>sample</td>
+      <td>ANOVA</td>
+      <td>0.409760</td>
+      <td>8.008411e-01</td>
+      <td>0.893246</td>
+      <td>0.804826</td>
+      <td>60</td>
+      <td>5</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>26</th>
+      <td>S.Score</td>
+      <td>numeric</td>
+      <td>cell (mean)</td>
+      <td>Spearman</td>
+      <td>-0.019315</td>
+      <td>8.767104e-01</td>
+      <td>0.941652</td>
+      <td>NaN</td>
+      <td>67</td>
+      <td>67</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>27</th>
+      <td>suspension_type</td>
+      <td>categorical</td>
+      <td>sample (most frequent)</td>
+      <td>ANOVA</td>
+      <td>0.007604</td>
+      <td>9.307776e-01</td>
+      <td>0.963443</td>
+      <td>0.929982</td>
+      <td>67</td>
+      <td>2</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>28</th>
+      <td>G2M.Score</td>
+      <td>numeric</td>
+      <td>cell (mean)</td>
+      <td>Spearman</td>
+      <td>0.005707</td>
+      <td>9.634432e-01</td>
+      <td>0.963443</td>
+      <td>NaN</td>
+      <td>67</td>
+      <td>67</td>
+      <td></td>
     </tr>
   </tbody>
 </table>
-</div>
 
-
-
+The skipped columns, and why:
 
 ```python
-
+adata.uns['trajectory_associations_skipped']
 ```
 
-We observe that there is a clear association between the trajectory and the origin of the biopsies. This is not surprising as PILOT uses cellular composition information, as samples at distinct regions do have distinct cells. Regarding continuous variable, we find an association with the degen.score, which is a gene signature score estimated from the comparisons of controls and disease samples (see data manuscript for more details https://doi.org/10.1038/s41586-023-05769-3). 
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Feature</th>
+      <th>Type</th>
+      <th>Level</th>
+      <th>N_samples</th>
+      <th>N_groups</th>
+      <th>Reason</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>library</td>
+      <td>skipped</td>
+      <td>sample (most frequent)</td>
+      <td>0</td>
+      <td>0</td>
+      <td>too many different values (67 for 67 samples, e.g. an ID)</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>experiment</td>
+      <td>skipped</td>
+      <td>sample (most frequent)</td>
+      <td>0</td>
+      <td>0</td>
+      <td>too many different values (67 for 67 samples, e.g. an ID)</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>specimen</td>
+      <td>skipped</td>
+      <td>sample (most frequent)</td>
+      <td>0</td>
+      <td>0</td>
+      <td>too many different values (67 for 67 samples, e.g. an ID)</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>condition.l1</td>
+      <td>skipped</td>
+      <td>sample</td>
+      <td>67</td>
+      <td>3</td>
+      <td>same groups as 'disease'</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>region.l1</td>
+      <td>skipped</td>
+      <td>sample (most frequent)</td>
+      <td>32</td>
+      <td>0</td>
+      <td>too many missing values (35 of 67)</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>region.l2</td>
+      <td>skipped</td>
+      <td>sample (most frequent)</td>
+      <td>32</td>
+      <td>0</td>
+      <td>too many missing values (35 of 67)</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>percent.medulla</td>
+      <td>skipped</td>
+      <td>cell (mean)</td>
+      <td>36</td>
+      <td>14</td>
+      <td>same groups as 'percent.cortex'</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>subclass.full</td>
+      <td>skipped</td>
+      <td>cell</td>
+      <td>0</td>
+      <td>0</td>
+      <td>differs between the cells of a sample (cell-level)</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>subclass.l3</td>
+      <td>skipped</td>
+      <td>cell</td>
+      <td>0</td>
+      <td>0</td>
+      <td>differs between the cells of a sample (cell-level)</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>subclass.l2</td>
+      <td>skipped</td>
+      <td>cell</td>
+      <td>0</td>
+      <td>0</td>
+      <td>differs between the cells of a sample (cell-level)</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>subclass.l1</td>
+      <td>skipped</td>
+      <td>cell</td>
+      <td>0</td>
+      <td>0</td>
+      <td>differs between the cells of a sample (cell-level)</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>state.l2</td>
+      <td>skipped</td>
+      <td>cell</td>
+      <td>0</td>
+      <td>0</td>
+      <td>differs between the cells of a sample (cell-level)</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>state</td>
+      <td>skipped</td>
+      <td>cell</td>
+      <td>0</td>
+      <td>0</td>
+      <td>differs between the cells of a sample (cell-level)</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>class</td>
+      <td>skipped</td>
+      <td>cell</td>
+      <td>0</td>
+      <td>0</td>
+      <td>differs between the cells of a sample (cell-level)</td>
+    </tr>
+    <tr>
+      <th>14</th>
+      <td>structure</td>
+      <td>skipped</td>
+      <td>cell</td>
+      <td>0</td>
+      <td>0</td>
+      <td>differs between the cells of a sample (cell-level)</td>
+    </tr>
+    <tr>
+      <th>15</th>
+      <td>BMI</td>
+      <td>skipped</td>
+      <td>sample</td>
+      <td>30</td>
+      <td>0</td>
+      <td>too many missing values (37 of 67)</td>
+    </tr>
+    <tr>
+      <th>16</th>
+      <td>cell_type</td>
+      <td>skipped</td>
+      <td>cell</td>
+      <td>0</td>
+      <td>0</td>
+      <td>differs between the cells of a sample (cell-level)</td>
+    </tr>
+    <tr>
+      <th>17</th>
+      <td>assay</td>
+      <td>skipped</td>
+      <td>sample</td>
+      <td>67</td>
+      <td>1</td>
+      <td>only one value</td>
+    </tr>
+    <tr>
+      <th>18</th>
+      <td>organism</td>
+      <td>skipped</td>
+      <td>sample</td>
+      <td>67</td>
+      <td>1</td>
+      <td>only one value</td>
+    </tr>
+    <tr>
+      <th>19</th>
+      <td>id</td>
+      <td>skipped</td>
+      <td>sample (most frequent)</td>
+      <td>67</td>
+      <td>2</td>
+      <td>same groups as 'suspension_type'</td>
+    </tr>
+    <tr>
+      <th>20</th>
+      <td>disease_ontology_term_id</td>
+      <td>skipped</td>
+      <td>sample</td>
+      <td>67</td>
+      <td>3</td>
+      <td>same groups as 'disease'</td>
+    </tr>
+    <tr>
+      <th>21</th>
+      <td>sex_ontology_term_id</td>
+      <td>skipped</td>
+      <td>sample</td>
+      <td>67</td>
+      <td>2</td>
+      <td>same groups as 'sex'</td>
+    </tr>
+    <tr>
+      <th>22</th>
+      <td>development_stage_ontology_term_id</td>
+      <td>skipped</td>
+      <td>sample</td>
+      <td>45</td>
+      <td>11</td>
+      <td>same groups as 'development_stage'</td>
+    </tr>
+    <tr>
+      <th>23</th>
+      <td>self_reported_ethnicity_ontology_term_id</td>
+      <td>skipped</td>
+      <td>sample</td>
+      <td>60</td>
+      <td>2</td>
+      <td>same groups as 'self_reported_ethnicity'</td>
+    </tr>
+    <tr>
+      <th>24</th>
+      <td>tissue_ontology_term_id</td>
+      <td>skipped</td>
+      <td>sample (most frequent)</td>
+      <td>67</td>
+      <td>4</td>
+      <td>same groups as 'tissue'</td>
+    </tr>
+    <tr>
+      <th>25</th>
+      <td>organism_ontology_term_id</td>
+      <td>skipped</td>
+      <td>sample</td>
+      <td>67</td>
+      <td>1</td>
+      <td>only one value</td>
+    </tr>
+    <tr>
+      <th>26</th>
+      <td>assay_ontology_term_id</td>
+      <td>skipped</td>
+      <td>sample</td>
+      <td>67</td>
+      <td>1</td>
+      <td>only one value</td>
+    </tr>
+    <tr>
+      <th>27</th>
+      <td>cell_type_ontology_term_id</td>
+      <td>skipped</td>
+      <td>cell</td>
+      <td>0</td>
+      <td>0</td>
+      <td>differs between the cells of a sample (cell-level)</td>
+    </tr>
+  </tbody>
+</table>
 
-To double check these results, one can of course plot the trajectory by showing the location as labels. 
+##### The significant variables on the trajectory:
+<div class="alert alert-block alert-info">
+`pl.pl.trajectory_associations` shows the variables with p-value < 0.05 (at most `top = 6`) on the trajectory, each in its own panel, with the test and the p-value in the title. With `basis = 'umap'` the same variables are shown on the UMAP of the samples. Use `variables = [...]` to choose the variables yourself.
+</div>
+
+```python
+pl.pl.trajectory_associations(adata)
+```
+
+![png](Kidney_trajectory_files/cell30_1.png)
+
+```python
+pl.pl.trajectory_associations(adata, basis = 'umap')
+```
+
+![png](Kidney_trajectory_files/cell31_1.png)
+
+<div class="alert alert-block alert-info">
+The functions of earlier versions, where you list the variables and their type yourself, still work: `pl.tl.correlation_categorical_with_trajectory(adata, sample_col = 'donor_id', features = [...])` and `pl.tl.correlation_numeric_with_trajectory(adata, sample_col = 'donor_id', features = [...])`.
+</div>
+
+We observe that there is a clear association between the trajectory and the origin of the biopsies (`tissue`, and `percent.cortex`, the fraction of cortex in the biopsy). This is not surprising as PILOT uses cellular composition information, as samples at distinct regions do have distinct cells. Among the gene signature scores (see the data manuscript for details: https://doi.org/10.1038/s41586-023-05769-3), the glycoprotein and matrisome scores (averaged over the cells of each sample) are associated with the trajectory.
+
+Note: earlier versions of this tutorial reported an association with the `degen.score`. The earlier functions used the score of one cell per sample (the first cell); the average over all cells of a sample, which is used now, is not associated with the trajectory.
+
+To double check these results, one can of course plot the trajectory by showing the location as labels.
 
 ###### Tissue
-
 
 ```python
 palette = sns.color_palette("husl", len(adata.obs['tissue'].unique()))
@@ -314,14 +954,11 @@ pl.tl.wasserstein_distance(
     )
 ```
 
-
 ```python
 pl.pl.trajectory(adata, colors = colors)
 ```
 
-
-![png](Kidney_trajectory_files/Kidney_trajectory_24_0.png)
-
+![png](Kidney_trajectory_files/cell36_1.png)
 
 #### Filtering of samples
 

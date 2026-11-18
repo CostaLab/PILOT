@@ -58,8 +58,8 @@ def infer_gene_cluster_differentiation(gene_list: list = None,
     n_bootstraps = 50
     
     if(cluster_names is None):
-        cluster_names = [os.path.splitext(f)[0] for f in listdir(path_to_results + '/cells/') \
-                         if isfile(join(path_to_results + '/cells/', f))]
+        from .._cells_io import list_cell_types
+        cluster_names = list_cell_types(path_to_results + '/cells/')
     else:
         if(len(cluster_names) < 2):
             warn("Number of clusters should be at least two to be compared.")

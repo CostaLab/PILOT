@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='pilotpy',
-    version='2.1.1',
+    version='2.1.2',
     author='Mehdi Joodaki & Mina Shaigan',
     author_email='judakimehdi@gmail.com',
     url='https://github.com/CostaLab/PILOT',
@@ -36,5 +36,6 @@ setup(
             "anndata",
             "umap-learn",
         ],
+        extras_require={'mudata': ['mudata']},
         packages=find_packages()
 )

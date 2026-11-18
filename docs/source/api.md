@@ -51,7 +51,33 @@ import pilotpy
    tl.gene_cluster_differentiation
    tl.results_gene_cluster_differentiation
    tl.compute_diff_expressions
-  
+```
+
+### Clinical and technical variables
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated/
+
+   tl.sample_variables
+   tl.correlation_with_trajectory
+   tl.correlation_with_clustering
+   tl.name_clusters
+   tl.correlation_categorical_with_trajectory
+   tl.correlation_numeric_with_trajectory
+   tl.correlation_categorical_with_clustering
+   tl.correlation_numeric_with_clustering
+```
+
+### MuData
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated/
+
+   tl.sample_adata
+   tl.to_mudata
+   tl.from_mudata
 ```
 ## plot: `pl`
 
@@ -76,6 +102,10 @@ import pilotpy
    pl.umap_samples
    pl.trajectory_variable
    pl.umap_variable
+   pl.trajectory_associations
+   pl.select_best_sil
+   pl.clustering_emd
+   pl.cluster_associations
    pl.plot_trajectory_continuous
    pl.fit_pricipla_graph
    pl.principal_graph

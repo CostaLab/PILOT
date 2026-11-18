@@ -6,10 +6,13 @@ Although clinical applications represent the next challenge in single-cell genom
 
 ![plot](./img/plot.png)
 
-## 🆕 What's new in version 2.1.1
+## 🆕 What's new in version 2.1.2
 > [!TIP]
-> - **Trajectory branches (new):** split the trajectory and analyse each branch separately. 👉 [Tutorial](https://pilot.readthedocs.io/en/latest/Trajectory_branches.html)
-> - **Distance settings (2.1.0):** choose how PILOT measures the distances between samples. 👉 [Tutorial](https://pilot.readthedocs.io/en/latest/Distance_settings.html)
+> - **Clinical variables, automatically (new):** test all variables of the patients against the trajectory or the patient sub-groups in one call; the types are detected and unusable columns are skipped. Sub-groups get names such as `control_1`. 👉 [Trajectory](https://pilot.readthedocs.io/en/latest/Kidney_trajectory.html) · [Sub-groups](https://pilot.readthedocs.io/en/latest/Kidney_clusters.html)
+> - **Faster gene analysis (new):** `genes_importance` saves small sparse files instead of large CSV files; old results still work.
+> - **MuData (new):** export and import the results with one row per patient. 👉 [Tutorial](https://pilot.readthedocs.io/en/latest/MuData.html)
+> - **From raw data (new tutorial):** QC, PCA, Harmony and Leiden, then PILOT, on COVID-19 data. 👉 [Tutorial](https://pilot.readthedocs.io/en/latest/COVID_from_scratch.html)
+> - **Trajectory branches (2.1.1)** 👉 [Tutorial](https://pilot.readthedocs.io/en/latest/Trajectory_branches.html) · **Distance settings (2.1.0)** 👉 [Tutorial](https://pilot.readthedocs.io/en/latest/Distance_settings.html)
 >
 > Default results are unchanged.
 
@@ -28,10 +31,14 @@ cd PILOT/Tutorial
 ```
 
 ## [Tutorial&Data sets](https://pilot.readthedocs.io/en/latest/index.html)
-There are seven tutorials, one for [Myocardial Infarction (single cell data)](https://pilot.readthedocs.io/en/latest/Myocardial_infarction.html), and the second tutorial for [pathomics data, the combination of Kidney IgAN(G) & Kidney IgAN(T)](https://pilot.readthedocs.io/en/latest/Combination_Kidney_IgAN.html), and the third one  for [Patients sub-group detection and then ranking cells/genes (Pancreas data)](https://pilot.readthedocs.io/en/latest/Patients_sub_group_detection.html) and the forth one for 
-[evaluation of the presence of batch effects in Trajectory](https://pilot.readthedocs.io/en/latest/Kidney_trajectory.html) the fifth one for [evaluation of the presence of batch effects in detected sub-groups](https://pilot.readthedocs.io/en/latest/Kidney_clusters.html), the sixth one for the [settings of the Wasserstein distance](https://pilot.readthedocs.io/en/latest/Distance_settings.html), and the last one for [splitting the trajectory into branches](https://pilot.readthedocs.io/en/latest/Trajectory_branches.html).
-
-
+- [Myocardial Infarction (single-cell data)](https://pilot.readthedocs.io/en/latest/Myocardial_infarction.html): start here
+- [COVID-19 from raw data: QC to PILOT](https://pilot.readthedocs.io/en/latest/COVID_from_scratch.html)
+- [Pathomics data: combination of Kidney IgAN(G) & Kidney IgAN(T)](https://pilot.readthedocs.io/en/latest/Combination_Kidney_IgAN.html)
+- [Patient sub-group detection and ranking of cells/genes (Pancreas data)](https://pilot.readthedocs.io/en/latest/Patients_sub_group_detection.html)
+- [Batch effects in the trajectory](https://pilot.readthedocs.io/en/latest/Kidney_trajectory.html) and [in the patient sub-groups](https://pilot.readthedocs.io/en/latest/Kidney_clusters.html)
+- [Settings of the Wasserstein distance](https://pilot.readthedocs.io/en/latest/Distance_settings.html)
+- [Splitting the trajectory into branches](https://pilot.readthedocs.io/en/latest/Trajectory_branches.html)
+- [Export and import with MuData](https://pilot.readthedocs.io/en/latest/MuData.html)
 
 You can access the used data sets by PILOT in Part 1 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4740646.svg)](https://zenodo.org/records/8370081) and  Part 2 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4740646.svg)](https://zenodo.org/records/7957118)
 

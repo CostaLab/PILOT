@@ -1052,7 +1052,7 @@ def _scatter_variable(adata, coords, values, name, kind='auto', colors=None, cma
                       legend_loc='best', legend_bbox=None, legend_title=None,
                       fontsize_legend=None, show_legend=True, label_act=False,
                       point_size=None, alpha=1, figsize=None, font_size=None, title=None,
-                      xlabel=None, ylabel=None, facecolor='white'):
+                      xlabel=None, ylabel=None, facecolor='white', ax=None):
     """Scatter the samples colored by a categorical or numeric variable."""
     font_size = DEFAULT_FONTSIZE if font_size is None else font_size
     fontsize_legend = font_size if fontsize_legend is None else fontsize_legend
@@ -1060,7 +1060,10 @@ def _scatter_variable(adata, coords, values, name, kind='auto', colors=None, cma
     legend_title = name if legend_title is None else legend_title
     numeric = _as_numeric(values, kind)
     with plt.rc_context({'font.size': font_size}):
-        fig, ax = plt.subplots(figsize=DEFAULT_FIGSIZE if figsize is None else figsize)
+        if ax is None:
+            fig, ax = plt.subplots(figsize=DEFAULT_FIGSIZE if figsize is None else figsize)
+        else:
+            fig = ax.figure
         ax.set_facecolor(facecolor)
         na = values.isna().values if numeric is None else numeric.isna().values
         if na.any():
@@ -1315,6 +1318,217 @@ def umap_variable(adata,
 
 for _func in (trajectory_variable, umap_variable):
     _func.__doc__ = _func.__doc__.replace('\n    <<VARIABLE_PARAMS>>', _VARIABLE_PARAMS_DOC)
+
+
+def _pick_associations(res, variables, top, p_val, use_adjusted):
+    """Rows of an association table to plot."""
+    if res is None or len(res) == 0:
+        raise ValueError("No association results. Run pl.tl.correlation_with_trajectory(adata) "
+                         "or pl.tl.correlation_with_clustering(adata, proportion_df) first.")
+    if variables is not None:
+        variables = [variables] if isinstance(variables, str) else list(variables)
+        unknown = [v for v in variables if v not in set(res['Feature'])]
+        if unknown:
+            raise ValueError(f"Not tested (or skipped): {unknown}")
+        return res.set_index('Feature').loc[variables].reset_index()
+    col = 'Adjusted_P_value' if use_adjusted else 'P_value'
+    picked = res[res[col] < p_val].head(top)
+    if picked.empty:
+        print(f"No variable with {col} < {p_val}; showing the {min(top, len(res))} "
+              "variables with the smallest p-values.")
+        picked = res.dropna(subset=['P_value']).head(top)
+    return picked
+
+
+def _grid(n, ncols, panel_size):
+    ncols = max(1, min(ncols, n))
+    nrows = int(np.ceil(n / ncols))
+    fig, axes = plt.subplots(nrows, ncols, figsize=(panel_size[0] * ncols, panel_size[1] * nrows),
+                             squeeze=False)
+    for ax in axes.ravel()[n:]:
+        ax.axis('off')
+    return fig, axes.ravel()
+
+
+def trajectory_associations(adata,
+                            variables=None,
+                            top=6,
+                            p_val=0.05,
+                            use_adjusted=False,
+                            basis='trajectory',
+                            components=(0, 1),
+                            show_graph=True,
+                            ncols=3,
+                            panel_size=(6, 5),
+                            point_size=None,
+                            cmap='viridis',
+                            font_size=12,
+                            plot_path='Results_PILOT/plots',
+                            save_format='pdf',
+                            show=True):
+    """
+    Show the variables that are associated with the trajectory, side by side.
+
+    Uses the results of ``pl.tl.correlation_with_trajectory``. Each panel shows
+    the samples on the trajectory (or the sample UMAP), colored by one
+    variable; categorical variables get one color per group and numeric
+    variables a color scale. The title gives the test and the p-value.
+
+    Parameters
+    ----------
+    adata : AnnData
+        AnnData object after ``pl.tl.correlation_with_trajectory``.
+    variables : list, optional
+        Variables to show. If None, the ``top`` variables with p-value below
+        ``p_val``.
+    top : int, optional
+        Maximum number of variables, by default 6.
+    p_val : float, optional
+        P-value threshold, by default 0.05.
+    use_adjusted : bool, optional
+        Use the adjusted p-values for the threshold, by default False.
+    basis : {'trajectory', 'umap'}, optional
+        Show the samples on the trajectory (default) or on the sample UMAP.
+    components : tuple, optional
+        Diffusion components of the trajectory, by default (0, 1).
+    show_graph : bool, optional
+        Draw the principal graph on the trajectory, by default True.
+    ncols : int, optional
+        Number of panels per row, by default 3.
+    panel_size : tuple, optional
+        Size of one panel in inches, by default (6, 5).
+    point_size : float, optional
+        Size of the points. If None, chosen from the number of samples.
+    cmap : str, optional
+        Color scale of numeric variables, by default 'viridis'.
+    font_size : int, optional
+        Base font size, by default 12.
+    plot_path : str, optional
+        Folder of the saved figure, by default 'Results_PILOT/plots'.
+    save_format : str, optional
+        File format, by default 'pdf'. Use None to not save.
+    show : bool, optional
+        Whether to show the figure, by default True.
+    """
+    res = adata.uns.get('trajectory_associations', None)
+    picked = _pick_associations(res, variables, top, p_val, use_adjusted)
+    table = adata.uns['trajectory_associations_values']
+    keys = [str(x) for x in _sample_order(adata)]
+    if basis == 'trajectory':
+        if 'embedding' not in adata.uns:
+            raise ValueError("No trajectory found. Run pl.pl.trajectory(adata) first.")
+        coords, xlabel, ylabel = _trajectory_axes(adata, components)
+    elif basis == 'umap':
+        coords = np.asarray(_compute_umap(adata))
+        xlabel, ylabel = 'UMAP 1', 'UMAP 2'
+    else:
+        raise ValueError("basis must be 'trajectory' or 'umap'.")
+    fig, axes = _grid(len(picked), ncols, panel_size)
+    for ax, (_, r) in zip(axes, picked.iterrows()):
+        values = table[r['Feature']].reindex(keys)
+        title = f"{r['Feature']}\n{r['Test']} p = {r['P_value']:.2g}"
+        _scatter_variable(adata, coords, values, r['Feature'],
+                          kind='numeric' if r['Type'] == 'numeric' else 'categorical',
+                          cmap=cmap, point_size=point_size, font_size=font_size, title=title,
+                          xlabel=xlabel, ylabel=ylabel, legend_loc='best',
+                          fontsize_legend=max(font_size - 3, 6), ax=ax)
+        if basis == 'trajectory' and show_graph and 'principal_graph' in adata.uns:
+            _draw_graph(ax, adata, components=components)
+    fig.tight_layout()
+    save_path = None if save_format is None else \
+        Path(plot_path) / f"Trajectory associations ({basis}).{save_format}"
+    _save_and_show(fig, save_path, show)
+
+
+def cluster_associations(adata,
+                         variables=None,
+                         top=6,
+                         p_val=0.05,
+                         use_adjusted=False,
+                         ncols=3,
+                         panel_size=(5, 4),
+                         cluster_order=None,
+                         font_size=12,
+                         plot_path='Results_PILOT/plots',
+                         save_format='pdf',
+                         show=True):
+    """
+    Show the variables that differ between the clusters of samples.
+
+    Uses the results of ``pl.tl.correlation_with_clustering``. For a
+    categorical variable, a bar shows the fraction of each group in each
+    cluster; for a numeric variable, a box plot (with the samples as points)
+    shows its values per cluster.
+
+    Parameters
+    ----------
+    adata : AnnData
+        AnnData object after ``pl.tl.correlation_with_clustering``.
+    variables : list, optional
+        Variables to show. If None, the ``top`` variables with p-value below
+        ``p_val``.
+    top : int, optional
+        Maximum number of variables, by default 6.
+    p_val : float, optional
+        P-value threshold, by default 0.05.
+    use_adjusted : bool, optional
+        Use the adjusted p-values for the threshold, by default False.
+    ncols : int, optional
+        Number of panels per row, by default 3.
+    panel_size : tuple, optional
+        Size of one panel in inches, by default (5, 4).
+    cluster_order : list, optional
+        Order of the clusters on the x-axis (default: sorted names).
+    font_size : int, optional
+        Base font size, by default 12.
+    plot_path : str, optional
+        Folder of the saved figure, by default 'Results_PILOT/plots'.
+    save_format : str, optional
+        File format, by default 'pdf'. Use None to not save.
+    show : bool, optional
+        Whether to show the figure, by default True.
+    """
+    res = adata.uns.get('cluster_associations', None)
+    picked = _pick_associations(res, variables, top, p_val, use_adjusted)
+    table = adata.uns['cluster_associations_values']
+    clusters = adata.uns['sample_clusters']
+    clusters = pd.Series(clusters['Predicted_Labels'].astype(str).values,
+                         index=clusters['sampleID'].astype(str).values)
+    order = sorted(clusters.unique()) if cluster_order is None else list(cluster_order)
+    fig, axes = _grid(len(picked), ncols, panel_size)
+    with plt.rc_context({'font.size': font_size}):
+        for ax, (_, r) in zip(axes, picked.iterrows()):
+            values = table[r['Feature']].reindex(clusters.index)
+            ok = values.notna()
+            title = f"{r['Feature']}\n{r['Test']} p = {r['P_value']:.2g}"
+            if r['Type'] == 'numeric':
+                data = [values[ok & (clusters == c)].astype(float).values for c in order]
+                ax.boxplot(data, positions=range(1, len(order) + 1), showfliers=False)
+                ax.set_xticks(range(1, len(order) + 1))
+                ax.set_xticklabels(order)
+                for i, d in enumerate(data, start=1):
+                    jitter = np.random.default_rng(0).uniform(-0.15, 0.15, len(d))
+                    ax.scatter(np.full(len(d), i) + jitter, d, s=15, color='k', alpha=0.6)
+                ax.set_ylabel(r['Feature'])
+            else:
+                ct = pd.crosstab(clusters[ok], values[ok].astype(str), normalize='index')
+                ct = ct.reindex(order).fillna(0)
+                colors = _get_colors(adata, r['Feature'], list(ct.columns))
+                bottom = np.zeros(len(ct))
+                for g in ct.columns:
+                    ax.bar(range(len(ct)), ct[g].values, bottom=bottom, color=colors[g], label=g)
+                    bottom += ct[g].values
+                ax.set_xticks(range(len(ct)))
+                ax.set_xticklabels(ct.index)
+                ax.set_ylabel('Fraction of samples')
+                ax.legend(fontsize=max(font_size - 4, 6), frameon=False, loc='upper left',
+                          bbox_to_anchor=(1.0, 1.0))
+            ax.set_title(title, fontsize=font_size)
+            ax.set_xlabel('Cluster')
+            ax.tick_params(axis='x', rotation=30)
+    fig.tight_layout()
+    save_path = None if save_format is None else Path(plot_path) / f"Cluster associations.{save_format}"
+    _save_and_show(fig, save_path, show)
 
 
 def plot_trajectory_continuous(
@@ -2098,7 +2312,9 @@ def clustering_emd(
     save=False,
     sorter_leiden=None,
     use_rep="X",
-    order_file=None):
+    order_file=None,
+    rename_clusters=False,
+    name_by=None):
     """
     Perform clustering and visualization of EMD (Earth Mover's Distance) data in AnnData object.
     
@@ -2135,6 +2351,13 @@ def clustering_emd(
              50 columns, calculates the PCA otherwise. The 50 columns (features)
              comes from sc.settings.N_PCS.
     order_file: Path where the row/column order should be saved. Default: None
+    rename_clusters : bool, optional
+        Name the clusters after the majority group of their samples (e.g.
+        'control', 'disease_1', 'disease_2') instead of 0, 1, 2, ... (see
+        ``pl.tl.name_clusters``). Default: False. ``sorter_leiden`` then uses
+        the new names.
+    name_by : str, optional
+        Column of ``adata.obs`` used for the names. Default: the status.
     
     Returns
     -------
@@ -2174,6 +2397,12 @@ def clustering_emd(
     sc.pp.neighbors(adata_emd, metric=metric, use_rep=rep)
     sc.tl.leiden(adata_emd, resolution=res)
     predicted_labels = np.array(adata_emd.obs.leiden)
+    if rename_clusters:
+        from ..tools.associations import name_clusters
+        named = name_clusters(adata, pd.DataFrame({'sampleID': list(proportions.keys()),
+                                                   'Predicted_Labels': predicted_labels}),
+                              by=name_by)
+        predicted_labels = np.array(named['Predicted_Labels'])
     
     proportion_df = pd.DataFrame(proportions)
     proportion_df = proportion_df.T
@@ -2181,6 +2410,8 @@ def clustering_emd(
     
     proportion_df["Predicted_Labels"] = predicted_labels
     proportion_df["sampleID"] = list(proportions.keys())
+    adata.uns['sample_clusters'] = pd.DataFrame({'sampleID': [str(x) for x in proportions.keys()],
+                                                 'Predicted_Labels': predicted_labels.astype(str)})
     
     EMD_df["Leiden"] = predicted_labels
     if groupby_col == "status":
@@ -2787,13 +3018,14 @@ def exploring_specific_genes(cluster_name='cell_type',
     Returns:
         Show the genes for the interested cell types
     """
-    result_path=Path('Results_PILOT')
-    file_name = "Whole_expressions.csv"
-    cluster_names = [f.stem for f in (result_path / 'cells').iterdir() if f.is_file()]
+    result_path = 'Results_PILOT'
+    file_name = "/Whole_expressions.csv"
+    from .._cells_io import list_cell_types
+    cluster_names = list_cell_types(result_path + '/cells')
     
-    all_stats_extend = pd.read_csv(result_path / "gene_clusters_stats_extend.csv", sep = ",")
+    all_stats_extend = pd.read_csv(result_path + "/gene_clusters_stats_extend.csv", sep = ",")
     
-    with open(result_path / 'genes_dictionary.pkl', 'rb') as handle:
+    with open(result_path + '/genes_dictionary.pkl', 'rb') as handle:
         gene_dict = pickle.load(handle)
     
     pline = np.linspace(1, 20, 20)
@@ -2805,10 +3037,10 @@ def exploring_specific_genes(cluster_name='cell_type',
     
     # Load the PNG image file
     if create_new_plot_folder:
-        image_path = result_path+'/plot_genes_for_'+str(cluster_name)+'/'+str(cluster_name) + ".png"  # Replace with the actual path to your PNG image
+        image_path = result_path+'/plot_genes_for_'+str(cluster_name)+'/'+str(cluster_name) + ".png"
         image = imread(image_path)
     else:        
-        image_path =result_path+'plots_gene_cluster_differentiation/'+cluster_name+'.png'  # Replace with the actual path to your PNG image
+        image_path = result_path+'/plots_gene_cluster_differentiation/'+str(cluster_name)+'.png'
         image = imread(image_path)
     
     # Set the size of the figure
@@ -2930,10 +3162,10 @@ def plt_gene_cluster_differentiation(cellnames=['healthy_CM','Myofib'],font_size
         Generates and saves scatterplots of gene expression patterns for selected clusters.
     """
     
-    file_name = "Whole_expressions.csv"
-    result_path=Path('Results_PILOT')
-    all_stats_extend=pd.read_csv(result_path / 'gene_clusters_stats_extend.csv')
-    with open(result_path / 'genes_dictionary.pkl', 'rb') as handle:
+    file_name = "/Whole_expressions.csv"
+    result_path = 'Results_PILOT'
+    all_stats_extend=pd.read_csv(result_path + '/gene_clusters_stats_extend.csv')
+    with open(result_path + '/genes_dictionary.pkl', 'rb') as handle:
         gene_dict = pickle.load(handle)
     
     pline = np.linspace(1, 20, 20)

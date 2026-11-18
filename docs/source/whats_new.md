@@ -1,5 +1,26 @@
 # What's new
 
+## Version 2.1.2
+
+**Clinical and technical variables, automatically.**
+
+- `pl.tl.correlation_with_trajectory(adata)`: tests **all** columns of `adata.obs` against the trajectory in one table. The usable variables are found automatically, their type (categorical or numeric) is detected, and columns that cannot be used (one value only, IDs, too many missing values, cell-level labels, duplicates such as 'sex' and 'sex_ontology_term_id') are skipped with a reason. Categorical: ANOVA (and Kruskal-Wallis); numeric: Spearman; p-values corrected (Benjamini-Hochberg). See the [Batch effects: trajectory](Kidney_trajectory.md) tutorial.
+- `pl.pl.trajectory_associations(adata)`: the significant variables side by side on the trajectory (or the sample UMAP with `basis = 'umap'`).
+- `pl.tl.correlation_with_clustering(adata, proportion_df)` and `pl.pl.cluster_associations(adata)`: the same for the sub-groups of patients (Chi-squared / ANOVA).
+- `pl.pl.clustering_emd(..., rename_clusters = True)` and `pl.tl.name_clusters`: the clusters are named after the majority status of their samples (e.g. 'control', 'disease_1', 'disease_2') instead of 0, 1, 2. See the [Batch effects: sub-groups](Kidney_clusters.md) tutorial.
+- `pl.tl.sample_variables`: the table of usable sample variables and their types.
+
+**Faster gene analysis.** `pl.tl.genes_importance` saves the expression of each cell type as a small sparse `.h5ad` file in `Results_PILOT/cells` instead of a large CSV file (option `cells_format = 'csv'` for the old format). All functions that read this folder accept both formats, so results of older versions keep working without running anything again.
+
+**MuData.** `pl.tl.to_mudata` saves the results as a MuData with a patient-level modality (one row per sample: proportions, clinical variables, pseudotime, clusters, trajectory, Wasserstein distances); `pl.tl.from_mudata` loads it again and continues the analysis; `pl.tl.wasserstein_distance` accepts a MuData (`modality = 'rna'`). See the [MuData tutorial](MuData.md).
+
+**New tutorial.** [COVID-19 from raw data](COVID_from_scratch.md): quality control, normalization, PCA, Harmony and Leiden, then PILOT and the clinical variables.
+
+**Fixes.**
+
+- `pl.tl.gene_cluster_differentiation`, `pl.pl.exploring_specific_genes` and `pl.pl.genes_selection_heatmap` work again with current scikit-learn and NumPy (2.x).
+- `pl.tl.extract_cells_from_gene_expression` now extracts all given cell types (it stopped after the first one).
+
 ## Version 2.1.1
 
 **Trajectory branches.** Split the trajectory and analyse each branch separately. See the [Trajectory branches tutorial](Trajectory_branches.md).

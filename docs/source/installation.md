@@ -17,6 +17,13 @@ import pilotpy as pl
 print(pl.__version__)
 ```
 
+## Optional packages
+
+Some functions and tutorials need extra packages:
+
+- MuData export and import (`pl.tl.to_mudata`, `pl.tl.from_mudata`): `pip install mudata` (or `pip install "pilotpy[mudata]"`).
+- Batch correction in the [COVID-19 tutorial](COVID_from_scratch.md): `pip install harmonypy`.
+
 ## Get the tutorials
 
 The tutorials are Jupyter notebooks in the `Tutorial` folder of the GitHub repository. Run them from that folder, because PILOT writes its results there (in `Results_PILOT`):
