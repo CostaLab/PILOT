@@ -8,24 +8,10 @@ Although clinical applications represent the next challenge in single-cell genom
 
 ## 🆕 What's new in version 2.1.1
 > [!TIP]
-> **Split the trajectory into branches.**
-> - **Choose a branch** (`pl.tl.select_branch(adata, nodes=[...])`): keep only the samples of the chosen nodes of the principal graph; all other samples are ignored.
-> - **Analyse each branch separately**: cell type importance, heatmap of the proportions and cell type plots use only the samples of the branch (one result folder per branch).
-> - **Choose the nodes** with `pl.tl.sample_nodes(adata)` and `pl.pl.principal_graph(adata)`, which highlights the selected branch.
+> - **Trajectory branches (new):** split the trajectory and analyse each branch separately. 👉 [Tutorial](https://pilot.readthedocs.io/en/latest/Trajectory_branches.html)
+> - **Distance settings (2.1.0):** choose how PILOT measures the distances between samples. 👉 [Tutorial](https://pilot.readthedocs.io/en/latest/Distance_settings.html)
 >
-> Without a selected branch, the results are the same as before. 👉 See the **[Trajectory branches tutorial](https://pilot.readthedocs.io/en/latest/Trajectory_branches.html)**.
-
-### Version 2.1.0
-> [!NOTE]
-> **You can choose how PILOT measures the distances between samples.**
-> - **Metrics** (`metric`): `cosine` (default), `euclidean`, `correlation`, `cityblock` and more.
-> - **Cost methods** (`cost_method`): `centroid` (default), `distribution`, `graph`, `expression`, `jaccard`, or your own cost matrix.
-> - **Transport methods** (`regularized`): exact (default), `sinkhorn`, `sinkhorn_divergence`, `unbalanced`.
-> - **Clinical variables**: color the patients by any variable (age, sex, eGFR, ...) on the trajectory and UMAP with `pl.pl.trajectory_variable` and `pl.pl.umap_variable`.
->
-> The default settings are unchanged. 👉 See the **[Distance settings tutorial](https://pilot.readthedocs.io/en/latest/Distance_settings.html)** for examples.
-
-
+> Default results are unchanged.
 
 ## Installation
 The easiest way to install PILOT and the required packages is using the following way:
