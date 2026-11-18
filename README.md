@@ -6,17 +6,24 @@ Although clinical applications represent the next challenge in single-cell genom
 
 ![plot](./img/plot.png)
 
-## 🆕 What's new in version 2.1.0
+## 🆕 What's new in version 2.1.1
 > [!TIP]
-> **You can now choose how PILOT measures the distances between samples.**
+> **Split the trajectory into branches.**
+> - **Choose a branch** (`pl.tl.select_branch(adata, nodes=[...])`): keep only the samples of the chosen nodes of the principal graph; all other samples are ignored.
+> - **Analyse each branch separately**: cell type importance, heatmap of the proportions and cell type plots use only the samples of the branch (one result folder per branch).
+> - **Choose the nodes** with `pl.tl.sample_nodes(adata)` and `pl.pl.principal_graph(adata)`, which highlights the selected branch.
+>
+> Without a selected branch, the results are the same as before. 👉 See the **[Trajectory branches tutorial](https://pilot.readthedocs.io/en/latest/Trajectory_branches.html)**.
+
+### Version 2.1.0
+> [!NOTE]
+> **You can choose how PILOT measures the distances between samples.**
 > - **Metrics** (`metric`): `cosine` (default), `euclidean`, `correlation`, `cityblock` and more.
 > - **Cost methods** (`cost_method`): `centroid` (default), `distribution`, `graph`, `expression`, `jaccard`, or your own cost matrix.
 > - **Transport methods** (`regularized`): exact (default), `sinkhorn`, `sinkhorn_divergence`, `unbalanced`.
 > - **Clinical variables**: color the patients by any variable (age, sex, eGFR, ...) on the trajectory and UMAP with `pl.pl.trajectory_variable` and `pl.pl.umap_variable`.
 >
 > The default settings are unchanged. 👉 See the **[Distance settings tutorial](https://pilot.readthedocs.io/en/latest/Distance_settings.html)** for examples.
->
-> **New in 2.1.1: trajectory branches.** Choose nodes of the principal graph with `pl.tl.select_branch` and find the cell types that change in each branch. 👉 See the **[Trajectory branches tutorial](https://pilot.readthedocs.io/en/latest/Trajectory_branches.html)**.
 
 
 
